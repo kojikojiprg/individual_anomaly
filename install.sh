@@ -4,7 +4,6 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 git submodule update --init
 
 # installation for mmpose
-mim install mmcv-full
-cd submodule/mmpose
+cd submodules/mmpose
 pip install -v -e .
 cd ../../
