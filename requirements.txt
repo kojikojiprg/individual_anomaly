@@ -1,0 +1,16 @@
+numpy
+scipy
+matplotlib
+opencv-python
+torch==1.11.0+cu115
+torchvision==0.12.0+cu115
+pytorch-lightning
+openmim
+munkres
+json_tricks
+kiwisolver
+fonttools
+cython
+cycler
+chumpy
+xtcocotools
