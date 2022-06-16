@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/usr/bin/env bash
+
 pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu115
 
 git submodule update --init
