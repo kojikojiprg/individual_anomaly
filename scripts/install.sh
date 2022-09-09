@@ -6,5 +6,6 @@ git submodule update --init
 
 # installation for mmpose
 cd submodules/mmpose
+pip install -r requirements.txt
 pip install -v -e .
 cd ../../
