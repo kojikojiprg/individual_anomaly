@@ -2,3 +2,6 @@
 	path = submodules/mmpose
 	url = https://github.com/open-mmlab/mmpose.git
 	ignore = dirty
+[submodule "submodules/unitrack"]
+	path = submodules/unitrack
+	url = https://github.com/Zhongdao/UniTrack.git
