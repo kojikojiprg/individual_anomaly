@@ -5,6 +5,8 @@
 [submodule "submodules/unitrack"]
 	path = submodules/unitrack
 	url = https://github.com/Zhongdao/UniTrack.git
+	ignore = dirty
 [submodule "submodules/mmdet"]
 	path = submodules/mmdet
 	url = https://github.com/open-mmlab/mmdetection.git
+	ignore = dirty
