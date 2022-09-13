@@ -1,5 +1,4 @@
 import sys
-from logging import Logger
 from types import SimpleNamespace
 from typing import Dict, List
 
@@ -13,25 +12,16 @@ sys.path.append("submodules")
 from unitrack.tracker.mot.pose import PoseAssociationTracker
 
 
-class UniTrackTracker:
-    def __init__(
-        self,
-        cfg_path: str,
-        logger: Logger,
-        device: str,
-        model_type: str = "detco",
-        model_path: str = "models/unitrack/detco.pth",
-    ):
+class Tracker:
+    def __init__(self, cfg: dict, device: str):
         # set config
         opts = SimpleNamespace(**{})
-        with open(cfg_path) as f:
+        with open(cfg["configs"]["unitrack"]) as f:
             common_args = yaml.safe_load(f)
         for k, v in common_args["common"].items():
             setattr(opts, k, v)
         for k, v in common_args["posetrack"].items():
             setattr(opts, k, v)
-        opts.model_type = model_type
-        opts.resume = model_path
         opts.return_stage = 2
         opts.device = device  # assign device
         self.use_lab = getattr(opts, "use_lab", False)
@@ -40,9 +30,6 @@ class UniTrackTracker:
             [T.ToTensor(), T.Normalize(opts.im_mean, opts.im_std)]
         )
 
-        self.logger = logger
-
-        self.logger.info(f"=> loading unitrack model from {opts.resume}")
         self.tracker = PoseAssociationTracker(opts)
 
     def __del__(self):
