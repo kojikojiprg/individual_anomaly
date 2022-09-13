@@ -11,6 +11,7 @@ pytorch-lightning
 pycocotools
 PyYAML
 types-PyYAML
+mmcv
 
 black
 flake8
