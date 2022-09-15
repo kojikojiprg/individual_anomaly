@@ -36,7 +36,7 @@ class DataHandler:
     def _convert(item: Dict[str, Any]) -> Dict[str, Any]:
         return {
             DataFormat.frame: item[DataFormat.frame],
-            DataFormat.id: item[DataFormat.frame],
+            DataFormat.id: item[DataFormat.id],
             DataFormat.keypoints: KPClass(item[DataFormat.keypoints]),
         }
 
