@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Tuple
 import torch
 from modules.utils import json_handler, video
 from numpy.typing import NDArray
-from tqdm import tqdm
 
 from .keypoints import KPClass
 
@@ -44,7 +43,7 @@ class DataHandler:
     def load(data_dir) -> List[Dict[str, Any]]:
         json_path = os.path.join(data_dir, "json", "keypoints.json")
         json_data = json_handler.load(json_path)
-        data = [DataHandler._convert(item) for item in tqdm(json_data, ncols=100)]
+        data = [DataHandler._convert(item) for item in json_data]
 
         return data
 
