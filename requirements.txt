@@ -13,6 +13,7 @@ PyYAML
 types-PyYAML
 mmcv
 mmcv-full
+cython_bbox
 
 black
 flake8
