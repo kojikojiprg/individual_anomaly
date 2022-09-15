@@ -12,6 +12,7 @@ pycocotools
 PyYAML
 types-PyYAML
 mmcv
+mmcv-full
 
 black
 flake8
