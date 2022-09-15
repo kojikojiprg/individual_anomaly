@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
@@ -56,6 +57,7 @@ class DataHandler:
 
     @staticmethod
     def save(json_path, data: List[Tuple[int, int, NDArray]]):
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
         reformed_data = []
         for item in data:
             item = DataHandler._reform(item)
