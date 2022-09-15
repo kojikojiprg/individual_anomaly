@@ -18,12 +18,8 @@ class DataFormat:
 
 class DataHandler:
     @staticmethod
-    def load_video(video_path: str):
-        return video.Capture(video_path)
-
-    @staticmethod
     def create_video_loader(video_path: str) -> torch.utils.data.DataLoader:
-        cap = DataHandler.load_video(video_path)
+        cap = video.Capture(video_path)
         assert cap.is_opened, f"{video_path} does not exist or is wrong file type."
         dataset = KeypointDetaset(cap)
 
@@ -60,9 +56,12 @@ class DataHandler:
 
     @staticmethod
     def save(json_path, data: List[Tuple[int, int, NDArray]]):
+        reformed_data = []
         for item in data:
             item = DataHandler._reform(item)
-        json_handler.dump(json_path, data)
+            reformed_data.append(item)
+        json_handler.dump(json_path, reformed_data)
+        del reformed_data
 
 
 class KeypointDetaset(torch.utils.data.Dataset):
@@ -74,5 +73,7 @@ class KeypointDetaset(torch.utils.data.Dataset):
         return self._cap.frame_count
 
     def __getitem__(self, idx):
-        _, frame = self._cap.read()
+        is_opened, frame = self._cap.read()
+        if not is_opened:
+            raise FileNotFoundError
         return idx + 1, frame

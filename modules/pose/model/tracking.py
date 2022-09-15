@@ -1,3 +1,5 @@
+import importlib
+import os
 import sys
 from types import SimpleNamespace
 from typing import Dict, List
@@ -8,6 +10,10 @@ import yaml
 from numpy.typing import NDArray
 from torchvision.transforms import transforms as T
 
+sys.path.append(os.path.join("submodules/unitrack/"))
+import utils
+
+importlib.reload(utils)
 sys.path.append("submodules")
 from unitrack.tracker.mot.pose import PoseAssociationTracker
 

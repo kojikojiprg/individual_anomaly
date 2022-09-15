@@ -1,8 +1,6 @@
 from logging import Logger
-from typing import List, Tuple
 
 import yaml
-from numpy.typing import NDArray
 
 from .data_handler import DataFormat, DataHandler
 from .keypoints import KPClass, KPListClass, KPName
@@ -21,14 +19,13 @@ class PoseEstimation:
 
         self._model = KPModel(cfg, device, logger)
 
-        self._results: List[Tuple[int, int, NDArray]] = []
-
     def __del__(self):
-        del self._data_loader, self._model
+        del self._model
 
-    def predict(self, video_path: str):
+    def predict(self, video_path: str, output_path: str = None):
         data_loader = DataHandler.create_video_loader(video_path)
-        self._results = self._model.predict(data_loader)
+        results = self._model.predict(data_loader)
+        if output_path is not None:
+            DataHandler.save(output_path, results)
 
-    def save_result(self, output_path: str):
-        DataHandler.save(output_path, self._results)
+        return results

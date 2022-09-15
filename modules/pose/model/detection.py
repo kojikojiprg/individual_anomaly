@@ -1,4 +1,3 @@
-import yaml
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector
 from mmpose.apis import (
@@ -15,16 +14,14 @@ class Detector:
         self._device = device
 
         # build the detection model from a config file and a checkpoint file
-        with open(cfg["configs"]["mmdet"], "r") as f:
-            mmdet_cfg = Config.fromfile(yaml.safe_load(f))
+        mmdet_cfg = Config.fromfile(cfg["configs"]["mmdet"])
         self._det_model = init_detector(
-            mmdet_cfg.det_config, mmdet_cfg.det_checkpoint, device=device
+            mmdet_cfg.config, mmdet_cfg.weights, device=device
         )
         # build the pose model from a config file and a checkpoint file
-        with open(cfg["configs"]["mmpose"], "r") as f:
-            mmpose_cfg = Config.fromfile(yaml.safe_load(f))
+        mmpose_cfg = Config.fromfile(cfg["configs"]["mmpose"])
         self._pose_model = init_pose_model(
-            mmpose_cfg.pose_config, mmpose_cfg.pose_checkpoint, device=device
+            mmpose_cfg.config, mmpose_cfg.weights, device=device
         )
 
     def __del__(self):
