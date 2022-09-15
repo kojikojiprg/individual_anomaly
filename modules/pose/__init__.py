@@ -22,10 +22,10 @@ class PoseEstimation:
     def __del__(self):
         del self._model
 
-    def predict(self, video_path: str, output_path: str = None):
+    def predict(self, video_path: str, data_dir: str = None):
         data_loader = DataHandler.create_video_loader(video_path)
         results = self._model.predict(data_loader)
-        if output_path is not None:
-            DataHandler.save(output_path, results)
+        if data_dir is not None:
+            DataHandler.save(data_dir, results)
 
         return results

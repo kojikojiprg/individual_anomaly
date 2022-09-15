@@ -41,7 +41,8 @@ class DataHandler:
         }
 
     @staticmethod
-    def load(json_path) -> List[Dict[str, Any]]:
+    def load(data_dir) -> List[Dict[str, Any]]:
+        json_path = os.path.join(data_dir, "json", "keypoints.json")
         json_data = json_handler.load(json_path)
         data = [DataHandler._convert(item) for item in tqdm(json_data, ncols=100)]
 
@@ -56,13 +57,16 @@ class DataHandler:
         }
 
     @staticmethod
-    def save(json_path, data: List[Tuple[int, int, NDArray]]):
+    def save(data_dir, data: List[Tuple[int, int, NDArray]]):
+        json_path = os.path.join(data_dir, "json", "keypoints.json")
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
+
         reformed_data = []
         for item in data:
             item = DataHandler._reform(item)
             reformed_data.append(item)
         json_handler.dump(json_path, reformed_data)
+
         del reformed_data
 
 

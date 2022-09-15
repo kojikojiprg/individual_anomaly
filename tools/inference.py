@@ -104,7 +104,7 @@ def main():
         logger.info(f"=> processing {video_path}")
 
         if args.keypoints:
-            pose_model.predict(video_path, os.path.join(data_dir, "keypoints.json"))
+            pose_model.predict(video_path, data_dir)
 
         if args.video:
             vis.visualise(video_path, data_dir)

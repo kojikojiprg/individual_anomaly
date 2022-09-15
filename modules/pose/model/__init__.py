@@ -61,7 +61,7 @@ class KPModel:
     @staticmethod
     def _del_leaky(kps_results: NDArray, th_delete: float):
         return kps_results[
-            np.nonzero(np.mean(kps_results[:, :, 2], axis=1) > th_delete)
+            np.nonzero(np.mean(kps_results[:, :, 2], axis=1) >= th_delete)
         ]
 
     @staticmethod
