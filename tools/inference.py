@@ -9,6 +9,7 @@ import torch
 sys.path.append(".")
 from modules.pose import PoseEstimation
 from modules.utils.logger import logger
+from modules.visualize import Visualizer
 
 warnings.simplefilter("ignore")
 
@@ -38,10 +39,10 @@ def parser():
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     parser.add_argument(
         "-k",
-        "--keypoint",
+        "--keypoints",
         default=False,
         action="store_true",
-        help="with keypoint extraction",
+        help="with keypoints extraction",
     )
     parser.add_argument(
         "-i",
@@ -69,6 +70,7 @@ def main():
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 
+    # load video paths
     if args.expand_name != "":
         video_dir = os.path.join(
             "video", args.room_num, args.surgery_num, args.expand_name
@@ -80,6 +82,7 @@ def main():
     video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
     logger.info(f"=> video paths:\n{video_paths}")
 
+    # prepairing output data dirs
     data_dirs = []
     for video_path in video_paths:
         name = os.path.basename(video_path).replace(".mp4", "")
@@ -90,11 +93,21 @@ def main():
         os.makedirs(data_dir, exist_ok=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    pose_model = PoseEstimation(args.cfg_path, device, logger)
+
+    # load model
+    if args.keypoints:
+        pose_model = PoseEstimation(args.cfg_path, device, logger)
+
+    vis = Visualizer(logger)
 
     for video_path, data_dir in zip(video_paths, data_dirs):
         logger.info(f"=> processing {video_path}")
-        pose_model.predict(video_path, os.path.join(data_dir, "keypoints.json"))
+
+        if args.keypoints:
+            pose_model.predict(video_path, os.path.join(data_dir, "keypoints.json"))
+
+        if args.video:
+            vis.visualise(video_path, data_dir)
 
 
 if __name__ == "__main__":

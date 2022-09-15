@@ -26,19 +26,21 @@ class KPName:
     RAnkle: int = 16
 
 
-class KPClass:
+class KPClass(list):
     def __init__(self, keypoints: Union[list, NDArray]):
+        super().__init__([])
         keypoints = np.array(keypoints)
         if keypoints.shape != (17, 3):
             keypoints = keypoints.reshape(17, 3)
 
-        self._keypoints = keypoints
+        for keypoint in keypoints:
+            super().append(keypoint)
 
     def get(self, name: int, ignore_confidence: bool = False) -> NDArray:
         if ignore_confidence:
-            return self._keypoints[name][:2].copy()
+            return self[name][:2].copy()
         else:
-            return self._keypoints[name].copy()
+            return self[name].copy()
 
     def get_middle(self, name, th_conf=None) -> Union[NDArray, None]:
         if th_conf is None:
@@ -57,7 +59,7 @@ class KPClass:
         return point[:2].astype(np.int32)
 
     def ravel(self) -> NDArray:
-        return self._keypoints.ravel()
+        return np.array(self).ravel()
 
 
 class KPListClass(list):
