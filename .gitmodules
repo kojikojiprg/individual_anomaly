@@ -1,3 +1,7 @@
+[submodule "submodules/mmdet"]
+	path = submodules/mmdet
+	url = https://github.com/open-mmlab/mmdetection.git
+	ignore = dirty
 [submodule "submodules/mmpose"]
 	path = submodules/mmpose
 	url = https://github.com/open-mmlab/mmpose.git
@@ -5,8 +9,4 @@
 [submodule "submodules/unitrack"]
 	path = submodules/unitrack
 	url = https://github.com/Zhongdao/UniTrack.git
-	ignore = dirty
-[submodule "submodules/mmdet"]
-	path = submodules/mmdet
-	url = https://github.com/open-mmlab/mmdetection.git
 	ignore = dirty
