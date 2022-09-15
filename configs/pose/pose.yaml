@@ -2,7 +2,7 @@ configs:
   mmdet: "configs/pose/mmdet/yolox.yaml"
   mmpose: "configs/pose/mmpose/hrnet.yaml"
   unitrack: "configs/pose/unitrack/detco.yaml"
-th_bbox: 0.7
-th_delete: 0.2 # threshold of confidence score of keypoints
+th_bbox: 0.2
+th_delete: 0.3 # threshold of confidence score of keypoints
 th_diff: 10  # threshold of difference for finding same keypoints
 th_count: 5
