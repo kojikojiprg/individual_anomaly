@@ -41,10 +41,10 @@ class Tracker:
     def __del__(self):
         del self.tracker, self.transforms
 
-    def update(self, img: NDArray, kps: NDArray):
+    def update(self, img: NDArray, kps_all: NDArray):
         process_img = img.copy()
         if self.use_lab:
-            process_img = cv2.cvtColor(process_img, cv2.COLOR_BGR2LAB)
+            process_img = cv2.cvtColor(process_img, cv2.COLOR_RGB2LAB)
             process_img = np.array([process_img[:, :, 0]] * 3)
             process_img = process_img.transpose(1, 2, 0)
 
@@ -54,7 +54,7 @@ class Tracker:
         process_img = np.ascontiguousarray(process_img)
         process_img = self.transforms(process_img)
 
-        obs = [self._cvt_kp2ob(kp) for kp in kps]
+        obs = [self._cvt_kp2ob(kps) for kps in kps_all]
 
         tracks = self.tracker.update(process_img, img, obs)
         for t in tracks:
@@ -66,11 +66,11 @@ class Tracker:
         return tracks
 
     @staticmethod
-    def _cvt_kp2ob(kp: NDArray):
+    def _cvt_kp2ob(kps: NDArray):
         # https://github.com/leonid-pishchulin/poseval
         return [
-            {"id": [i], "x": [pt[0]], "y": [pt[1]], "score": [pt[2]]}
-            for i, pt in enumerate(kp)
+            {"id": [i], "x": [kp[0]], "y": [kp[1]], "score": [kp[2]]}
+            for i, kp in enumerate(kps)
         ]
 
     @staticmethod
