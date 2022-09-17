@@ -4,7 +4,6 @@ import sys
 from types import SimpleNamespace
 from typing import Dict, List
 
-import cv2
 import numpy as np
 import yaml
 from numpy.typing import NDArray
@@ -30,7 +29,6 @@ class Tracker:
             setattr(opts, k, v)
         opts.return_stage = 2
         opts.device = device  # assign device
-        self.use_lab = getattr(opts, "use_lab", False)
 
         self.transforms = T.Compose(
             [T.ToTensor(), T.Normalize(opts.im_mean, opts.im_std)]
@@ -43,10 +41,6 @@ class Tracker:
 
     def update(self, img: NDArray, kps_all: NDArray):
         process_img = img.copy()
-        if self.use_lab:
-            process_img = cv2.cvtColor(process_img, cv2.COLOR_RGB2LAB)
-            process_img = np.array([process_img[:, :, 0]] * 3)
-            process_img = process_img.transpose(1, 2, 0)
 
         # Normalize RGB
         process_img = process_img / 255.0
