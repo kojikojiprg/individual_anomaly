@@ -15,7 +15,7 @@ class Visualizer:
         self._do_keypoints = True
 
     def visualise(self, video_path: str, data_dir: str):
-        pose_results = pose_datahandler.load(data_dir)
+        pose_results = pose_datahandler.load(data_dir, self._logger)
 
         # create video capture
         self._logger.info(f"=> loading video from {video_path}.")
