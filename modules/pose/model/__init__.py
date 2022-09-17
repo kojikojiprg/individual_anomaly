@@ -51,10 +51,11 @@ class KPModel:
     def _detect_keypoints(self, frame):
         det_results = self._detector.predict(frame)
         kps_results = np.array([det["keypoints"] for det in det_results])
-        kps_results = self._del_leaky(kps_results, self._cfg["th_delete"])
-        kps_results = self._get_unique(
-            kps_results, self._cfg["th_diff"], self._cfg["th_count"]
-        )
+        if len(kps_results) > 0:
+            kps_results = self._del_leaky(kps_results, self._cfg["th_delete"])
+            kps_results = self._get_unique(
+                kps_results, self._cfg["th_diff"], self._cfg["th_count"]
+            )
 
         return kps_results
 
