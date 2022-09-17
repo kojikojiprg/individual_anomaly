@@ -66,7 +66,8 @@ def parser():
 def main():
     args = parser()
 
-    device = f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # load video paths
     if args.expand_name != "":
