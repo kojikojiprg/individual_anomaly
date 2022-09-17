@@ -33,9 +33,7 @@ def parser():
     parser.add_argument(
         "-ex", "--expand_name", type=str, default="", help="'passing' or 'attention'"
     )
-    parser.add_argument(
-        "-c", "--cfg_path", type=str, default="config/surgery_config.yaml"
-    )
+    parser.add_argument("-c", "--cfg_path", type=str, default="configs/pose/pose.yaml")
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     parser.add_argument(
         "-k",
@@ -68,7 +66,7 @@ def parser():
 def main():
     args = parser()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    device = f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu"
 
     # load video paths
     if args.expand_name != "":
@@ -91,8 +89,6 @@ def main():
         )
         data_dirs.append(data_dir)
         os.makedirs(data_dir, exist_ok=True)
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # load model
     if args.keypoints:
