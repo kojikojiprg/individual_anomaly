@@ -3,6 +3,7 @@ from typing import List, Tuple
 
 import numpy as np
 import torch
+from modules.utils.video import Capture
 from numpy.typing import NDArray
 from tqdm import tqdm
 
@@ -25,14 +26,12 @@ class KPModel:
         torch.cuda.empty_cache()
         del self._detector, self._tracker, self._logger
 
-    def predict(
-        self, data_loader: torch.utils.data.DataLoader
-    ) -> List[Tuple[int, int, NDArray]]:
+    def predict(self, cap: Capture) -> List[Tuple[int, int, NDArray]]:
         self._logger.info("=> estimating keypoints")
         results = []
-        for frame_num, frame in tqdm(data_loader, ncols=100):
-            frame_num = frame_num.cpu().numpy()[0]
-            frame = frame.cpu().numpy()[0]
+        for frame_num in tqdm(range(cap.frame_count), ncols=100):
+            frame_num += 1
+            frame = cap.read()[1]
 
             # keypoints detection
             kps = self._detect_keypoints(frame)

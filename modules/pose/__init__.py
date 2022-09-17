@@ -24,9 +24,9 @@ class PoseEstimation:
         del self._model
 
     def predict(self, video_path: str, data_dir: str = None):
-        data_loader = DataHandler.create_video_loader(video_path, self._logger)
+        cap = DataHandler.create_video_capture(video_path, self._logger)
 
-        results = self._model.predict(data_loader)
+        results = self._model.predict(cap)
         if data_dir is not None:
             DataHandler.save(data_dir, results, self._logger)
 

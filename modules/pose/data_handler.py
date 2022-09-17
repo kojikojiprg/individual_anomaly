@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import Any, Dict, List, Tuple
 
-import torch
 from modules.utils import json_handler, video
 from numpy.typing import NDArray
 
@@ -19,22 +18,11 @@ class DataFormat:
 
 class DataHandler:
     @staticmethod
-    def create_video_loader(
-        video_path: str, logger: Logger
-    ) -> torch.utils.data.DataLoader:
+    def create_video_capture(video_path: str, logger: Logger) -> video.Capture:
         logger.info(f"=> loading video from {video_path}")
         cap = video.Capture(video_path)
         assert cap.is_opened, f"{video_path} does not exist or is wrong file type."
-
-        dataset = KeypointDetaset(cap)
-
-        return torch.utils.data.DataLoader(
-            dataset,
-            batch_size=1,
-            shuffle=False,
-            num_workers=0,
-            pin_memory=False,
-        )
+        return cap
 
     @staticmethod
     def _convert(item: Dict[str, Any]) -> Dict[str, Any]:
@@ -74,18 +62,3 @@ class DataHandler:
         json_handler.dump(json_path, reformed_data)
 
         del reformed_data
-
-
-class KeypointDetaset(torch.utils.data.Dataset):
-    def __init__(self, cap: video.Capture):
-        self._cap = cap
-        self._cap.set_pos_frame_count(0)
-
-    def __len__(self):
-        return self._cap.frame_count
-
-    def __getitem__(self, idx):
-        is_opened, frame = self._cap.read()
-        if not is_opened:
-            raise FileNotFoundError
-        return idx + 1, frame
