@@ -18,14 +18,16 @@ class PoseEstimation:
             cfg = yaml.safe_load(f)
 
         self._model = KPModel(cfg, device, logger)
+        self._logger = logger
 
     def __del__(self):
         del self._model
 
     def predict(self, video_path: str, data_dir: str = None):
-        data_loader = DataHandler.create_video_loader(video_path)
+        data_loader = DataHandler.create_video_loader(video_path, self._logger)
+
         results = self._model.predict(data_loader)
         if data_dir is not None:
-            DataHandler.save(data_dir, results)
+            DataHandler.save(data_dir, results, self._logger)
 
         return results

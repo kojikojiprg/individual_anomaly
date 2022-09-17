@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+from logging import Logger
 from typing import Any, Dict, List, Tuple
 
 import torch
@@ -18,9 +19,13 @@ class DataFormat:
 
 class DataHandler:
     @staticmethod
-    def create_video_loader(video_path: str) -> torch.utils.data.DataLoader:
+    def create_video_loader(
+        video_path: str, logger: Logger
+    ) -> torch.utils.data.DataLoader:
+        logger.info(f"=> loading video from {video_path}")
         cap = video.Capture(video_path)
         assert cap.is_opened, f"{video_path} does not exist or is wrong file type."
+
         dataset = KeypointDetaset(cap)
 
         return torch.utils.data.DataLoader(
@@ -40,8 +45,9 @@ class DataHandler:
         }
 
     @staticmethod
-    def load(data_dir) -> List[Dict[str, Any]]:
+    def load(data_dir, logger: Logger) -> List[Dict[str, Any]]:
         json_path = os.path.join(data_dir, "json", "keypoints.json")
+        logger.info(f"=> loading pose estimation results from {json_path}")
         json_data = json_handler.load(json_path)
         data = [DataHandler._convert(item) for item in json_data]
 
@@ -56,10 +62,11 @@ class DataHandler:
         }
 
     @staticmethod
-    def save(data_dir, data: List[Tuple[int, int, NDArray]]):
+    def save(data_dir, data: List[Tuple[int, int, NDArray]], logger: Logger):
         json_path = os.path.join(data_dir, "json", "keypoints.json")
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
+        logger.info(f"=> saving pose estimation results to {json_path}")
         reformed_data = []
         for item in data:
             item = DataHandler._reform(item)
