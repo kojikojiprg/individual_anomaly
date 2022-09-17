@@ -27,14 +27,8 @@ class Capture:
     @property
     def frame_count(self) -> int:
         # cv2.CAP_PROP_FRAME_COUNT is not correct.
-        self.set_pos_frame_count(0)  # initialize
-        count: int = 0
-        ret, frame = self._cap.read()
-        while ret:
-            ret, frame = self._cap.read()
-            count += 1
-
-        del ret, frame  # release memory
+        self.set_pos_frame_count(int(1e10))  # set large value
+        count = int(self._cap.get(cv2.CAP_PROP_POS_FRAMES))
         self.set_pos_frame_count(0)  # initialize
         return count
 
