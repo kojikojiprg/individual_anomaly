@@ -36,11 +36,11 @@ def parser():
     parser.add_argument("-c", "--cfg_path", type=str, default="configs/pose/pose.yaml")
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     parser.add_argument(
-        "-k",
-        "--keypoints",
+        "-p",
+        "--pose",
         default=False,
         action="store_true",
-        help="with keypoints extraction",
+        help="with pose estimation",
     )
     parser.add_argument(
         "-i",
@@ -59,8 +59,20 @@ def parser():
     parser.add_argument(
         "-v", "--video", default=False, action="store_true", help="with writing video"
     )
+    parser.add_argument(
+        "-nb",
+        "--video_no_background",
+        default=False,
+        action="store_true",
+        help="with writing video in no background",
+    )
 
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    if args.video_no_background:
+        args.video = True
+
+    return args
 
 
 def main():
@@ -92,15 +104,16 @@ def main():
         os.makedirs(data_dir, exist_ok=True)
 
     # load model
-    if args.keypoints:
+    if args.pose:
         pose_model = PoseEstimation(args.cfg_path, device, logger)
 
-    vis = Visualizer(logger)
+    if args.video:
+        vis = Visualizer(args, logger)
 
     for video_path, data_dir in zip(video_paths, data_dirs):
         logger.info(f"=> processing {video_path}")
 
-        if args.keypoints:
+        if args.pose:
             pose_model.predict(video_path, data_dir)
 
         if args.video:

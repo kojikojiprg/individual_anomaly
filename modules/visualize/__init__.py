@@ -9,10 +9,12 @@ from . import pose as pose_vis
 
 
 class Visualizer:
-    def __init__(self, logger: Logger):
+    def __init__(self, args, logger: Logger):
         self._logger = logger
 
-        self._do_keypoints = True
+        # self._do_pose_estimation = args.pose
+        self._do_pose_estimation = True
+        self._no_bg = args.video_no_background
 
     def visualise(self, video_path: str, data_dir: str):
         pose_results = pose_datahandler.load(data_dir, self._logger)
@@ -28,9 +30,13 @@ class Visualizer:
         video_capture.set_pos_frame_count(0)
 
         out_paths = []
-        # create video writer for keypoints results
-        if self._do_keypoints:
-            out_path = os.path.join(data_dir, "keypoints.mp4")
+        # create video writer for pose estimation results
+        if self._do_pose_estimation:
+            if not self._no_bg:
+                out_path = os.path.join(data_dir, "pose.mp4")
+            else:
+                out_path = os.path.join(data_dir, "pose_nobg.mp4")
+
             pose_video_writer = Writer(
                 out_path, video_capture.fps, tmp_frame.shape[1::-1]
             )
@@ -41,12 +47,12 @@ class Visualizer:
             frame_num += 1  # frame_num = (1, ...)
             ret, frame = video_capture.read()
 
-            # write keypoint video
-            frame = pose_vis.write_frame(frame, pose_results, frame_num)
-            if self._do_keypoints:
+            # write pose estimation video
+            frame = pose_vis.write_frame(frame, pose_results, frame_num, self._no_bg)
+            if self._do_pose_estimation:
                 pose_video_writer.write(frame)
 
         # release memory
         del video_capture
-        if self._do_keypoints:
+        if self._do_pose_estimation:
             del pose_video_writer

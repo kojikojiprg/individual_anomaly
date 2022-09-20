@@ -27,7 +27,7 @@ class KPModel:
         del self._detector, self._tracker, self._logger
 
     def predict(self, cap: Capture) -> List[Tuple[int, int, NDArray]]:
-        self._logger.info("=> estimating keypoints")
+        self._logger.info("=> running pose estimation")
         results = []
         for frame_num in tqdm(range(cap.frame_count), ncols=100):
             frame_num += 1

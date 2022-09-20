@@ -34,7 +34,7 @@ class DataHandler:
 
     @staticmethod
     def load(data_dir, logger: Logger) -> List[Dict[str, Any]]:
-        json_path = os.path.join(data_dir, "json", "keypoints.json")
+        json_path = os.path.join(data_dir, "json", "pose.json")
         logger.info(f"=> loading pose estimation results from {json_path}")
         json_data = json_handler.load(json_path)
         data = [DataHandler._convert(item) for item in json_data]
@@ -51,7 +51,7 @@ class DataHandler:
 
     @staticmethod
     def save(data_dir, data: List[Tuple[int, int, NDArray]], logger: Logger):
-        json_path = os.path.join(data_dir, "json", "keypoints.json")
+        json_path = os.path.join(data_dir, "json", "pose.json")
         os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
         logger.info(f"=> saving pose estimation results to {json_path}")
