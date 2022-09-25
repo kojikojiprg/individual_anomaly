@@ -7,7 +7,7 @@ from modules.utils.video import Capture
 from numpy.typing import NDArray
 from tqdm import tqdm
 
-from ..data import Format
+from ..format import Format
 from .detection import Detector
 from .tracking import Tracker
 
