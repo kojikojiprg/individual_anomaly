@@ -6,14 +6,14 @@ from numpy.typing import NDArray
 
 
 def write_frame(
-    frame: NDArray, kps_data: List[Dict[str, Any]], frame_num: int, is_no_bg: bool
+    frame: NDArray, pose_data: List[Dict[str, Any]], frame_num: int, is_no_bg: bool
 ):
     if is_no_bg:
         frame = np.full_like(frame, 220, dtype=np.uint8)
 
     # add keypoints to image
     frame = _put_frame_num(frame, frame_num)
-    for kps in kps_data:
+    for kps in pose_data:
         if kps["frame"] == frame_num:
             frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
 

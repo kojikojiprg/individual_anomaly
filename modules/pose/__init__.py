@@ -2,9 +2,9 @@ from logging import Logger
 
 import yaml
 
-from .data_handler import DataFormat, DataHandler
-from .keypoints import KPClass, KPListClass, KPName
-from .model import KPModel
+from .data import PoseDataHandler
+from .data.format import Format as PoseDataFormat
+from .model import PoseModel
 
 
 class PoseEstimation:
@@ -17,17 +17,17 @@ class PoseEstimation:
         with open(cfg_path, "r") as f:
             cfg = yaml.safe_load(f)
 
-        self._model = KPModel(cfg, device, logger)
+        self._model = PoseModel(cfg, device, logger)
         self._logger = logger
 
     def __del__(self):
         del self._model
 
     def predict(self, video_path: str, data_dir: str = None):
-        cap = DataHandler.create_video_capture(video_path, self._logger)
+        cap = PoseDataHandler.create_video_capture(video_path, self._logger)
 
         results = self._model.predict(cap)
         if data_dir is not None:
-            DataHandler.save(data_dir, results, self._logger)
+            PoseDataHandler.save(data_dir, results, self._logger)
 
         return results

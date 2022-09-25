@@ -1,7 +1,7 @@
 import os
 from logging import Logger
 
-from modules.pose import DataHandler as pose_datahandler
+from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
 from tqdm import tqdm
 
@@ -17,7 +17,7 @@ class Visualizer:
         self._no_bg = args.video_no_background
 
     def visualise(self, video_path: str, data_dir: str):
-        pose_results = pose_datahandler.load(data_dir, self._logger)
+        pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
 
         # create video capture
         self._logger.info(f"=> loading video from {video_path}.")
@@ -48,7 +48,7 @@ class Visualizer:
             ret, frame = video_capture.read()
 
             # write pose estimation video
-            frame = pose_vis.write_frame(frame, pose_results, frame_num, self._no_bg)
+            frame = pose_vis.write_frame(frame, pose_data_lst, frame_num, self._no_bg)
             if self._do_pose_estimation:
                 pose_video_writer.write(frame)
 

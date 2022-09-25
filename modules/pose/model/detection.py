@@ -27,18 +27,22 @@ class Detector:
     def __del__(self):
         del self._det_model, self._pose_model
 
-    def predict(self, img: NDArray):
+    def predict(self, img: NDArray, return_heatmap: bool = False):
         mmdet_results = inference_detector(self._det_model, img)
 
         person_results = process_mmdet_results(mmdet_results, cat_id=1)
 
-        pose_results, _ = inference_top_down_pose_model(
+        pose_results, heatmaps = inference_top_down_pose_model(
             self._pose_model,
             img,
             person_results,
             bbox_thr=self._cfg["th_bbox"],
             format="xyxy",
             dataset=self._pose_model.cfg.data.test.type,
+            return_heatmap=return_heatmap,
         )
 
-        return pose_results
+        if return_heatmap:
+            heatmaps = heatmaps[0]["heatmap"]
+
+        return pose_results, heatmaps
