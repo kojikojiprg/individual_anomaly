@@ -46,8 +46,8 @@ class PoseDataHandler:
     @staticmethod
     def load(data_dir, logger: Logger) -> List[Dict[str, Any]]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
+
         logger.info(f"=> loading pose estimation results from {pkl_path}")
-        open
         pkl_data = pickle_handler.load(pkl_path)
         return pkl_data
 
@@ -56,4 +56,4 @@ class PoseDataHandler:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
         logger.info(f"=> saving pose estimation results to {pkl_path}")
-        pickle_handler.dump(pkl_path, data)
+        pickle_handler.dump(data, pkl_path)
