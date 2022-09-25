@@ -4,5 +4,5 @@ configs:
   unitrack: "configs/pose/unitrack/detco.yaml"
 th_bbox: 0.2
 th_delete: 0.3 # threshold of confidence score of keypoints
-th_diff: 10  # threshold of difference for finding same keypoints
+th_diff: 20  # threshold of difference for finding same keypoints
 th_count: 5

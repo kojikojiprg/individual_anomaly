@@ -49,19 +49,20 @@ class PoseModel:
                     self._cfg["th_diff"],
                     self._cfg["th_count"],
                 )
-            # det_results = [det_results[i] for i in remain_indices]
-            kps = np.array([kps[i] for i in remain_indices])
 
             # tracking
+            kps = kps[remain_indices]
             tracks = self._tracker.update(frame, kps)
 
             # append result
             for t in tracks:
-                # search index
+                # select index
                 i = np.where(np.isclose(t.pose, kps))[0]
                 if len(i) == 0:
-                    break
-                i = remain_indices[i[0]]
+                    continue
+                unique, freq = np.unique(i, return_counts=True)
+                i = unique[np.argmax(freq)]
+                i = remain_indices[i]
 
                 # create result
                 result = {
@@ -80,31 +81,26 @@ class PoseModel:
         return results
 
     @staticmethod
-    def _del_leaky(kps_results: NDArray, th_delete: float):
-        return np.flatnonzero(np.mean(kps_results[:, :, 2], axis=1) >= th_delete)
+    def _del_leaky(kps: NDArray, th_delete: float):
+        return np.where(np.mean(kps[:, :, 2], axis=1) >= th_delete)[0]
 
     @staticmethod
-    def _get_unique(
-        kps_results: NDArray, indices: NDArray, th_diff: float, th_count: int
-    ):
+    def _get_unique(kps: NDArray, indices: NDArray, th_diff: float, th_count: int):
         remain_indices = np.empty((0,), dtype=np.int32)
 
         for idx in indices:
-            found_overlap = False
-            for ptr, ridx in enumerate(remain_indices):
-                diff = np.linalg.norm(
-                    kps_results[idx, :, :2] - kps_results[ridx, :, :2], axis=1
-                )
-                if len(np.where(diff < th_diff)[0]) >= th_count:
-                    found_overlap = True
-                    if np.mean(kps_results[idx, :, 2]) > np.mean(
-                        kps_results[ridx, :, 2]
-                    ):
-                        # select one has more confidence score
-                        remain_indices[ptr] = idx
-                    break
+            for ridx in remain_indices:
+                # calc diff of all points
+                diff = np.linalg.norm(kps[idx, :, :2] - kps[ridx, :, :2], axis=1)
 
-            if not found_overlap:
+                if len(np.where(diff < th_diff)[0]) >= th_count:
+                    # found overlap
+                    if np.mean(kps[idx, :, 2]) > np.mean(kps[ridx, :, 2]):
+                        # select one which is more confidence
+                        remain_indices[remain_indices == ridx] = idx
+
+                    break
+            else:
                 # if there aren't overlapped
                 remain_indices = np.append(remain_indices, idx)
 
