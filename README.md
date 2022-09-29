@@ -7,5 +7,5 @@ CUDA: 11.5
 
 ## Installation
 ```
-bash scripts/setup.sh
+bash setup.sh
 ```
