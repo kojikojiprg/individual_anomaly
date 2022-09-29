@@ -5,7 +5,6 @@ import warnings
 from glob import glob
 
 import torch
-import yaml
 
 sys.path.append(".")
 from modules.individual import IndividualDataHandler, IndividualModelFactory
@@ -33,7 +32,9 @@ def parser():
     parser.add_argument(
         "-ex", "--expand_name", type=str, default="", help="'passing' or 'attention'"
     )
-    parser.add_argument("-c", "--cfg_path", type=str, default="configs/individual/individual.yaml")
+    parser.add_argument(
+        "-c", "--cfg_path", type=str, default="configs/individual/individual.yaml"
+    )
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     args = parser.parse_args()
 
