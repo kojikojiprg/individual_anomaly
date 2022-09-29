@@ -38,21 +38,19 @@ class IndividualDataset(Dataset):
 
             # get frame_num and id of first data
             pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
-            pre_id = pose_data[0][PoseDataFormat.id]
+            pre_pid = pose_data[0][PoseDataFormat.id]
             pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
             seq_data: list = []
             for item in pose_data:
                 # get values
                 frame_num = item[PoseDataFormat.frame_num]
-                id = item[PoseDataFormat.id]
+                pid = item[PoseDataFormat.id]
                 keypoints = item[PoseDataFormat.keypoints]
 
-                if id != pre_id:
+                if pid != pre_pid:
                     if len(seq_data) > seq_len:
-                        # append data with creating sequential data
-                        for i in range(0, len(seq_data) - seq_len + 1):
-                            self._data.append((id, np.array(seq_data[i : i + seq_len])))
+                        self._append(pid, seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
@@ -64,11 +62,7 @@ class IndividualDataset(Dataset):
                         seq_data += [pre_kps for _ in range(frame_num - pre_frame_num)]
                     elif th_split < frame_num - pre_frame_num:
                         if len(seq_data) > seq_len:
-                            # append data with creating sequential data
-                            for i in range(0, len(seq_data) - seq_len + 1):
-                                self._data.append(
-                                    (id, np.array(seq_data[i : i + seq_len]))
-                                )
+                            self._append(pid, seq_data, seq_len)
                         # reset seq_data
                         seq_data = []
                     else:
@@ -79,8 +73,15 @@ class IndividualDataset(Dataset):
 
                 # update frame_num and id
                 pre_frame_num = frame_num
-                pre_id = id
+                pre_pid = pid
                 pre_kps = keypoints
+        else:
+            self._append(pid, seq_data, seq_len)
+
+    def _append(self, pid, seq_data, seq_len):
+        # append data with creating sequential data
+        for i in range(0, len(seq_data) - seq_len + 1):
+            self._data.append((pid, np.array(seq_data[i : i + seq_len])))
 
     def __len__(self):
         return len(self._data)
