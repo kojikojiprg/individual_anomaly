@@ -59,7 +59,7 @@ def main():
     dataloader = IndividualDataHandler.create_data_loader(dirs, config, logger)
 
     # load model
-    model = IndividualModelFactory.create_model(config, device)
+    model = IndividualModelFactory.create_model(config, device, logger)
 
     # train
     model.train(dataloader)

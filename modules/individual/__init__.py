@@ -58,8 +58,8 @@ class IndividualDataHandler:
 
 class IndividualModelFactory:
     @staticmethod
-    def create_model(config: SimpleNamespace, device: str):
-        return IndividualGAN(config, device)
+    def create_model(config: SimpleNamespace, device: str, logger: Logger):
+        return IndividualGAN(config, device, logger)
 
     @staticmethod
     def load_model(
