@@ -1,0 +1,30 @@
+batch_size: 32
+epochs: 300
+seq_len: 300
+th_split: 5  # split keypoints sequence of an individual
+
+model:
+  G:
+    d_z: 256
+    d_model: 256
+    d_emb: 1024
+    d_ff: 1024
+    n_heads: 8
+    n_sttr: 2
+    dropout: 0.1
+    activation: ReLU
+  D:
+    d_model: 256
+    d_emb: 1024
+    d_ff: 1024
+    d_output: 1
+    n_heads: 8
+    n_sttr: 2
+    dropout: 0.1
+    activation: LeakyReLU
+
+optim:
+  lr_g: 0.0001
+  lr_d: 0.0004
+  beta1: 0.0
+  beta2: 0.9
