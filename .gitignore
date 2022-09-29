@@ -2,6 +2,7 @@
 data/
 models/
 videos/
+notebooks/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
