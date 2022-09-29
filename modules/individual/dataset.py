@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 
 class IndividualDataset(Dataset):
-    _dmy_kps = np.full((17, 3), np.nan, dtype=np.float32)
+    # _dmy_kps = np.full((17, 3), np.nan, dtype=np.float32)
 
     def __init__(
         self,
@@ -39,6 +39,7 @@ class IndividualDataset(Dataset):
             # get frame_num and id of first data
             pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
             pre_id = pose_data[0][PoseDataFormat.id]
+            pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
             seq_data: list = []
             for item in pose_data:
@@ -60,9 +61,7 @@ class IndividualDataset(Dataset):
                         and frame_num - pre_frame_num <= th_split
                     ):
                         # fill brank with nan
-                        seq_data += [
-                            self._dmy_kps for _ in range(frame_num - pre_frame_num)
-                        ]
+                        seq_data += [pre_kps for _ in range(frame_num - pre_frame_num)]
                     elif th_split < frame_num - pre_frame_num:
                         if len(seq_data) > seq_len:
                             # append data with creating sequential data
@@ -81,6 +80,7 @@ class IndividualDataset(Dataset):
                 # update frame_num and id
                 pre_frame_num = frame_num
                 pre_id = id
+                pre_kps = keypoints
 
     def __len__(self):
         return len(self._data)
