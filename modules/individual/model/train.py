@@ -73,10 +73,10 @@ def train(
         t_epoch_finish = time.time()
         print("-------------")
         print(
-            "epoch {}/{} || Epoch_D_Loss:{:.4f} ||Epoch_G_Loss:{:.4f}".format(
+            "epoch {}/{} | Epoch_D_Loss:{:.4f} | Epoch_G_Loss:{:.4f}".format(
                 epoch, n_epochs, epoch_d_loss / batch_size, epoch_g_loss / batch_size
             )
         )
-        print("timer:  {:.4f} sec.".format(t_epoch_finish - t_epoch_start))
+        print("time: {:.4f} sec.".format(t_epoch_finish - t_epoch_start))
 
     return G, D
