@@ -10,3 +10,6 @@
 	path = submodules/unitrack
 	url = https://github.com/Zhongdao/UniTrack.git
 	ignore = dirty
+[submodule "submodules/mmcv"]
+	path = submodules/mmcv
+	url = https://github.com/open-mmlab/mmcv.git
