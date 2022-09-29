@@ -36,11 +36,6 @@ def train(
         epoch_g_loss = 0.0
         epoch_d_loss = 0.0
 
-        print("-------------")
-        print("Epoch {}/{}".format(epoch, n_epochs))
-        print("-------------")
-        print("(train)")
-
         for id, keypoints in dataloader:
             # learn Discriminator
             keypoints = keypoints.to(device)
@@ -78,8 +73,8 @@ def train(
         t_epoch_finish = time.time()
         print("-------------")
         print(
-            "epoch {} || Epoch_D_Loss:{:.4f} ||Epoch_G_Loss:{:.4f}".format(
-                epoch, epoch_d_loss / batch_size, epoch_g_loss / batch_size
+            "epoch {}/{} || Epoch_D_Loss:{:.4f} ||Epoch_G_Loss:{:.4f}".format(
+                epoch, n_epochs, epoch_d_loss / batch_size, epoch_g_loss / batch_size
             )
         )
         print("timer:  {:.4f} sec.".format(t_epoch_finish - t_epoch_start))
