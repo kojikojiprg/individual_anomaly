@@ -36,6 +36,7 @@ def train(
     D.train()
     torch.backends.cudnn.benchmark = True
 
+    logger.info("=> start training")
     for epoch in range(n_epochs):
         t_epoch_start = time.time()
         epoch_g_loss = 0.0
@@ -91,5 +92,6 @@ def train(
             )
         )
         logger.info("time: {:.3f} sec.".format(t_epoch_finish - t_epoch_start))
+    logger.info("=> finish training")
 
     return G, D
