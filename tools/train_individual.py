@@ -35,9 +35,8 @@ def parser():
     parser.add_argument(
         "-c", "--cfg_path", type=str, default="configs/individual/individual.yaml"
     )
-    parser.add_argument(
-        "-m", "--model_dir", type=str, default=None
-    )
+    parser.add_argument("-md", "--model_dir", type=str, default="models/individual")
+    parser.add_argument("-nm", "--load_model", default=False, action="store_true")
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     args = parser.parse_args()
 
@@ -63,7 +62,7 @@ def main():
 
     checkpoint_dir = args.model_dir
     # load model
-    if checkpoint_dir is not None and os.path.exists(checkpoint_dir):
+    if args.load_model and os.path.exists(checkpoint_dir):
         model = IndividualModelFactory.load_model(
             checkpoint_dir, config, device, logger
         )
