@@ -58,11 +58,20 @@ def main():
     # creating dataloader
     dataloader = IndividualDataHandler.create_data_loader(dirs, config, logger)
 
+    checkpoint_dir = os.path.join("models", "individual")
     # load model
-    model = IndividualModelFactory.create_model(config, device, logger)
+    if os.path.exists(checkpoint_dir):
+        model = IndividualModelFactory.load_model(
+            checkpoint_dir, config, device, logger
+        )
+    else:
+        model = IndividualModelFactory.create_model(config, device, logger)
 
     # train
     model.train(dataloader)
+
+    # save params
+    IndividualModelFactory.save_model(model, checkpoint_dir)
 
 
 if __name__ == "__main__":

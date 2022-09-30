@@ -7,7 +7,7 @@ from .layers.transformer import SpatialTemporalTransformer
 
 
 class Generator(nn.Module):
-    def __init__(self, config, device):
+    def __init__(self, config):
         super().__init__()
 
         self.fc = nn.Linear(config.d_z, config.seq_len * 17 * 2)
@@ -15,8 +15,8 @@ class Generator(nn.Module):
         self.emb_spat = Embedding(17 * 2, config.d_emb, config.d_model)
         self.emb_temp = Embedding(config.seq_len, config.d_emb, config.d_model)
 
-        self.pe_spat = PositionalEncoding(config.d_model, config.seq_len, device)
-        self.pe_temp = PositionalEncoding(config.d_model, 17 * 2, device)
+        self.pe_spat = PositionalEncoding(config.d_model, config.seq_len)
+        self.pe_temp = PositionalEncoding(config.d_model, 17 * 2)
 
         self.sttr = nn.ModuleList()
         self.n_sttr = config.n_sttr
@@ -30,6 +30,11 @@ class Generator(nn.Module):
                     config.activation,
                 )
             )
+
+    def to(self, device):
+        self = super().to(device)
+        self.pe_spat.to(device)
+        self.pe_temp.to(device)
 
     def forward(self, z):
         z = self.fc(z)
