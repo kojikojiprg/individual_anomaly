@@ -1,5 +1,4 @@
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class SpatialTemporalTransformer(nn.Module):
@@ -119,10 +118,12 @@ class FeedFoward(nn.Module):
     @staticmethod
     def _get_activation(activation):
         if activation == "ReLU":
-            return F.relu
+            return nn.ReLU(inplace=True)
         elif activation == "LeakyReLU":
-            return F.leaky_relu
-        elif activation == "GeLU":
-            return F.gelu
+            return nn.LeakyReLU(0.1, inplace=True)
+        elif activation == "GELU":
+            return nn.GELU()
+        elif activation == "SELU":
+            return nn.SELU(inplace=True)
         else:
             raise NameError
