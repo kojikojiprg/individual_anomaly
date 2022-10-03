@@ -1,5 +1,5 @@
 batch_size: 32
-epochs: 50
+epochs: 100
 seq_len: 300
 th_split: 10  # split keypoints sequence of an individual
 
