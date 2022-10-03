@@ -7,7 +7,7 @@ from glob import glob
 import torch
 
 sys.path.append(".")
-from modules.individual import IndividualDataHandler, IndividualModelFactory
+from modules.individual import IndividualActivityRecognition
 from modules.utils.logger import logger
 
 warnings.simplefilter("ignore")
@@ -54,26 +54,8 @@ def main():
     dirs = sorted(glob(os.path.join(data_dir, "*")))
     logger.info(f"=> data directories:\n{dirs}")
 
-    # load config
-    config = IndividualDataHandler.get_config(args.cfg_path)
-
-    # creating dataloader
-    dataloader = IndividualDataHandler.create_data_loader(dirs, config, logger)
-
-    checkpoint_dir = args.model_dir
-    # load model
-    if args.load_model and os.path.exists(checkpoint_dir):
-        model = IndividualModelFactory.load_model(
-            checkpoint_dir, config, device, logger
-        )
-    else:
-        model = IndividualModelFactory.create_model(config, device, logger)
-
-    # train
-    model.train(dataloader)
-
-    # save params
-    IndividualModelFactory.save_model(model, checkpoint_dir)
+    iar = IndividualActivityRecognition(args.cfg_path, device, logger)
+    iar.train(dirs, args.model_dir, args.load_model)
 
 
 if __name__ == "__main__":
