@@ -1,82 +1,46 @@
 import os
 from logging import Logger
-from types import SimpleNamespace
-from typing import Any, Dict, List
+from typing import List
 
-import yaml
-from modules.pose import PoseDataHandler
-from modules.utils import pickle_handler
-from torch.utils.data import DataLoader
-
-from .dataset import IndividualDataset
+from .data_handler import IndividualDataHandler
+from .format import Format as IndividualDataFormat
 from .model import IndividualGAN
+from .model_factory import IndividualModelFactory
 
 
-class IndividualDataHandler:
-    @staticmethod
-    def create_data_loader(data_dirs: str, config: SimpleNamespace, logger: Logger):
-        # load pose data
-        pose_data_lst: List[List[Dict[str, Any]]] = []
-        for data_dir in data_dirs:
-            pose_data_lst.append(PoseDataHandler.load(data_dir, logger))
+class IndividualActivityRecognition:
+    def __init__(self, config_path: str, device: str, logger: Logger):
+        self._config = IndividualDataHandler.get_config(config_path)
+        self._device = device
+        self._logger = logger
 
-        dataset = IndividualDataset(
-            pose_data_lst, config.seq_len, config.th_split, logger
+    def train(self, dirs: List[str], checkpoint_dir: str, load_model: bool = False):
+        # creating dataloader
+        dataloader = IndividualDataHandler.create_data_loader(
+            dirs, self._config, self._logger
         )
-        return DataLoader(dataset, config.batch_size, shuffle=True)
 
-    @staticmethod
-    def load(data_dir, logger: Logger) -> List[Dict[str, Any]]:
-        pkl_path = os.path.join(data_dir, "pickle", "individual.pkl")
+        if load_model and os.path.exists(checkpoint_dir):
+            # load model
+            model = IndividualModelFactory.load_model(
+                checkpoint_dir, self._config, self._device, self._logger
+            )
+        else:
+            # create new model
+            model = IndividualModelFactory.create_model(
+                self._config, self._device, self._logger
+            )
 
-        logger.info(f"=> loading individual activity results from {pkl_path}")
-        pkl_data = pickle_handler.load(pkl_path)
-        return pkl_data
+        # train
+        model.train(dataloader)
 
-    @staticmethod
-    def save(data_dir, data: List[dict], logger: Logger):
-        pkl_path = os.path.join(data_dir, "pickle", "individual.pkl")
+        # save params
+        IndividualModelFactory.save_model(model, checkpoint_dir)
 
-        logger.info(f"=> saving individual activity results to {pkl_path}")
-        pickle_handler.dump(data, pkl_path)
-
-    @staticmethod
-    def get_config(config_path):
-        with open(config_path, "r") as f:
-            config = yaml.safe_load(f)
-        config = SimpleNamespace(**config)
-        config.model = SimpleNamespace(**config.model)
-        config.model.G = SimpleNamespace(**config.model.G)
-        config.model.D = SimpleNamespace(**config.model.D)
-        config.optim = SimpleNamespace(**config.optim)
-
-        config.model.G.seq_len = config.seq_len
-        config.model.D.seq_len = config.seq_len
-
-        return config
-
-
-class IndividualModelFactory:
-    @staticmethod
-    def create_model(config: SimpleNamespace, device: str, logger: Logger):
-        model = IndividualGAN(config, device, logger)
-        return model
-
-    @staticmethod
-    def load_model(
-        checkpoint_dir: str,
-        config: SimpleNamespace,
-        device: str,
-        logger: Logger,
-    ) -> IndividualGAN:
-        model = IndividualGAN(config, device, logger)
-        model.load_checkpoints(checkpoint_dir)
-        return model
-
-    @staticmethod
-    def save_model(
-        model: IndividualGAN,
-        checkpoint_dir: str,
-    ):
-        os.makedirs(checkpoint_dir, exist_ok=True)
-        model.save_checkpoints(checkpoint_dir)
+    def inference(self, checkpoint_dir: str, data_dir: str, num_individual: int):
+        # load model
+        model = IndividualModelFactory.load_model(
+            checkpoint_dir, self._config, self._device, self._logger
+        )
+        results = model.test_generator(num_individual)
+        IndividualDataHandler.save_generator_data(data_dir, results, self._logger)

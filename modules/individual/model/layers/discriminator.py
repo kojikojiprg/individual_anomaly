@@ -1,16 +1,14 @@
 import torch
 import torch.nn as nn
 
-from .layers.embedding import Embedding
-from .layers.positional_encoding import PositionalEncoding
-from .layers.transformer import SpatialTemporalTransformer
+from .embedding import Embedding
+from .positional_encoding import PositionalEncoding
+from .transformer import SpatialTemporalTransformer
 
 
-class Generator(nn.Module):
+class Discriminator(nn.Module):
     def __init__(self, config):
         super().__init__()
-
-        self.fc = nn.Linear(config.d_z, config.seq_len * 17 * 2)
 
         self.emb_spat = Embedding(17 * 2, config.d_emb, config.d_model)
         self.emb_temp = Embedding(config.seq_len, config.d_emb, config.d_model)
@@ -31,32 +29,32 @@ class Generator(nn.Module):
                 )
             )
 
+        self.fc = nn.Linear(config.seq_len * 17 * 2, config.d_output)
+
     def to(self, device):
         self = super().to(device)
         self.pe_spat.to(device)
         self.pe_temp.to(device)
 
-    def forward(self, z):
-        z = self.fc(z)
-
-        B = z.shape[0]
-        z = z.view(B, -1, 34)
-        z_spat = z  # spatial
-        z_temp = z.permute(0, 2, 1)  # temporal
+    def forward(self, x):
+        B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2
+        x = x.view(B, T, P * D)
+        x_spat = x  # spatial(B, T, 34)
+        x_temp = x.permute(0, 2, 1)  # temporal(B, 34, T)
 
         # embedding
-        z_spat = self.emb_spat(z_spat)
-        z_temp = self.emb_temp(z_temp)
+        x_spat = self.emb_spat(x_spat)
+        x_temp = self.emb_temp(x_temp)
 
         # positional encoding
-        z_spat = self.pe_spat(z_spat)
-        z_temp = self.pe_temp(z_temp)
+        x_spat = self.pe_spat(x_spat)
+        x_temp = self.pe_temp(x_temp)
 
         # spatial-temporal transformer
         for i in range(self.n_sttr):
-            z_spat, z_temp, weights_spat, weights_temp = self.sttr[i](z_spat, z_temp)
+            x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
 
-        z = torch.matmul(z_spat, z_temp.permute(0, 2, 1))
-        z = z.view((B, -1, 17, 2))
+        feature = torch.matmul(x_spat, x_temp.permute(0, 2, 1))
+        x = self.fc(feature.view(B, -1))
 
-        return z, weights_spat, weights_temp
+        return x, feature, weights_spat, weights_temp

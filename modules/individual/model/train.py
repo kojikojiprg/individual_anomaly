@@ -5,7 +5,8 @@ from types import SimpleNamespace
 import numpy as np
 import torch
 
-from . import Discriminator, Generator
+from .layers.discriminator import Discriminator
+from .layers.generator import Generator
 
 
 def train(
@@ -36,10 +37,10 @@ def train(
 
     logger.info("=> start training")
     for epoch in range(n_epochs):
-        t_epoch_start = time.time()
-        g_losses = []
         d_losses = []
+        g_losses = []
 
+        t_epoch_start = time.time()
         for pids, keypoints in dataloader:
             # learn Discriminator
             keypoints = keypoints.to(device)
@@ -75,11 +76,13 @@ def train(
             g_losses.append(g_loss.item())
 
         t_epoch_finish = time.time()
+        d_loss_mean = np.average(d_losses)
+        g_loss_mean = np.average(g_losses)
         logger.info("-------------")
         logger.info(
-            "Epoch {}/{} | D_loss:{:.5e} | G_loss:{:.5e}".format(
-                epoch, n_epochs, np.mean(d_losses), np.mean(g_losses)
-            )
+            f"Epoch {epoch + 1}/{n_epochs} | "
+            + f"D_loss:{d_loss_mean:.5e} | "
+            + f"G_loss:{g_loss_mean:.5e}"
         )
         logger.info("time: {:.3f} sec.".format(t_epoch_finish - t_epoch_start))
     logger.info("=> finish training")

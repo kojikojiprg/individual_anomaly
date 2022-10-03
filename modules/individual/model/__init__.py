@@ -3,8 +3,9 @@ from logging import Logger
 
 import torch
 
-from .discriminator import Discriminator
-from .generator import Generator
+from .layers.discriminator import Discriminator
+from .layers.generator import Generator
+from .test import test_discriminator, test_generator
 from .train import train
 
 
@@ -62,7 +63,17 @@ class IndividualGAN:
         self._logger.info(f"=> saving discriminator {d_path}")
         torch.save(self._D.state_dict(), d_path)
 
-    def train(self, dataloader):
+    def train(self, train_dataloader):
         self._G, self._D = train(
-            self._G, self._D, dataloader, self._config, self._device, self._logger
+            self._G, self._D, train_dataloader, self._config, self._device, self._logger
         )
+
+    def test_generator(self, num_individual: int):
+        results = test_generator(
+            self._G, num_individual, self._config.model.G.d_z, self._device
+        )
+        return results
+
+    def test_discriminator(self, test_dataloader):
+        test_discriminator(self._D)
+        pass
