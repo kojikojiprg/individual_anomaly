@@ -28,7 +28,7 @@ def test_generator(
             results.append(
                 {
                     Format.frame_num: frame_num,
-                    Format.id: i,
+                    Format.id: i + 1,
                     Format.keypoints: kps,
                     Format.w_spat: w_spat,
                     Format.w_temp: w_temp,
@@ -38,5 +38,27 @@ def test_generator(
     return results
 
 
-def test_discriminator(D: Discriminator):
+def test_discriminator(
+    D: Discriminator, dataloader: torch.utils.data.DataLoader
+) -> List[Dict[str, Any]]:
+    results = []
     D.eval()
+    with torch.no_grad():
+        for frame_nums, ids, kps in dataloader:
+            _, features, weights_spat, weights_temp = D(kps)
+
+            for frame_num, i, feature, w_spat, w_temp in zip(
+                frame_nums, ids, features, weights_spat, weights_temp
+            ):
+                results.append(
+                    {
+                        Format.frame_num: frame_num,
+                        Format.id: i,
+                        Format.keypoints: kps,
+                        Format.feature: feature,
+                        Format.w_spat: w_spat,
+                        Format.w_temp: w_temp,
+                    }
+                )
+
+    return results

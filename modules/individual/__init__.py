@@ -37,10 +37,22 @@ class IndividualActivityRecognition:
         # save params
         IndividualModelFactory.save_model(model, checkpoint_dir)
 
-    def inference(self, checkpoint_dir: str, data_dir: str, num_individual: int):
+    def inference_generator(
+        self, checkpoint_dir: str, data_dir: str, num_individual: int
+    ):
         # load model
         model = IndividualModelFactory.load_model(
             checkpoint_dir, self._config, self._device, self._logger
         )
         results = model.test_generator(num_individual)
         IndividualDataHandler.save_generator_data(data_dir, results, self._logger)
+
+    def inference_discriminator(
+        self, checkpoint_dir: str, data_dir: str, num_individual: int
+    ):
+        # load model
+        model = IndividualModelFactory.load_model(
+            checkpoint_dir, self._config, self._device, self._logger
+        )
+        results = model.test_discriminator(num_individual)
+        IndividualDataHandler.save_discriminator_data(data_dir, results, self._logger)

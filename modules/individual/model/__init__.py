@@ -1,5 +1,6 @@
 import os
 from logging import Logger
+from typing import Any, Dict, List
 
 import torch
 
@@ -68,12 +69,12 @@ class IndividualGAN:
             self._G, self._D, train_dataloader, self._config, self._device, self._logger
         )
 
-    def test_generator(self, num_individual: int):
+    def test_generator(self, num_individual: int) -> List[Dict[str, Any]]:
         results = test_generator(
             self._G, num_individual, self._config.model.G.d_z, self._device
         )
         return results
 
-    def test_discriminator(self, test_dataloader):
-        test_discriminator(self._D)
-        pass
+    def test_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
+        results = test_discriminator(self._D, test_dataloader)
+        return results

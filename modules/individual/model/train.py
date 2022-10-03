@@ -41,7 +41,7 @@ def train(
         g_losses = []
 
         t_epoch_start = time.time()
-        for pids, keypoints in dataloader:
+        for frame_nums, pids, keypoints in dataloader:
             # learn Discriminator
             keypoints = keypoints.to(device)
             mini_batch_size = keypoints.size()[0]

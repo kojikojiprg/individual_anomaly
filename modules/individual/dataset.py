@@ -20,7 +20,7 @@ class IndividualDataset(Dataset):
     ):
         super().__init__()
 
-        self._data: List[Tuple[int, NDArray]] = []
+        self._data: List[Tuple[int, int, NDArray]] = []
         self._logger = logger
 
         self.create_dataset(pose_data_lst, seq_len, th_split)
@@ -50,7 +50,7 @@ class IndividualDataset(Dataset):
 
                 if pid != pre_pid:
                     if len(seq_data) > seq_len:
-                        self._append(pid, seq_data, seq_len)
+                        self._append(frame_num, pid, seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
@@ -62,7 +62,7 @@ class IndividualDataset(Dataset):
                         seq_data += [pre_kps for _ in range(frame_num - pre_frame_num)]
                     elif th_split < frame_num - pre_frame_num:
                         if len(seq_data) > seq_len:
-                            self._append(pid, seq_data, seq_len)
+                            self._append(frame_num, pid, seq_data, seq_len)
                         # reset seq_data
                         seq_data = []
                     else:
@@ -76,16 +76,16 @@ class IndividualDataset(Dataset):
                 pre_pid = pid
                 pre_kps = keypoints
         else:
-            self._append(pid, seq_data, seq_len)
+            self._append(frame_num, pid, seq_data, seq_len)
 
-    def _append(self, pid, seq_data, seq_len):
+    def _append(self, frame_num, pid, seq_data, seq_len):
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
-            self._data.append((pid, np.array(seq_data[i : i + seq_len])))
+            self._data.append((frame_num, pid, np.array(seq_data[i : i + seq_len])))
 
     def __len__(self):
         return len(self._data)
 
-    def __getitem__(self, idx: int) -> Tuple[int, NDArray]:
-        id, keypoints = self._data[idx]
-        return id, keypoints[:, :, :2]
+    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray]:
+        frame_num, id, keypoints = self._data[idx]
+        return frame_num, id, keypoints[:, :, :2]
