@@ -44,7 +44,7 @@ class IndividualGAN:
 
     def load_checkpoints(self, checkpoint_dir):
         g_path, d_path = self.get_model_paths(checkpoint_dir)
-        if not os.path.exists(g_path) or os.path.exists(d_path):
+        if not os.path.exists(g_path) or not os.path.exists(d_path):
             self._logger.warn(f"not exist {g_path} or {d_path}")
             return
 
