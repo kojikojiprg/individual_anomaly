@@ -78,15 +78,16 @@ class Writer:
             self._writer.write(frame)
 
 
-def concat_field_with_frame(frame: NDArray, field: NDArray) -> NDArray:
-    ratio = 1 - (field.shape[0] - frame.shape[0]) / field.shape[0]
-    size = [round(field.shape[1] * ratio), round(field.shape[0] * ratio)]
-    field = cv2.resize(field, size)
-    frame = np.concatenate([frame, field], axis=1)
+def concat_frames(frame1: NDArray, frame2: NDArray) -> NDArray:
+    # change frame2 height and merge to frame1
+    ratio = frame1.shape[0] / frame2.shape[0]
+    size = (round(frame2.shape[1] * ratio), frame1.shape[0])
+    frame2 = cv2.resize(frame2, size)
+    frame1 = np.concatenate([frame1, frame2], axis=1)
 
-    return frame
+    return frame1
 
 
 def get_size(frame: NDArray, field: NDArray) -> Tuple[int, ...]:
-    cmb_img = concat_field_with_frame(frame, field)
+    cmb_img = concat_frames(frame, field)
     return cmb_img.shape[1::-1]
