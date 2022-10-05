@@ -25,6 +25,10 @@ class KPName:
     LAnkle: int = 15
     RAnkle: int = 16
 
+    @classmethod
+    def get_names(cls):
+        return list(cls.__dict__.keys())
+
 
 class KPClass(list):
     def __init__(self, keypoints: Union[list, NDArray]):
