@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-from .embedding import Embedding
-from .positional_encoding import PositionalEncoding
-from .transformer import SpatialTemporalTransformer
+from ..layers.embedding import Embedding
+from ..layers.positional_encoding import PositionalEncoding
+from ..layers.transformer import SpatialTemporalTransformer
 
 
 class Generator(nn.Module):

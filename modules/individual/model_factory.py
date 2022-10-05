@@ -2,7 +2,7 @@ import os
 from logging import Logger
 from types import SimpleNamespace
 
-from .model import IndividualGAN
+from .model.gan import IndividualGAN
 
 
 class IndividualModelFactory:

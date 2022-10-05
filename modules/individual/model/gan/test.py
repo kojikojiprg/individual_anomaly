@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
 
 import torch
+from modules.individual.format import Format
 
-from ..format import Format
-from .layers.discriminator import Discriminator
-from .layers.generator import Generator
+from .discriminator import Discriminator
+from .generator import Generator
 
 
 def test_generator(

@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-from .embedding import Embedding
-from .positional_encoding import PositionalEncoding
-from .transformer import SpatialTemporalTransformer
+from ..layers.embedding import Embedding
+from ..layers.positional_encoding import PositionalEncoding
+from ..layers.transformer import SpatialTemporalTransformer
 
 
 class Discriminator(nn.Module):
@@ -29,7 +29,9 @@ class Discriminator(nn.Module):
                 )
             )
 
+        # self.norm = nn.LayerNorm((config.seq_len, 17 * 2))
         self.fc = nn.Linear(config.seq_len * 17 * 2, config.d_output)
+        # self.last = nn.Sigmoid()
 
     def to(self, device):
         self = super().to(device)
@@ -55,6 +57,8 @@ class Discriminator(nn.Module):
             x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
 
         feature = torch.matmul(x_spat, x_temp.permute(0, 2, 1))
+        # feature = self.norm(feature)
         x = self.fc(feature.view(B, -1))
+        # x = self.last(x)
 
         return x, feature, weights_spat, weights_temp

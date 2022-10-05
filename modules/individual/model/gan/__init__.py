@@ -4,8 +4,8 @@ from typing import Any, Dict, List
 
 import torch
 
-from .layers.discriminator import Discriminator
-from .layers.generator import Generator
+from .discriminator import Discriminator
+from .generator import Generator
 from .test import test_discriminator, test_generator
 from .train import train
 
