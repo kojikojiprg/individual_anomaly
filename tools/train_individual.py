@@ -27,15 +27,19 @@ def parser():
         type=str,
         help="surgery number of each room",
     )
+    parser.add_argument(
+        "-mt",
+        "--model_type",
+        required=True,
+        type=str,
+        default="GAN",
+        help="'GAN(gan)', 'EGAN(egan)' or 'Autoencoder(autoencoder)'",
+    )
 
     # options
     parser.add_argument(
         "-ex", "--expand_name", type=str, default="", help="'passing' or 'attention'"
     )
-    parser.add_argument(
-        "-c", "--cfg_path", type=str, default="configs/individual/individual.yaml"
-    )
-    parser.add_argument("-md", "--model_dir", type=str, default="models/individual")
     parser.add_argument("-nm", "--load_model", default=False, action="store_true")
     parser.add_argument("--gpu", type=int, default=0, help="gpu number")
     args = parser.parse_args()
@@ -51,11 +55,11 @@ def main():
 
     # load video paths
     data_dir = os.path.join("data", args.room_num, args.surgery_num, args.expand_name)
-    dirs = sorted(glob(os.path.join(data_dir, "*")))
-    logger.info(f"=> data directories:\n{dirs}")
+    data_dirs = sorted(glob(os.path.join(data_dir, "*")))
+    logger.info(f"=> data directories:\n{data_dirs}")
 
-    iar = IndividualActivityRecognition(args.cfg_path, device, logger)
-    iar.train(dirs, args.model_dir, args.load_model)
+    iar = IndividualActivityRecognition(args.model_type, device, logger)
+    iar.train(data_dirs, args.load_model)
 
 
 if __name__ == "__main__":

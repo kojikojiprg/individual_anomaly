@@ -5,30 +5,38 @@ from typing import List
 from .data_handler import IndividualDataHandler
 from .format import Format as IndividualDataFormat
 from .model.gan import IndividualGAN
-from .model_factory import IndividualModelFactory
+from .model_factory import IndividualModelFactory, IndividualModelType
 
 
 class IndividualActivityRecognition:
-    def __init__(self, config_path: str, device: str, logger: Logger):
-        self._config = IndividualDataHandler.get_config(config_path)
+    def __init__(self, model_type: str, device: str, logger: Logger):
+        assert model_type.casefold() in IndividualModelType.get_types()
+
+        self._model_type = model_type
+        self._config = IndividualDataHandler.get_config(model_type)
         self._device = device
         self._logger = logger
 
-    def train(self, dirs: List[str], checkpoint_dir: str, load_model: bool = False):
+    def train(self, dirs: List[str], load_model: bool = False):
         # creating dataloader
         dataloader = IndividualDataHandler.create_data_loader(
             dirs, self._config, self._logger
         )
 
-        if load_model and os.path.exists(checkpoint_dir):
+        if load_model:
             # load model
+            checkpoint_dir = os.path.join("models", "individual")
             model = IndividualModelFactory.load_model(
-                checkpoint_dir, self._config, self._device, self._logger
+                self._model_type,
+                checkpoint_dir,
+                self._config,
+                self._device,
+                self._logger,
             )
         else:
             # create new model
             model = IndividualModelFactory.create_model(
-                self._config, self._device, self._logger
+                self._model_type, self._config, self._device, self._logger
             )
 
         # train

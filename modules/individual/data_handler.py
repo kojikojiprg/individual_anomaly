@@ -56,16 +56,47 @@ class IndividualDataHandler:
         pickle_handler.dump(data, pkl_path)
 
     @staticmethod
-    def get_config(config_path):
+    def get_config(model_type: str):
+        config_path = IndividualDataHandler._get_config_path(model_type)
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
-        config = SimpleNamespace(**config)
-        config.model = SimpleNamespace(**config.model)
-        config.model.G = SimpleNamespace(**config.model.G)
-        config.model.D = SimpleNamespace(**config.model.D)
-        config.optim = SimpleNamespace(**config.optim)
+        config = IndividualDataHandler._get_config_reccursive(config)
 
-        config.model.G.seq_len = config.seq_len
-        config.model.D.seq_len = config.seq_len
+        model_names = config.model.__dict__.keys()
+
+        # check included model
+        assert "D" in model_names and ("G" in model_names or "E" in model_names)
+
+        # check d_z and d_model
+        if "G" in model_names and "D" in model_names:
+            assert config.model.G.d_model == config.model.D.d_model
+        if "G" in model_names and "E" in model_names:
+            assert config.model.G.d_z == config.model.E.d_z
+        if "D" in model_names and "E" in model_names:
+            assert config.model.D.d_model == config.model.E.d_model
+
+        # set same seq_len
+        if "G" in model_names:
+            config.model.G.seq_len = config.seq_len
+        if "D" in model_names:
+            config.model.D.seq_len = config.seq_len
+        if "E" in model_names:
+            config.model.E.seq_len = config.seq_len
 
         return config
+
+    @staticmethod
+    def _get_config_path(model_type: str):
+        return os.path.join("configs", "individual", f"{model_type.lower()}.yaml")
+
+    @staticmethod
+    def _get_config_reccursive(config: dict):
+        new_config = SimpleNamespace(**config)
+        for name, values in new_config.__dict__.items():
+            if type(values) == dict:
+                new_config.__setattr__(
+                    name, IndividualDataHandler._get_config_reccursive(values)
+                )
+            else:
+                continue
+        return new_config
