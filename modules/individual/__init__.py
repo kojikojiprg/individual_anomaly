@@ -50,7 +50,7 @@ class IndividualActivityRecognition:
     ):
         # load model
         model = IndividualModelFactory.load_model(
-            checkpoint_dir, self._config, self._device, self._logger
+            self._model_type, checkpoint_dir, self._config, self._device, self._logger
         )
         results = model.test_generator(num_individual)
         IndividualDataHandler.save_generator_data(data_dir, results, self._logger)
@@ -60,7 +60,7 @@ class IndividualActivityRecognition:
     ):
         # load model
         model = IndividualModelFactory.load_model(
-            checkpoint_dir, self._config, self._device, self._logger
+            self._model_type, checkpoint_dir, self._config, self._device, self._logger
         )
         results = model.test_discriminator(num_individual)
         IndividualDataHandler.save_discriminator_data(data_dir, results, self._logger)
