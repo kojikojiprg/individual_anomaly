@@ -6,7 +6,7 @@ import torch
 
 from .discriminator import Discriminator
 from .generator import Generator
-from .test import test_discriminator, test_generator
+from .inference import infer_discriminator, infer_generator
 from .train import train
 
 
@@ -70,11 +70,11 @@ class IndividualGAN:
         )
 
     def test_generator(self, num_individual: int) -> List[Dict[str, Any]]:
-        results = test_generator(
+        results = infer_generator(
             self._G, num_individual, self._config.model.G.d_z, self._device
         )
         return results
 
     def test_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
-        results = test_discriminator(self._D, test_dataloader)
+        results = infer_discriminator(self._D, test_dataloader)
         return results
