@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 
 import yaml
 from modules.pose import PoseDataHandler
-from modules.utils import pickle_handler
+from modules.utils import pickle_handler, video
 from torch.utils.data import DataLoader
 
 from .dataset import IndividualDataset
@@ -24,8 +24,16 @@ class IndividualDataHandler:
         for data_dir in data_dirs:
             pose_data_lst.append(PoseDataHandler.load(data_dir, logger))
 
+        # get frame size
+        data_dir = data_dirs[0]
+        video_path = os.path.join(data_dir, "pose.mp4")
+        cap = video.Capture(video_path)
+        frame_shape = cap.size
+        del cap
+
+        # create dataset
         dataset = IndividualDataset(
-            pose_data_lst, config.seq_len, config.th_split, logger
+            pose_data_lst, config.seq_len, config.th_split, frame_shape, logger
         )
         return DataLoader(dataset, config.batch_size, shuffle=is_test)
 

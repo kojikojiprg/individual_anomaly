@@ -4,7 +4,6 @@ from typing import List
 
 from .data_handler import IndividualDataHandler
 from .format import Format as IndividualDataFormat
-from .model.gan import IndividualGAN
 from .model_factory import IndividualModelFactory, IndividualModelType
 
 

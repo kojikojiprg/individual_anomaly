@@ -16,6 +16,7 @@ class IndividualDataset(Dataset):
         pose_data_lst: List[List[Dict[str, Any]]],
         seq_len: int,
         th_split: int,
+        frame_shape_xy: Tuple[int, int],
         logger: Logger,
     ):
         super().__init__()
@@ -23,13 +24,14 @@ class IndividualDataset(Dataset):
         self._data: List[Tuple[int, int, NDArray]] = []
         self._logger = logger
 
-        self.create_dataset(pose_data_lst, seq_len, th_split)
+        self.create_dataset(pose_data_lst, seq_len, th_split, frame_shape_xy)
 
     def create_dataset(
         self,
         pose_data_lst: List[List[Dict[str, Any]]],
         seq_len: int,
         th_split: int,
+        frame_shape_xy: Tuple[int, int],
     ):
         self._logger.info("=> creating dataset")
         for pose_data in tqdm(pose_data_lst, ncols=100):
@@ -69,6 +71,8 @@ class IndividualDataset(Dataset):
                         pass
 
                 # append keypoints to seq_data
+                keypoints = keypoints[:, :2] / frame_shape_xy  # 0-1 scalling
+                keypoints = keypoints.astype(np.float32)
                 seq_data.append(keypoints)
 
                 # update frame_num and id
