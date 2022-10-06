@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 from ..layers.embedding import Embedding
@@ -10,8 +9,8 @@ class Discriminator(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.emb_spat = Embedding(17 * 2, config.d_emb, config.d_model)
-        self.emb_temp = Embedding(config.seq_len, config.d_emb, config.d_model)
+        self.emb_spat = Embedding(17 * 2, config.d_model)
+        self.emb_temp = Embedding(config.seq_len, config.d_model)
 
         self.pe_spat = PositionalEncoding(config.d_model, config.seq_len)
         self.pe_temp = PositionalEncoding(config.d_model, 17 * 2)
@@ -29,14 +28,32 @@ class Discriminator(nn.Module):
                 )
             )
 
-        # self.norm = nn.LayerNorm((config.seq_len, 17 * 2))
-        self.fc = nn.Linear(config.seq_len * 17 * 2, config.d_output)
-        # self.last = nn.Sigmoid()
+        self.emb_out_spat = Embedding(config.d_model, 17 * 2)
+        self.emb_out_temp = Embedding(config.d_model, config.seq_len)
+        self.x_norm = nn.LayerNorm(config.seq_len * 17 * 2)
 
-    def to(self, device):
-        self = super().to(device)
-        self.pe_spat.to(device)
-        self.pe_temp.to(device)
+        self.fc1 = nn.Sequential(
+            nn.Linear(config.seq_len * 17 * 2, config.d_ff),
+            self._get_activation(config.activation),
+            nn.BatchNorm1d(config.d_ff),
+        )
+        self.fc2 = nn.Sequential(
+            nn.Linear(config.d_ff, config.d_output),
+            nn.BatchNorm1d(config.d_output),
+        )
+
+    @staticmethod
+    def _get_activation(activation):
+        if activation == "ReLU":
+            return nn.ReLU(inplace=True)
+        elif activation == "LeakyReLU":
+            return nn.LeakyReLU(0.1, inplace=True)
+        elif activation == "GELU":
+            return nn.GELU()
+        elif activation == "SELU":
+            return nn.SELU(inplace=True)
+        else:
+            raise NameError
 
     def forward(self, x):
         B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2
@@ -55,10 +72,12 @@ class Discriminator(nn.Module):
         # spatial-temporal transformer
         for i in range(self.n_sttr):
             x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
+        x_spat = self.emb_out_spat(x_spat)
+        x_temp = self.emb_out_temp(x_temp)
+        x = x_spat + x_temp.permute(0, 2, 1)
+        x = self.x_norm(x.view(B, -1))
 
-        feature = torch.matmul(x_spat, x_temp.permute(0, 2, 1))
-        # feature = self.norm(feature)
-        x = self.fc(feature.view(B, -1))
-        # x = self.last(x)
+        x = self.fc1(x)
+        out = self.fc2(x)
 
-        return x, feature, weights_spat, weights_temp
+        return out, x, weights_spat, weights_temp

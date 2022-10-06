@@ -4,7 +4,6 @@ from types import SimpleNamespace
 
 import numpy as np
 import torch
-import torch.nn as nn
 
 from .discriminator import Discriminator
 from .generator import Generator
@@ -32,8 +31,6 @@ def train(
         (config.optim.beta1, config.optim.beta2),
     )
 
-    criterion = nn.BCEWithLogitsLoss(reduction="mean")
-
     G.train()
     D.train()
     torch.backends.cudnn.benchmark = True
@@ -47,25 +44,16 @@ def train(
         for frame_nums, pids, keypoints in dataloader:
             keypoints = keypoints.to(device)
             mini_batch_size = keypoints.size()[0]
-            label_real = torch.full((mini_batch_size,), 1, dtype=torch.float32).to(
-                device
-            )
-            label_fake = torch.full((mini_batch_size,), 0, dtype=torch.float32).to(
-                device
-            )
 
             # train Discriminator
             d_out_real, _, _, _ = D(keypoints)
-            # print(d_out_real)
 
             z = torch.randn(mini_batch_size, d_z).to(device)
-            fake_keypoints, _, _ = G(z)
+            fake_keypoints, _ = G(z)
             d_out_fake, _, _, _ = D(fake_keypoints)
 
             d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
             d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
-            # d_loss_real = criterion(d_out_real.view(-1), label_real)
-            # d_loss_fake = criterion(d_out_fake.view(-1), label_fake)
             d_loss = d_loss_real + d_loss_fake
 
             d_optim.zero_grad()
@@ -74,11 +62,10 @@ def train(
 
             # train Generator
             z = torch.randn(mini_batch_size, d_z).to(device)
-            fake_keypoints, _, _ = G(z)
+            fake_keypoints, _ = G(z)
             d_out_fake, _, _, _ = D(fake_keypoints)
 
             g_loss = -d_out_fake.mean()
-            # g_loss = criterion(d_out_fake.view(-1), label_real)
 
             g_optim.zero_grad()
             g_loss.backward()
