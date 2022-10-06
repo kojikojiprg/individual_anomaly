@@ -8,5 +8,10 @@ class Embedding(nn.Module):
         self.linear = nn.Linear(d_input, d_output)
         self.linear.requires_grad_ = False
 
+        # init weights
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
     def forward(self, x):
         return self.linear(x)
