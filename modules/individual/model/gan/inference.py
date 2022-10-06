@@ -7,7 +7,7 @@ from .discriminator import Discriminator
 from .generator import Generator
 
 
-def test_generator(
+def infer_generator(
     G: Generator, num_individual: int, d_z: int, device: str
 ) -> List[Dict[str, Any]]:
     z = torch.randn((num_individual, d_z)).to(device)
@@ -38,7 +38,7 @@ def test_generator(
     return results
 
 
-def test_discriminator(
+def infer_discriminator(
     D: Discriminator, dataloader: torch.utils.data.DataLoader
 ) -> List[Dict[str, Any]]:
     results = []
