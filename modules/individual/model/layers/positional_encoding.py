@@ -18,9 +18,7 @@ class PositionalEncoding(nn.Module):
                 pe[pos, i + 1] = math.cos(pos / (10000 ** (2 * (i + 1) / d_model)))
         self._pe = pe.unsqueeze(0)
         self._pe.requires_grad = False
-
-    def to(self, device):
-        self._pe = self._pe.to(device)
+        self.register_buffer("pe", self._pe)
 
     def forward(self, x):
-        return x + self._pe
+        return x + self.pe
