@@ -1,4 +1,3 @@
-import torch
 import torch.nn as nn
 
 from ..layers.embedding import Embedding
@@ -10,8 +9,8 @@ class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.emb_spat = Embedding(17 * 2, config.d_emb, config.d_model)
-        self.emb_temp = Embedding(config.seq_len, config.d_emb, config.d_model)
+        self.emb_spat = Embedding(17 * 2, config.d_model)
+        self.emb_temp = Embedding(config.seq_len, config.d_model)
 
         self.pe_spat = PositionalEncoding(config.d_model, config.seq_len)
         self.pe_temp = PositionalEncoding(config.d_model, 17 * 2)
@@ -29,14 +28,11 @@ class Encoder(nn.Module):
                 )
             )
 
-        # self.norm = nn.LayerNorm((config.seq_len, 17 * 2))
-        self.fc = nn.Linear(config.seq_len * 17 * 2, config.d_z)
-        # self.last = nn.Sigmoid()
+        self.fc_spat = Embedding(config.d_model, 17 * 2)
+        self.fc_temp = Embedding(config.d_model, config.seq_len)
 
-    def to(self, device):
-        self = super().to(device)
-        self.pe_spat.to(device)
-        self.pe_temp.to(device)
+        self.fc = nn.Linear(config.seq_len * 17 * 2, config.d_z)
+        self.norm = nn.LayerNorm(config.d_z)
 
     def forward(self, x):
         B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2
@@ -55,10 +51,11 @@ class Encoder(nn.Module):
         # spatial-temporal transformer
         for i in range(self.n_sttr):
             x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
+        x_spat = self.fc_spat(x_spat)
+        x_temp = self.fc_temp(x_temp)
 
-        feature = torch.matmul(x_spat, x_temp.permute(0, 2, 1))
-        # feature = self.norm(feature)
-        x = self.fc(feature.view(B, -1))
-        # x = self.last(x)
+        feature = x_spat + x_temp.permute(0, 2, 1)
+        z = self.fc(feature.view(B, -1))
+        z = self.norm(z)
 
-        return x, feature, weights_spat, weights_temp
+        return z, feature, weights_spat, weights_temp

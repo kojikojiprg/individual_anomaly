@@ -10,8 +10,8 @@ class Discriminator(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.emb_spat = Embedding(17 * 2, config.d_emb, config.d_model)
-        self.emb_temp = Embedding(config.seq_len, config.d_emb, config.d_model)
+        self.emb_in_spat = Embedding(17 * 2, config.d_model)
+        self.emb_in_temp = Embedding(config.seq_len, config.d_model)
 
         self.pe_spat = PositionalEncoding(config.d_model, config.seq_len)
         self.pe_temp = PositionalEncoding(config.d_model, 17 * 2)
@@ -29,16 +29,25 @@ class Discriminator(nn.Module):
                 )
             )
 
+        self.emb_out_spat = Embedding(config.d_model, 17 * 2)
+        self.emb_out_temp = Embedding(config.d_model, config.seq_len)
+        self.x_norm = nn.LayerNorm(config.seq_len * 17 * 2)
+
         self.z_layer = nn.Sequential(
             nn.Linear(config.d_z, config.seq_len * 17 * 2),
             self._get_activation_for_z(config.activation),
+            nn.LayerNorm(config.seq_len * 17 * 2),
         )
 
         self.fc1 = nn.Sequential(
-            nn.Linear(config.seq_len * 17 * 2 * 2, config.d_model),
+            nn.Linear(config.seq_len * 17 * 2 * 2, config.d_ff),
             self._get_activation_for_z(config.activation),
+            nn.LayerNorm(config.d_ff),
         )
-        self.fc2 = nn.Linear(config.d_model, config.d_output)
+        self.fc2 = nn.Sequential(
+            nn.Linear(config.d_ff, config.d_output),
+            nn.BatchNorm1d(config.d_output),
+        )
 
     @staticmethod
     def _get_activation_for_z(activation):
@@ -53,11 +62,6 @@ class Discriminator(nn.Module):
         else:
             raise NameError
 
-    def to(self, device):
-        self = super().to(device)
-        self.pe_spat.to(device)
-        self.pe_temp.to(device)
-
     def forward(self, x, z):
         B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2
         x = x.view(B, T, P * D)
@@ -65,8 +69,8 @@ class Discriminator(nn.Module):
         x_temp = x.permute(0, 2, 1)  # temporal(B, 34, T)
 
         # embedding
-        x_spat = self.emb_spat(x_spat)
-        x_temp = self.emb_temp(x_temp)
+        x_spat = self.emb_in_spat(x_spat)
+        x_temp = self.emb_in_temp(x_temp)
 
         # positional encoding
         x_spat = self.pe_spat(x_spat)
@@ -75,13 +79,16 @@ class Discriminator(nn.Module):
         # spatial-temporal transformer
         for i in range(self.n_sttr):
             x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
-        feature = torch.matmul(x_spat, x_temp.permute(0, 2, 1))
+        x_spat = self.emb_out_spat(x_spat)
+        x_temp = self.emb_out_temp(x_temp)
+        x = x_spat + x_temp.permute(0, 2, 1)
+        x = self.x_norm(x.view(B, -1))
 
         # z layer
         z = self.z_layer(z)
 
-        # concat feature and z
-        feature = torch.cat([feature.view(B, -1), z], dim=1)
+        # concat x and z
+        feature = torch.cat([x, z], dim=1)
         feature = self.fc1(feature)
 
         # last layer

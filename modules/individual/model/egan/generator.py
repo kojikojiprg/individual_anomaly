@@ -16,8 +16,8 @@ class Generator(nn.Module):
         self.pe = PositionalEncoding(config.d_model, config.seq_len)
 
         self.tr = nn.ModuleList()
-        self.n_sttr = config.n_sttr
-        for _ in range(config.n_sttr):
+        self.n_tre = config.n_tre
+        for _ in range(self.n_tre):
             self.tr.append(
                 TransformerEncoder(
                     config.d_model,
@@ -41,7 +41,7 @@ class Generator(nn.Module):
         z = self.pe(z)
 
         # spatial-temporal transformer
-        for i in range(self.n_sttr):
+        for i in range(self.n_tre):
             z, weights = self.tr[i](z)
 
         z = self.fc(z)

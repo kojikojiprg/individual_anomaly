@@ -3,6 +3,7 @@ from logging import Logger
 from typing import Any, Dict, List
 
 import torch
+import torch.nn as nn
 
 from .discriminator import Discriminator
 from .encoder import Encoder
@@ -11,8 +12,10 @@ from .inference import test_discriminator, test_generator
 from .train import train
 
 
-class IndividualEGAN:
+class IndividualEGAN(nn.Module):
     def __init__(self, config, device: str, logger: Logger):
+        super().__init__()
+
         self._config = config
         self._logger = logger
         self._G = Generator(config.model.G)
@@ -20,11 +23,6 @@ class IndividualEGAN:
         self._E = Encoder(config.model.E)
         self.to(device)
         self._device = device
-
-    def to(self, device):
-        self._G.to(device)
-        self._D.to(device)
-        self._E.to(device)
 
     @property
     def Generator(self):

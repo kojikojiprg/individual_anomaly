@@ -68,7 +68,7 @@ def train(
             d_out_real, _ = D(keypoints, z_out_real)
 
             z = torch.randn(mini_batch_size, d_z).to(device)
-            fake_keypoints, _, _ = G(z)
+            fake_keypoints, _ = G(z)
             d_out_fake, _ = D(fake_keypoints, z)
 
             d_loss_real = criterion(d_out_real.view(-1), label_real)
@@ -81,7 +81,7 @@ def train(
 
             # train Generator
             z = torch.randn(mini_batch_size, d_z).to(device)
-            fake_keypoints, _, _ = G(z)
+            fake_keypoints, _ = G(z)
             d_out_fake, _ = D(fake_keypoints, z)
 
             g_loss = criterion(d_out_fake.view(-1), label_real)
