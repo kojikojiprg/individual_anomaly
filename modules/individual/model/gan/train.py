@@ -45,7 +45,6 @@ def train(
 
         t_epoch_start = time.time()
         for frame_nums, pids, keypoints in dataloader:
-            # learn Discriminator
             keypoints = keypoints.to(device)
             mini_batch_size = keypoints.size()[0]
             label_real = torch.full((mini_batch_size,), 1, dtype=torch.float32).to(
@@ -55,6 +54,7 @@ def train(
                 device
             )
 
+            # train Discriminator
             d_out_real, _, _, _ = D(keypoints)
             # print(d_out_real)
 
@@ -72,7 +72,7 @@ def train(
             d_loss.backward()
             d_optim.step()
 
-            # learn Generator
+            # train Generator
             z = torch.randn(mini_batch_size, d_z).to(device)
             fake_keypoints, _, _ = G(z)
             d_out_fake, _, _, _ = D(fake_keypoints)
@@ -84,7 +84,7 @@ def train(
             g_loss.backward()
             g_optim.step()
 
-            # sum losses
+            # append losses
             d_losses.append(d_loss.item())
             g_losses.append(g_loss.item())
 
