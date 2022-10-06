@@ -34,11 +34,11 @@ class IndividualGAN:
     def get_model_paths(self, checkpoint_dir):
         g_path = os.path.join(
             checkpoint_dir,
-            f"generator_{self._config.model.G.n_sttr}x{self._config.model.G.n_heads}.pth",
+            f"gan_g_{self._config.model.G.n_sttr}x{self._config.model.G.n_heads}.pth",
         )
         d_path = os.path.join(
             checkpoint_dir,
-            f"discriminator_{self._config.model.D.n_sttr}x{self._config.model.D.n_heads}.pth",
+            f"gan_d_{self._config.model.D.n_sttr}x{self._config.model.D.n_heads}.pth",
         )
         return g_path, d_path
 
