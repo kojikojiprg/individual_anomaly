@@ -2,6 +2,7 @@ import os
 from logging import Logger
 
 from modules.pose import PoseDataHandler
+from modules.individual import IndividualDataHandler
 from modules.utils.video import Capture, Writer
 from tqdm import tqdm
 
@@ -12,12 +13,16 @@ class Visualizer:
     def __init__(self, args, logger: Logger):
         self._logger = logger
 
-        # self._do_pose_estimation = args.pose
-        self._do_pose_estimation = True
+        self._do_pose_estimation = args.pose
+        self._do_individual = args.individual
         self._no_bg = args.video_no_background
 
     def visualise(self, video_path: str, data_dir: str):
-        pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
+        # load data
+        if self._do_pose_estimation:
+            pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
+        if self._do_individual:
+            ind_data_lst = IndividualDataHandler.load(data_dir, self._logger)
 
         # create video capture
         self._logger.info(f"=> loading video from {video_path}.")
@@ -36,6 +41,15 @@ class Visualizer:
                 out_path = os.path.join(data_dir, "pose.mp4")
             else:
                 out_path = os.path.join(data_dir, "pose_nobg.mp4")
+
+            pose_video_writer = Writer(
+                out_path, video_capture.fps, tmp_frame.shape[1::-1]
+            )
+            out_paths.append(out_path)
+
+        # create video writer for individual results
+        if self._do_individual:
+            out_path = os.path.join(data_dir, f"individual_{}.mp4")
 
             pose_video_writer = Writer(
                 out_path, video_capture.fps, tmp_frame.shape[1::-1]

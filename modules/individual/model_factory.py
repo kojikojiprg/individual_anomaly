@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from logging import Logger
 from types import SimpleNamespace
-from typing import List
+from typing import List, Union
 
 from .model.egan import IndividualEGAN
 from .model.gan import IndividualGAN
@@ -44,14 +44,14 @@ class IndividualModelFactory:
         config: SimpleNamespace,
         device: str,
         logger: Logger,
-    ) -> IndividualGAN:
+    ) -> Union[IndividualGAN, IndividualEGAN]:
         model = IndividualModelFactory.create_model(model_type, config, device, logger)
         model.load_checkpoints(checkpoint_dir)
         return model
 
     @staticmethod
     def save_model(
-        model: IndividualGAN,
+        model: Union[IndividualGAN, IndividualEGAN],
         checkpoint_dir: str,
     ):
         os.makedirs(checkpoint_dir, exist_ok=True)

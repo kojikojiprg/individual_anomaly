@@ -23,9 +23,9 @@ class IndividualActivityRecognition:
             dirs, self._config, self._logger
         )
 
+        checkpoint_dir = os.path.join("models", "individual")
         if load_model:
             # load model
-            checkpoint_dir = os.path.join("models", "individual")
             model = IndividualModelFactory.load_model(
                 self._model_type,
                 checkpoint_dir,
