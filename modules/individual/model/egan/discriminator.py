@@ -35,14 +35,14 @@ class Discriminator(nn.Module):
 
         self.z_layer = nn.Sequential(
             nn.Linear(config.d_z, config.seq_len * 17 * 2),
-            self._get_activation_for_z(config.activation),
+            self._get_activation(config.activation),
             nn.LayerNorm(config.seq_len * 17 * 2),
         )
 
         self.fc1 = nn.Sequential(
             nn.Linear(config.seq_len * 17 * 2 * 2, config.d_ff),
-            self._get_activation_for_z(config.activation),
-            nn.LayerNorm(config.d_ff),
+            self._get_activation(config.activation),
+            nn.BatchNorm1d(config.d_ff),
         )
         self.fc2 = nn.Sequential(
             nn.Linear(config.d_ff, config.d_output),
@@ -50,7 +50,7 @@ class Discriminator(nn.Module):
         )
 
     @staticmethod
-    def _get_activation_for_z(activation):
+    def _get_activation(activation):
         if activation == "ReLU":
             return nn.ReLU(inplace=True)
         elif activation == "LeakyReLU":
