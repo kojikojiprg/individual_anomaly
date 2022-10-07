@@ -3,6 +3,7 @@ batch_size: 256
 epochs: 100
 seq_len: 300
 th_split: 10  # split keypoints sequence of an individual
+seed: 128  # random seed
 
 model:
   E:
