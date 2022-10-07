@@ -1,0 +1,28 @@
+
+batch_size: 256
+epochs: 100
+seq_len: 300
+th_split: 10  # split keypoints sequence of an individual
+
+model:
+  E:
+    d_z: 32
+    d_model: 64
+    d_ff: 128
+    n_heads: 8
+    n_sttr: 2
+    dropout: 0.1
+    activation: ReLU
+  D:
+    d_z: 32
+    d_model: 64
+    d_ff: 128
+    n_heads: 8
+    n_tre: 2
+    dropout: 0.1
+    activation: SELU
+
+optim:
+  lr: 0.001
+  beta1: 0.9
+  beta2: 0.999
