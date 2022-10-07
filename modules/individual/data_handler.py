@@ -22,11 +22,12 @@ class IndividualDataHandler:
         # load pose data
         pose_data_lst: List[List[Dict[str, Any]]] = []
         for data_dir in data_dirs:
-            pose_data_lst.append(PoseDataHandler.load(data_dir, logger))
+            data = PoseDataHandler.load(data_dir, logger)
+            if data is not None:
+                pose_data_lst.append(data)
 
         # get frame size
-        data_dir = data_dirs[0]
-        video_path = os.path.join(data_dir, "pose.mp4")
+        video_path = data_dirs[0].replace("data/", "/raid6/surgery-video/") + ".mp4"
         cap = video.Capture(video_path)
         frame_shape = cap.size
         del cap
