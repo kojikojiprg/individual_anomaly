@@ -31,7 +31,7 @@ class Discriminator(nn.Module):
         self.emb_out_spat = Embedding(config.d_model, 17 * 2)
         self.emb_out_temp = Embedding(config.d_model, config.seq_len)
 
-        self.out_layer = nn.Linear(config.seq_len * 17 * 2, config.d_output)
+        self.out_layer = nn.Linear(config.seq_len * 17 * 2, 1)
 
     def forward(self, x):
         B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2

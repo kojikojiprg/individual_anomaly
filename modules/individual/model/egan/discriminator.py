@@ -39,7 +39,7 @@ class Discriminator(nn.Module):
             nn.Linear(config.seq_len * 17 * 2 * 2, config.d_ff),
             self._get_activation(config.activation),
         )
-        self.out_layer = nn.Linear(config.d_ff, config.d_output)
+        self.out_layer = nn.Linear(config.d_ff, 1)
 
     @staticmethod
     def _get_activation(activation):
