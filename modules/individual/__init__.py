@@ -1,6 +1,8 @@
 from logging import Logger
 from typing import List
 
+from modules.utils import set_random
+
 from .data_handler import IndividualDataHandler
 from .format import Format as IndividualDataFormat
 from .model_factory import IndividualModelFactory, IndividualModelType
@@ -14,6 +16,7 @@ class IndividualActivityRecognition:
         self._config = IndividualDataHandler.get_config(model_type)
         self._device = device
         self._logger = logger
+        set_random.seed(self._config.seed)
 
     def train(self, dirs: List[str], load_model: bool = False):
         # creating dataloader
