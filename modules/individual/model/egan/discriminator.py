@@ -33,21 +33,13 @@ class Discriminator(nn.Module):
         self.emb_out_temp = Embedding(config.d_model, config.seq_len)
         self.x_norm = nn.LayerNorm(config.seq_len * 17 * 2)
 
-        self.z_layer = nn.Sequential(
-            nn.Linear(config.d_z, config.seq_len * 17 * 2),
-            self._get_activation(config.activation),
-            nn.LayerNorm(config.seq_len * 17 * 2),
-        )
+        self.z_layer = nn.Linear(config.d_z, config.seq_len * 17 * 2)
 
-        self.fc1 = nn.Sequential(
+        self.ff = nn.Sequential(
             nn.Linear(config.seq_len * 17 * 2 * 2, config.d_ff),
             self._get_activation(config.activation),
-            nn.BatchNorm1d(config.d_ff),
         )
-        self.fc2 = nn.Sequential(
-            nn.Linear(config.d_ff, config.d_output),
-            nn.BatchNorm1d(config.d_output),
-        )
+        self.out_layer = nn.Linear(config.d_ff, config.d_output)
 
     @staticmethod
     def _get_activation(activation):
@@ -89,9 +81,9 @@ class Discriminator(nn.Module):
 
         # concat x and z
         feature = torch.cat([x, z], dim=1)
-        feature = self.fc1(feature)
+        feature = self.ff(feature)
 
         # last layer
-        out = self.fc2(feature)
+        out = self.out_layer(feature)
 
         return out, feature
