@@ -4,6 +4,7 @@ from logging import Logger
 from types import SimpleNamespace
 from typing import List, Union
 
+from .model.autoencoder import IndividualAutoEncoder
 from .model.egan import IndividualEGAN
 from .model.gan import IndividualGAN
 
@@ -25,7 +26,7 @@ class IndividualModelFactory:
     @staticmethod
     def create_model(
         model_type: str, config: SimpleNamespace, device: str, logger: Logger
-    ) -> IndividualGAN:
+    ) -> Union[IndividualGAN, IndividualEGAN, IndividualAutoEncoder]:
         model_type = model_type.lower()
 
         if model_type == IndividualModelType.gan:
@@ -33,7 +34,7 @@ class IndividualModelFactory:
         elif model_type == IndividualModelType.egan:
             model = IndividualEGAN(config, device, logger)
         elif model_type == IndividualModelType.autoencoder:
-            raise NotImplementedError
+            model = IndividualAutoEncoder(config, device, logger)
         else:
             raise NameError
 
@@ -45,7 +46,7 @@ class IndividualModelFactory:
         config: SimpleNamespace,
         device: str,
         logger: Logger,
-    ) -> Union[IndividualGAN, IndividualEGAN]:
+    ) -> Union[IndividualGAN, IndividualEGAN, IndividualAutoEncoder]:
         checkpoint_dir = IndividualModelFactory.CHECKPOINT_DIR
         model = IndividualModelFactory.create_model(model_type, config, device, logger)
         model.load_checkpoints(checkpoint_dir)
@@ -53,7 +54,7 @@ class IndividualModelFactory:
 
     @staticmethod
     def save_model(
-        model: Union[IndividualGAN, IndividualEGAN],
+        model: Union[IndividualGAN, IndividualEGAN, IndividualAutoEncoder],
     ):
         checkpoint_dir = IndividualModelFactory.CHECKPOINT_DIR
         os.makedirs(checkpoint_dir, exist_ok=True)
