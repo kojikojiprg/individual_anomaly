@@ -76,13 +76,11 @@ class IndividualDataHandler:
         # check included model
         assert "D" in model_names and ("G" in model_names or "E" in model_names)
 
-        # check d_z and d_model
-        if "G" in model_names and "D" in model_names:
-            assert config.model.G.d_model == config.model.D.d_model
+        # check d_z of egan and autoencoder (not included gan)
         if "G" in model_names and "E" in model_names:
             assert config.model.G.d_z == config.model.E.d_z
         if "D" in model_names and "E" in model_names:
-            assert config.model.D.d_model == config.model.E.d_model
+            assert config.model.D.d_z == config.model.E.d_z
 
         # set same seq_len
         if "G" in model_names:
