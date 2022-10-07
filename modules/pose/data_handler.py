@@ -1,6 +1,6 @@
 import os
 from logging import Logger
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from modules.utils import pickle_handler, video
 
@@ -14,12 +14,15 @@ class PoseDataHandler:
         return cap
 
     @staticmethod
-    def load(data_dir, logger: Logger) -> List[Dict[str, Any]]:
+    def load(data_dir, logger: Logger) -> Union[List[Dict[str, Any]], None]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
-        logger.info(f"=> loading pose estimation results from {pkl_path}")
-        pkl_data = pickle_handler.load(pkl_path)
-        return pkl_data
+        if os.path.exists(pkl_path):
+            logger.info(f"=> loading pose estimation results from {pkl_path}")
+            pkl_data = pickle_handler.load(pkl_path)
+            return pkl_data
+        else:
+            return None
 
     @staticmethod
     def save(data_dir, data: List[dict], logger: Logger):
