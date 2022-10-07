@@ -20,6 +20,8 @@ class IndividualModelType:
 
 
 class IndividualModelFactory:
+    CHECKPOINT_DIR = os.path.join("models", "individual")
+
     @staticmethod
     def create_model(
         model_type: str, config: SimpleNamespace, device: str, logger: Logger
@@ -40,11 +42,11 @@ class IndividualModelFactory:
     @staticmethod
     def load_model(
         model_type: str,
-        checkpoint_dir: str,
         config: SimpleNamespace,
         device: str,
         logger: Logger,
     ) -> Union[IndividualGAN, IndividualEGAN]:
+        checkpoint_dir = IndividualModelFactory.CHECKPOINT_DIR
         model = IndividualModelFactory.create_model(model_type, config, device, logger)
         model.load_checkpoints(checkpoint_dir)
         return model
@@ -52,7 +54,7 @@ class IndividualModelFactory:
     @staticmethod
     def save_model(
         model: Union[IndividualGAN, IndividualEGAN],
-        checkpoint_dir: str,
     ):
+        checkpoint_dir = IndividualModelFactory.CHECKPOINT_DIR
         os.makedirs(checkpoint_dir, exist_ok=True)
         model.save_checkpoints(checkpoint_dir)

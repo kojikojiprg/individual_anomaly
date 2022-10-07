@@ -38,13 +38,13 @@ class IndividualGAN(nn.Module):
         return path
 
     def load_checkpoints(self, checkpoint_dir):
-        path = self.get_model_paths(checkpoint_dir)
+        path = self.get_model_path(checkpoint_dir)
         self._logger.info(f"=> loading GAN parameters {path}")
         param = torch.load(path)
         self.load_state_dict(param)
 
     def save_checkpoints(self, checkpoint_dir):
-        path = self.get_model_paths(checkpoint_dir)
+        path = self.get_model_path(checkpoint_dir)
         self._logger.info(f"=> saving GAN parameters {path}")
         torch.save(self.state_dict(), path)
 
@@ -53,12 +53,12 @@ class IndividualGAN(nn.Module):
             self._G, self._D, train_dataloader, self._config, self._device, self._logger
         )
 
-    def test_generator(self, num_individual: int) -> List[Dict[str, Any]]:
+    def infer_generator(self, num_individual: int) -> List[Dict[str, Any]]:
         results = infer_generator(
             self._G, num_individual, self._config.model.G.d_z, self._device
         )
         return results
 
-    def test_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
+    def infer_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
         results = infer_discriminator(self._D, test_dataloader)
         return results

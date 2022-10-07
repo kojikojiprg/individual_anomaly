@@ -8,7 +8,7 @@ import torch.nn as nn
 from .discriminator import Discriminator
 from .encoder import Encoder
 from .generator import Generator
-from .inference import test_discriminator, test_generator
+from .inference import infer_discriminator, infer_generator
 from .train import train
 
 
@@ -36,53 +36,23 @@ class IndividualEGAN(nn.Module):
     def Encoder(self):
         return self._E
 
-    def get_model_paths(self, checkpoint_dir):
-        g_path = os.path.join(
+    def get_model_path(self, checkpoint_dir):
+        path = os.path.join(
             checkpoint_dir,
-            f"egan_g_{self._config.model.G.n_sttr}x{self._config.model.G.n_heads}.pth",
+            f"egan_g{self._config.model.G.n_sttr}d{self._config.model.D.n_sttr}e{self._config.model.E.n_sttr}.pth",
         )
-        d_path = os.path.join(
-            checkpoint_dir,
-            f"egan_d_{self._config.model.D.n_sttr}x{self._config.model.D.n_heads}.pth",
-        )
-        e_path = os.path.join(
-            checkpoint_dir,
-            f"egan_e_{self._config.model.E.n_sttr}x{self._config.model.E.n_heads}.pth",
-        )
-        return g_path, d_path, e_path
+        return path
 
     def load_checkpoints(self, checkpoint_dir):
-        g_path, d_path, e_path = self.get_model_paths(checkpoint_dir)
-        if (
-            not os.path.exists(g_path)
-            or not os.path.exists(d_path)
-            or not os.path.exists(e_path)
-        ):
-            self._logger.warn(f"not exist {g_path}, {d_path} or {e_path}")
-            return
-
-        self._logger.info(f"=> loading generator {g_path}")
-        param = torch.load(g_path)
-        self._G.load_state_dict(param)
-
-        self._logger.info(f"=> loading discriminator {d_path}")
-        param = torch.load(d_path)
-        self._D.load_state_dict(param)
-
-        self._logger.info(f"=> loading discriminator {e_path}")
-        param = torch.load(e_path)
-        self._E.load_state_dict(param)
+        path = self.get_model_paths(checkpoint_dir)
+        self._logger.info(f"=> loading EGAN parameters {path}")
+        param = torch.load(path)
+        self.load_state_dict(param)
 
     def save_checkpoints(self, checkpoint_dir):
-        g_path, d_path, e_path = self.get_model_paths(checkpoint_dir)
-        self._logger.info(f"=> saving generator {g_path}")
-        torch.save(self._G.state_dict(), g_path)
-
-        self._logger.info(f"=> saving discriminator {d_path}")
-        torch.save(self._D.state_dict(), d_path)
-
-        self._logger.info(f"=> saving encoder {e_path}")
-        torch.save(self._E.state_dict(), e_path)
+        path = self.get_model_paths(checkpoint_dir)
+        self._logger.info(f"=> saving EGAN parameters {path}")
+        torch.save(self.state_dict(), path)
 
     def train(self, train_dataloader):
         self._G, self._D, self._E = train(
@@ -95,8 +65,12 @@ class IndividualEGAN(nn.Module):
             self._logger,
         )
 
-    def test_generator(self, num_individual: int) -> List[Dict[str, Any]]:
-        pass
+    def infer_generator(self, num_individual: int) -> List[Dict[str, Any]]:
+        results = infer_generator(
+            self._G, num_individual, self._config.model.G.d_z, self._device
+        )
+        return results
 
-    def test_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
-        pass
+    def infer_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
+        results = infer_discriminator(self._D, test_dataloader)
+        return results
