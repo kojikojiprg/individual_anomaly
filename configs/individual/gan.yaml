@@ -5,7 +5,7 @@ th_split: 10  # split keypoints sequence of an individual
 
 model:
   G:
-    d_z: 32
+    d_z: 256
     d_model: 64
     d_ff: 128
     n_heads: 8
