@@ -44,13 +44,13 @@ class IndividualEGAN(nn.Module):
         return path
 
     def load_checkpoints(self, checkpoint_dir):
-        path = self.get_model_paths(checkpoint_dir)
+        path = self.get_model_path(checkpoint_dir)
         self._logger.info(f"=> loading EGAN parameters {path}")
         param = torch.load(path)
         self.load_state_dict(param)
 
     def save_checkpoints(self, checkpoint_dir):
-        path = self.get_model_paths(checkpoint_dir)
+        path = self.get_model_path(checkpoint_dir)
         self._logger.info(f"=> saving EGAN parameters {path}")
         torch.save(self.state_dict(), path)
 
