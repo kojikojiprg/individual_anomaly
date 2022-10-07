@@ -49,6 +49,8 @@ class PoseModel:
                     self._cfg["th_diff"],
                     self._cfg["th_count"],
                 )
+            if len(kps) == 0:
+                continue
 
             # tracking
             kps = kps[remain_indices]
