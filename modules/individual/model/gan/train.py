@@ -59,6 +59,7 @@ def train(
             d_optim.zero_grad()
             d_loss.backward()
             d_optim.step()
+            d_losses.append(d_loss.item())
 
             # train Generator
             z = torch.randn(mini_batch_size, d_z).to(device)
@@ -70,19 +71,16 @@ def train(
             g_optim.zero_grad()
             g_loss.backward()
             g_optim.step()
-
-            # append losses
-            d_losses.append(d_loss.item())
             g_losses.append(g_loss.item())
 
         t_epoch_finish = time.time()
-        d_loss_mean = np.average(d_losses)
-        g_loss_mean = np.average(g_losses)
+        d_loss_mean = np.mean(d_losses)
+        g_loss_mean = np.mean(g_losses)
         logger.info("-------------")
         logger.info(
             f"Epoch {epoch + 1}/{n_epochs} | "
-            + f"D_loss:{d_loss_mean:.5e} | "
-            + f"G_loss:{g_loss_mean:.5e}"
+            + f"D_loss:{d_loss_mean:.5f} | "
+            + f"G_loss:{g_loss_mean:.5f}"
         )
         logger.info("time: {:.3f} sec.".format(t_epoch_finish - t_epoch_start))
     logger.info("=> finish training")

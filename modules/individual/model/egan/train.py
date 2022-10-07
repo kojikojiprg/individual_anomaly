@@ -78,6 +78,7 @@ def train(
             d_optim.zero_grad()
             d_loss.backward()
             d_optim.step()
+            d_losses.append(d_loss.item())
 
             # train Generator
             z = torch.randn(mini_batch_size, d_z).to(device)
@@ -89,6 +90,7 @@ def train(
             g_optim.zero_grad()
             g_loss.backward()
             g_optim.step()
+            g_losses.append(g_loss.item())
 
             # train Encoder
             z_out_real, _, _, _ = E(keypoints)
@@ -99,22 +101,18 @@ def train(
             e_optim.zero_grad()
             e_loss.backward()
             e_optim.step()
-
-            # append losses
-            d_losses.append(d_loss.item())
-            g_losses.append(g_loss.item())
             e_losses.append(e_loss.item())
 
         t_epoch_finish = time.time()
-        d_loss_mean = np.average(d_losses)
-        g_loss_mean = np.average(g_losses)
-        e_loss_mean = np.average(e_losses)
+        d_loss_mean = np.mean(d_losses)
+        g_loss_mean = np.mean(g_losses)
+        e_loss_mean = np.mean(e_losses)
         logger.info("-------------")
         logger.info(
             f"Epoch {epoch + 1}/{n_epochs} | "
-            + f"G_loss:{g_loss_mean:.5e} | "
-            + f"D_loss:{d_loss_mean:.5e} | "
-            + f"E_loss:{e_loss_mean:.5e}"
+            + f"G_loss:{g_loss_mean:.5f} | "
+            + f"D_loss:{d_loss_mean:.5f} | "
+            + f"E_loss:{e_loss_mean:.5f}"
         )
         logger.info("time: {:.3f} sec.".format(t_epoch_finish - t_epoch_start))
     logger.info("=> finish training")
