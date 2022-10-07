@@ -16,7 +16,6 @@ model:
     d_z: 32
     d_model: 64
     d_ff: 128
-    d_output: 1
     n_heads: 8
     n_sttr: 1
     dropout: 0.5
