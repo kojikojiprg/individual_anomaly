@@ -31,10 +31,7 @@ class IndividualGAN(nn.Module):
         return self._D
 
     def get_model_path(self, checkpoint_dir):
-        path = os.path.join(
-            checkpoint_dir,
-            f"gan_g{self._config.model.G.n_sttr}d{self._config.model.D.n_sttr}.pth",
-        )
+        path = os.path.join(checkpoint_dir, "gan.pth")
         return path
 
     def load_checkpoints(self, checkpoint_dir):

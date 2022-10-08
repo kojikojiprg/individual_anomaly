@@ -37,10 +37,7 @@ class IndividualAutoEncoder(nn.Module):
         return y, z, feature, weights_spat, weights_temp
 
     def get_model_path(self, checkpoint_dir):
-        path = os.path.join(
-            checkpoint_dir,
-            f"autoencoder_e{self._config.model.E.n_sttr}d{self._config.model.D.n_sttr}.pth",
-        )
+        path = os.path.join(checkpoint_dir, "autoencoder.pth")
         return path
 
     def load_checkpoints(self, checkpoint_dir):

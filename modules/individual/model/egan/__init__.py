@@ -37,10 +37,7 @@ class IndividualEGAN(nn.Module):
         return self._E
 
     def get_model_path(self, checkpoint_dir):
-        path = os.path.join(
-            checkpoint_dir,
-            f"egan_g{self._config.model.G.n_sttr}d{self._config.model.D.n_sttr}e{self._config.model.E.n_sttr}.pth",
-        )
+        path = os.path.join(checkpoint_dir, "egan.pth")
         return path
 
     def load_checkpoints(self, checkpoint_dir):
