@@ -84,7 +84,6 @@ class IndividualActivityRecognition:
             raise NameError
 
     def train(self):
-        # train
         trainer = Trainer(
             TensorBoardLogger(self._log_path, name=self._model_type),
             callbacks=self._model.callbacks,
