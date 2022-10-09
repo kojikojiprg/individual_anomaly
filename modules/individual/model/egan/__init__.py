@@ -34,7 +34,7 @@ class IndividualEGAN(LightningModule):
                 config.checkpoint_dir,
                 filename="{epoch}-loss{d_loss:.5f}",
                 monitor="e_loss",
-                mode="min",
+                mode="max",
             ),
         ]
 
