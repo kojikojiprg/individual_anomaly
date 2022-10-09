@@ -17,7 +17,7 @@ class IndividualAutoencoder(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}-loss{loss:.5f}",
+                filename="{epoch}_{loss:.5f}",
                 monitor="loss",
             )
         ]

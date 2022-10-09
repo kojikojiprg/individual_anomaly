@@ -17,13 +17,13 @@ class IndividualGAN(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}-loss{g_loss:.5f}",
+                filename="{epoch}_{g_loss:.5f}",
                 monitor="g_loss",
                 mode="max",
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}-loss{d_loss:.5f}",
+                filename="{epoch}_{d_loss:.5f}",
                 monitor="d_loss",
                 mode="min",
             ),
