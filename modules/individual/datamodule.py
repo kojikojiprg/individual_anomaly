@@ -1,11 +1,83 @@
-from logging import Logger
+import os
+from glob import glob
+from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from modules.pose import PoseDataFormat
+from modules.pose import PoseDataFormat, PoseDataHandler
+from modules.utils import video
 from numpy.typing import NDArray
-from torch.utils.data import Dataset
+from pytorch_lightning import LightningDataModule
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
+
+
+class IndividualDataModule(LightningDataModule):
+    def __init__(self, data_dir: str, config: SimpleNamespace, stage: str = None):
+        super().__init__()
+        self._config = config
+        self._stage = stage
+
+        if stage is None or stage == "train":
+            train_data_dirs = glob(os.path.join(data_dir, "train", "*"))
+            self._train_pose_data_lst = self._load_pose_data(train_data_dirs)
+            frame_shape = self._get_frame_shape(train_data_dirs)
+            self._train_dataset = self._create_dataset(
+                self._train_pose_data_lst, frame_shape, "train"
+            )
+        if stage is None or stage == "test":
+            test_data_dirs = glob(os.path.join(data_dir, "test", "*"))
+            self._test_pose_data_lst = self._load_pose_data(test_data_dirs)
+            frame_shape = self._get_frame_shape(test_data_dirs)
+            self._test_dataset = self._create_dataset(
+                self._test_pose_data_lst, frame_shape, "test"
+            )
+
+    def train_dataloader(self):
+        return DataLoader(self._train_dataset, self._config.batch_size, shuffle=True)
+
+    def test_dataloader(self):
+        return DataLoader(self._test_dataset, self._config.batch_size, shuffle=False)
+
+    def predict_dataloader(self):
+        if self._stage == "train":
+            dataset = self._train_dataset
+        elif self._stage == "test":
+            dataset = self._test_dataset
+        else:
+            dataset = self._train_dataset + self._test_dataset
+        return DataLoader(dataset, self._config.batch_size, shuffle=False)
+
+    @staticmethod
+    def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
+        pose_data_lst = []
+        for pose_data_dir in data_dirs:
+            data = PoseDataHandler.load(pose_data_dir)
+            if data is not None:
+                pose_data_lst.append(data)
+        return pose_data_lst
+
+    @staticmethod
+    def _get_frame_shape(data_dirs: List[str]):
+        video_path = data_dirs[0].replace("data/", "/raid6/surgery-video/") + ".mp4"
+        cap = video.Capture(video_path)
+        frame_shape = cap.size
+        del cap
+        return frame_shape
+
+    def _create_dataset(
+        self,
+        pose_data_lst: List[List[Dict[str, Any]]],
+        frame_shape: Tuple[int, int],
+        stage: str,
+    ):
+        return IndividualDataset(
+            pose_data_lst,
+            self._config.seq_len,
+            self._config.th_split,
+            frame_shape,
+            stage,
+        )
 
 
 class IndividualDataset(Dataset):
@@ -17,24 +89,23 @@ class IndividualDataset(Dataset):
         seq_len: int,
         th_split: int,
         frame_shape_xy: Tuple[int, int],
-        logger: Logger,
+        stage: str,
     ):
         super().__init__()
 
+        self._stage = stage
         self._data: List[Tuple[int, int, NDArray]] = []
-        self._logger = logger
 
-        self.create_dataset(pose_data_lst, seq_len, th_split, frame_shape_xy)
+        self._create_dataset(pose_data_lst, seq_len, th_split, frame_shape_xy)
 
-    def create_dataset(
+    def _create_dataset(
         self,
         pose_data_lst: List[List[Dict[str, Any]]],
         seq_len: int,
         th_split: int,
         frame_shape_xy: Tuple[int, int],
     ):
-        self._logger.info("=> creating dataset")
-        for pose_data in tqdm(pose_data_lst, ncols=100):
+        for pose_data in tqdm(pose_data_lst, ncols=100, desc=self._stage):
             # sort data by id
             pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
 
@@ -84,6 +155,7 @@ class IndividualDataset(Dataset):
 
     def _append(self, frame_num, pid, seq_data, seq_len):
         # append data with creating sequential data
+        pid = f"{self._stage}_{pid}"
         for i in range(0, len(seq_data) - seq_len + 1):
             self._data.append((frame_num, pid, np.array(seq_data[i : i + seq_len])))
 
