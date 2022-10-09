@@ -1,8 +1,7 @@
 import torch.nn as nn
-
-from ..layers.embedding import Embedding
-from ..layers.positional_encoding import PositionalEncoding
-from ..layers.transformer import SpatialTemporalTransformer
+from modules.layers.embedding import Embedding
+from modules.layers.positional_encoding import PositionalEncoding
+from modules.layers.transformer import SpatialTemporalTransformer
 
 
 class Encoder(nn.Module):
