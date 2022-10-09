@@ -1,5 +1,4 @@
 import torch
-import torch.nn as nn
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 
@@ -14,7 +13,7 @@ class IndividualAutoencoder(LightningModule):
         self._config = config
         self._E = Encoder(config.model.E)
         self._D = Decoder(config.model.D)
-        self._criterion = nn.MSELoss()
+        self._criterion = torch.nn.MSELoss()
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,

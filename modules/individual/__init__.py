@@ -3,8 +3,10 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import List
 
+from black import find_user_pyproject_toml
 from modules.utils import set_random
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
+from pytorch_lightning.loggers import TensorBoardLogger
 
 from .datahandler import IndividualDataHandler
 from .model.autoencoder import IndividualAutoencoder
@@ -52,6 +54,8 @@ class IndividualActivityRecognition:
         self._gpu_ids = gpu_ids
         self._logger = logger
         self._stage = stage
+        self._log_path = os.path.join(data_dir, "logs")
+
         self._config = IndividualDataHandler.get_config(model_type)
         set_random.seed(self._config.seed)
 
@@ -88,22 +92,10 @@ class IndividualActivityRecognition:
 
         # train
         trainer = Trainer(
-            strategy="ddp", gpus=self._gpu_ids, callbacks=self._model.callbacks
+            TensorBoardLogger(self._log_path, name=self._model_type),
+            callbacks=self._model.callbacks,
+            gpus=self._gpu_ids,
+            accelerator="gpu",
+            strategy="ddp",
         )
         trainer.fit(self._model, datamodule=self._datamodule)
-
-    # def inference_generator(self, data_dir: str, num_individual: int):
-    #     # load model
-    #     model = IndividualModelFactory.load_model(
-    #         self._model_type, self._config, self._device, self._logger
-    #     )
-    #     results = model.infer_generator(num_individual)
-    #     IndividualDataHandler.save_generator_data(data_dir, results, self._logger)
-
-    # def inference_discriminator(self, data_dir: str, num_individual: int):
-    #     # load model
-    #     model = IndividualModelFactory.load_model(
-    #         self._model_type, self._config, self._device, self._logger
-    #     )
-    #     results = model.infer_discriminator(num_individual)
-    #     IndividualDataHandler.save_discriminator_data(data_dir, results, self._logger)
