@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from ..layers.activation import Activation
 from ..layers.embedding import Embedding
 from ..layers.positional_encoding import PositionalEncoding
 from ..layers.transformer import SpatialTemporalTransformer
@@ -37,22 +38,9 @@ class Discriminator(nn.Module):
 
         self.ff = nn.Sequential(
             nn.Linear(config.seq_len * 17 * 2 * 2, config.d_ff),
-            self._get_activation(config.activation),
+            Activation(config.activation),
         )
         self.out_layer = nn.Linear(config.d_ff, 1)
-
-    @staticmethod
-    def _get_activation(activation):
-        if activation == "ReLU":
-            return nn.ReLU(inplace=True)
-        elif activation == "LeakyReLU":
-            return nn.LeakyReLU(0.1, inplace=True)
-        elif activation == "GELU":
-            return nn.GELU()
-        elif activation == "SELU":
-            return nn.SELU(inplace=True)
-        else:
-            raise NameError
 
     def forward(self, x, z):
         B, T, P, D = x.shape  # batch, frame, num_points=17, dim=2

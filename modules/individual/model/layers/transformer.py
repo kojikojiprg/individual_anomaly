@@ -1,5 +1,7 @@
 import torch.nn as nn
 
+from .activation import Activation
+
 
 class SpatialTemporalTransformer(nn.Module):
     def __init__(self, d_model, n_heads, d_ff, dropout, activation):
@@ -116,7 +118,7 @@ class FeedFoward(nn.Module):
         super().__init__()
 
         self.linear1 = nn.Linear(d_model, d_ff)
-        self.activation = self._get_activation(activation)
+        self.activation = Activation(activation)
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(d_ff, d_model)
 
@@ -127,16 +129,3 @@ class FeedFoward(nn.Module):
         x = self.linear2(x)
 
         return x
-
-    @staticmethod
-    def _get_activation(activation):
-        if activation == "ReLU":
-            return nn.ReLU(inplace=True)
-        elif activation == "LeakyReLU":
-            return nn.LeakyReLU(0.1, inplace=True)
-        elif activation == "GELU":
-            return nn.GELU()
-        elif activation == "SELU":
-            return nn.SELU(inplace=True)
-        else:
-            raise NameError
