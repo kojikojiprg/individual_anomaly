@@ -19,6 +19,10 @@ class IndividualModelType:
     def get_types(cls) -> List[str]:
         return list(cls.__dict__.keys())
 
+    @classmethod
+    def includes(cls, model_type: str):
+        return model_type.casefold() in cls.get_types()
+
 
 class IndividualModelFactory:
     CHECKPOINT_DIR = os.path.join("models", "individual")

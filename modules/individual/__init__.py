@@ -10,7 +10,7 @@ from .model_factory import IndividualModelFactory, IndividualModelType
 
 class IndividualActivityRecognition:
     def __init__(self, model_type: str, device: str, logger: Logger):
-        assert model_type.casefold() in IndividualModelType.get_types()
+        assert IndividualModelType.includes(model_type)
 
         self._model_type = model_type
         self._config = IndividualDataHandler.get_config(model_type)
