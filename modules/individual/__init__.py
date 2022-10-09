@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from logging import Logger
 from typing import List
 
-from black import find_user_pyproject_toml
 from modules.utils import set_random
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
