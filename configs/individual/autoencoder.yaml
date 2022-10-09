@@ -12,7 +12,7 @@ model:
     d_ff: 128
     n_heads: 8
     n_sttr: 2
-    dropout: 0.5
+    dropout: 0.1
     activation: ReLU
   D:
     d_z: 32
@@ -20,7 +20,7 @@ model:
     d_ff: 128
     n_heads: 8
     n_tre: 2
-    dropout: 0.5
+    dropout: 0.1
     activation: SELU
 
 optim:
