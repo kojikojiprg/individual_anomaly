@@ -25,7 +25,6 @@ def parser():
     )
 
     # options
-    parser.add_argument("-lm", "--load_model", default=False, action="store_true")
     parser.add_argument("--gpus", type=int, nargs="*", default=0, help="gpu number")
     args = parser.parse_args()
 
@@ -41,7 +40,7 @@ def main():
     iar = IndividualActivityRecognition(
         args.model_type, data_dir, args.gpus, logger, "train"
     )
-    iar.train(args.load_model)
+    iar.train()
 
 
 if __name__ == "__main__":

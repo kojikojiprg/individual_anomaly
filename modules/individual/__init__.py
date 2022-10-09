@@ -83,12 +83,7 @@ class IndividualActivityRecognition:
         else:
             raise NameError
 
-    def train(self, is_continue: bool = False):
-        if is_continue:
-            ckpt_path = os.path.join(self._config.checkpoint_dir, "")
-            self._logger.info(f"=> loading model parameters from {ckpt_path}")
-            self._model.load_from_checkpoint()
-
+    def train(self):
         # train
         trainer = Trainer(
             TensorBoardLogger(self._log_path, name=self._model_type),
