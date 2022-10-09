@@ -97,7 +97,7 @@ class IndividualEGAN(LightningModule):
             d_out_real, _ = self._D(keypoints, z_out_real)
 
             e_loss = self._criterion(d_out_real.view(-1), label_fake)
-            self.log("e_loss", e_loss, prog_bar=True, on_step=True, on_epoch=True)
+            self.log("e_loss", e_loss, prog_bar=True, on_step=True)
             return e_loss
 
     def configure_optimizers(self):
