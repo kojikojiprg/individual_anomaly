@@ -114,7 +114,7 @@ def main():
         logger.info(f"=> processing {video_path}")
 
         if args.pose:
-            pose_model.predict(video_path, data_dir)
+            pose_model.infer(video_path, data_dir)
 
         if args.video:
             vis.visualise(video_path, data_dir)
