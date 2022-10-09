@@ -14,19 +14,16 @@ class PoseDataHandler:
         return cap
 
     @staticmethod
-    def load(data_dir, logger: Logger) -> Union[List[Dict[str, Any]], None]:
+    def load(data_dir) -> Union[List[Dict[str, Any]], None]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
         if os.path.exists(pkl_path):
-            logger.info(f"=> loading pose estimation results from {pkl_path}")
             pkl_data = pickle_handler.load(pkl_path)
             return pkl_data
         else:
             return None
 
     @staticmethod
-    def save(data_dir, data: List[dict], logger: Logger):
+    def save(data_dir, data: List[dict]):
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
-
-        logger.info(f"=> saving pose estimation results to {pkl_path}")
         pickle_handler.dump(data, pkl_path)

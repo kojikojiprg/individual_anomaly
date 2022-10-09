@@ -23,11 +23,12 @@ class PoseEstimation:
     def __del__(self):
         del self._model
 
-    def predict(self, video_path: str, data_dir: str = None):
+    def infer(self, video_path: str, data_dir: str = None):
         cap = PoseDataHandler.create_video_capture(video_path, self._logger)
 
         results = self._model.predict(cap)
         if data_dir is not None:
-            PoseDataHandler.save(data_dir, results, self._logger)
+            self._logger.info(f"=> saving pose estimation results to {data_dir}")
+            PoseDataHandler.save(data_dir, results)
 
         return results
