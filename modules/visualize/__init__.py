@@ -49,7 +49,7 @@ class Visualizer:
 
         # create video writer for individual results
         if self._do_individual:
-            out_path = os.path.join(data_dir, f"individual_{}.mp4")
+            # out_path = os.path.join(data_dir, f"individual_{}.mp4")
 
             pose_video_writer = Writer(
                 out_path, video_capture.fps, tmp_frame.shape[1::-1]
