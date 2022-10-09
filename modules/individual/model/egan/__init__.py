@@ -56,19 +56,17 @@ class IndividualEGAN(LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, keypoints = batch
-        mini_batch_size = keypoints.size()[0]
-        device = keypoints.get_device()
+        batch_size = keypoints.size()[0]
 
         # make random noise
-        z = torch.randn(mini_batch_size, self._d_z).to(device)
+        z = torch.randn(batch_size, self._d_z).to(self.device)
 
         # make true data
-        label_real = torch.full((mini_batch_size,), 1, dtype=torch.float32).to(device)
-        label_fake = torch.full((mini_batch_size,), 0, dtype=torch.float32).to(device)
+        label_real = torch.full((batch_size,), 1, dtype=torch.float32).to(self.device)
+        label_fake = torch.full((batch_size,), 0, dtype=torch.float32).to(self.device)
 
         if optimizer_idx == 0:
             # train Generator
-            z = torch.randn(mini_batch_size, self._d_z).to(device)
             fake_keypoints, _ = self._G(z)
             d_out_fake, _ = self._D(fake_keypoints, z)
 
@@ -81,7 +79,6 @@ class IndividualEGAN(LightningModule):
             z_out_real, _, _, _ = self._E(keypoints)
             d_out_real, _ = self._D(keypoints, z_out_real)
 
-            z = torch.randn(mini_batch_size, self._d_z).to(device)
             fake_keypoints, _ = self._G(z)
             d_out_fake, _ = self._D(fake_keypoints, z)
 

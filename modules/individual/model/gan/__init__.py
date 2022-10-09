@@ -44,10 +44,9 @@ class IndividualGAN(LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, keypoints = batch
         mini_batch_size = keypoints.size()[0]
-        device = keypoints.get_device()
 
         # make random noise
-        z = torch.randn(mini_batch_size, self._d_z).to(device)
+        z = torch.randn(mini_batch_size, self._d_z).to(self.device)
 
         if optimizer_idx == 0:
             # train Generator
