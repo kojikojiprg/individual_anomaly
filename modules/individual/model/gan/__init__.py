@@ -55,7 +55,7 @@ class IndividualGAN(LightningModule):
             d_out_fake, _, _, _ = self._D(fake_keypoints)
 
             g_loss = -d_out_fake.mean()
-            self.log("g_loss", g_loss, prog_bar=True, on_step=True, on_epoch=True)
+            self.log("g_loss", g_loss, prog_bar=True, on_step=True)
             return g_loss
 
         if optimizer_idx == 1:
@@ -68,7 +68,7 @@ class IndividualGAN(LightningModule):
             d_loss_real = torch.nn.ReLU()(1.0 - d_out_real).mean()
             d_loss_fake = torch.nn.ReLU()(1.0 + d_out_fake).mean()
             d_loss = d_loss_real + d_loss_fake
-            self.log("d_loss", d_loss, prog_bar=True, on_step=True, on_epoch=True)
+            self.log("d_loss", d_loss, prog_bar=True, on_step=True)
             return d_loss
 
     def configure_optimizers(self):

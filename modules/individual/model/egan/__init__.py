@@ -73,7 +73,7 @@ class IndividualEGAN(LightningModule):
             d_out_fake, _ = self._D(fake_keypoints, z)
 
             g_loss = self._criterion(d_out_fake.view(-1), label_real)
-            self.log("g_loss", g_loss, prog_bar=True, on_step=True, on_epoch=True)
+            self.log("g_loss", g_loss, prog_bar=True, on_step=True)
             return g_loss
 
         if optimizer_idx == 1:
@@ -88,7 +88,7 @@ class IndividualEGAN(LightningModule):
             d_loss_real = self._criterion(d_out_real.view(-1), label_real)
             d_loss_fake = self._criterion(d_out_fake.view(-1), label_fake)
             d_loss = d_loss_real + d_loss_fake
-            self.log("d_loss", d_loss, prog_bar=True, on_step=True, on_epoch=True)
+            self.log("d_loss", d_loss, prog_bar=True, on_step=True)
             return d_loss
 
         if optimizer_idx == 2:
