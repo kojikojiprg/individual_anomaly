@@ -5,7 +5,6 @@ import warnings
 from glob import glob
 
 import torch
-from individual import IndividualActivityRecognition
 
 sys.path.append(".")
 from modules.pose import PoseEstimation
@@ -107,11 +106,6 @@ def main():
     # load model
     if args.pose:
         pe = PoseEstimation(args.cfg_path, device, logger)
-
-    if args.individual:
-        iar = IndividualActivityRecognition(
-            args.model_type,
-        )
 
     if args.video:
         vis = Visualizer(args, logger)
