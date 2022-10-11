@@ -1,6 +1,6 @@
 checkpoint_dir: "models/individual/autoencoder/"
 batch_size: 256
-epochs: 100
+epochs: 200
 seq_len: 300
 th_split: 10  # split keypoints sequence of an individual
 seed: 42  # random seed

@@ -1,6 +1,6 @@
 checkpoint_dir: "models/individual/egan/"
 batch_size: 128
-epochs: 100
+epochs: 200
 seq_len: 300
 th_split: 10  # split keypoints sequence of an individual
 seed: 42  # random seed
@@ -8,26 +8,26 @@ seed: 42  # random seed
 model:
   G:
     d_z: 256
-    d_model: 64
-    d_ff: 128
+    d_model: 128
+    d_ff: 256
     n_heads: 8
-    n_tre: 2
+    n_tre: 3
     dropout: 0.1
     activation: ReLU
   D:
     d_z: 256
-    d_model: 64
-    d_ff: 128
+    d_model: 128
+    d_ff: 256
     n_heads: 8
-    n_sttr: 1
+    n_sttr: 2
     dropout: 0.1
     activation: SELU
   E:
     d_z: 256
-    d_model: 64
-    d_ff: 128
+    d_model: 128
+    d_ff: 256
     n_heads: 8
-    n_sttr: 2
+    n_sttr: 3
     dropout: 0.1
     activation: SELU
 
