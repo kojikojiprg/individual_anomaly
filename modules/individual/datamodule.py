@@ -33,17 +33,26 @@ class IndividualDataModule(LightningDataModule):
                 self._test_pose_data_lst, frame_shape, "test"
             )
 
-    def train_dataloader(self, shuffle: bool = True):
+    def train_dataloader(self, batch_size: int = None, shuffle: bool = True):
         assert self._stage is None or self._stage == "train"
-        return DataLoader(self._train_dataset, self._config.batch_size, shuffle=shuffle)
+        if batch_size is None:
+            batch_size = self._config.batch_size
+        return DataLoader(self._train_dataset, batch_size, shuffle=shuffle)
 
-    def test_dataloader(self):
+    def test_dataloader(self, batch_size: int = None):
         assert self._stage is None or self._stage == "test"
-        return DataLoader(self._test_dataset, self._config.batch_size, shuffle=False)
+        if batch_size is None:
+            batch_size = self._config.batch_size
+        return DataLoader(self._test_dataset, batch_size, shuffle=False)
 
-    def predict_dataloader(self):
+    def predict_dataloader(self, batch_size: int = None):
         assert self._stage is None
-        return [self.train_dataloader(shuffle=False), self.test_dataloader()]
+        if batch_size is None:
+            batch_size = 1
+        return [
+            self.train_dataloader(batch_size, shuffle=False),
+            self.test_dataloader(batch_size),
+        ]
 
     @staticmethod
     def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
@@ -103,6 +112,8 @@ class IndividualDataset(Dataset):
         frame_shape_xy: Tuple[int, int],
     ):
         for pose_data in tqdm(pose_data_lst, desc=self._stage):
+            # sort data by frame_num
+            pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
             # sort data by id
             pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
 
@@ -120,7 +131,7 @@ class IndividualDataset(Dataset):
 
                 if pid != pre_pid:
                     if len(seq_data) > seq_len:
-                        self._append(frame_num, pid, seq_data, seq_len)
+                        self._append(seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
@@ -129,10 +140,13 @@ class IndividualDataset(Dataset):
                         and frame_num - pre_frame_num <= th_split
                     ):
                         # fill brank with nan
-                        seq_data += [pre_kps for _ in range(frame_num - pre_frame_num)]
+                        seq_data += [
+                            (num, pid, pre_kps)
+                            for num in range(pre_frame_num + 1, frame_num)
+                        ]
                     elif th_split < frame_num - pre_frame_num:
                         if len(seq_data) > seq_len:
-                            self._append(frame_num, pid, seq_data, seq_len)
+                            self._append(seq_data, seq_len)
                         # reset seq_data
                         seq_data = []
                     else:
@@ -141,24 +155,29 @@ class IndividualDataset(Dataset):
                 # append keypoints to seq_data
                 keypoints = keypoints[:, :2] / frame_shape_xy  # 0-1 scalling
                 keypoints = keypoints.astype(np.float32)
-                seq_data.append(keypoints)
+                seq_data.append((frame_num, pid, keypoints))
 
                 # update frame_num and id
                 pre_frame_num = frame_num
                 pre_pid = pid
                 pre_kps = keypoints
         else:
-            self._append(frame_num, pid, seq_data, seq_len)
+            self._append(seq_data, seq_len)
 
-    def _append(self, frame_num, pid, seq_data, seq_len):
+    def _append(self, seq_data, seq_len):
         # append data with creating sequential data
-        pid = f"{self._stage}_{pid}"
         for i in range(0, len(seq_data) - seq_len + 1):
-            self._data.append((frame_num, pid, np.array(seq_data[i : i + seq_len])))
+            self._data.append(
+                (
+                    seq_data[i + seq_len - 1][0],
+                    f"{self._stage}_{seq_data[i + seq_len - 1][1]}",
+                    np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :, :2],
+                )
+            )
 
     def __len__(self):
         return len(self._data)
 
     def __getitem__(self, idx: int) -> Tuple[int, int, NDArray]:
-        frame_num, id, keypoints = self._data[idx]
-        return frame_num, id, keypoints[:, :, :2]
+        frame_nums, ids, keypoints = self._data[idx]
+        return frame_nums, ids, keypoints
