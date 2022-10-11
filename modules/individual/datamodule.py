@@ -102,7 +102,7 @@ class IndividualDataset(Dataset):
         th_split: int,
         frame_shape_xy: Tuple[int, int],
     ):
-        for pose_data in tqdm(pose_data_lst, ncols=100, desc=self._stage, leave=False):
+        for pose_data in tqdm(pose_data_lst, desc=self._stage, leave=False):
             # sort data by id
             pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
 
