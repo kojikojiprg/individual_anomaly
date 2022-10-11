@@ -35,7 +35,6 @@ def main():
     args = parser()
 
     data_dir = os.path.join("data", args.dataset)
-    logger.info(f"=> data directorie: {data_dir}")
 
     iar = IndividualActivityRecognition(
         args.model_type, data_dir, args.gpus, logger, "train"
