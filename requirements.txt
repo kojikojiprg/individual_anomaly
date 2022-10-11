@@ -21,5 +21,7 @@ flake8
 mypy
 isort
 
+jupyter
 jupyterlab
 jupyterlab-vim
+ipywidgets
