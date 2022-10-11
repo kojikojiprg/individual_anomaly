@@ -11,7 +11,7 @@ from .datamodule import IndividualDataModule
 
 class IndividualDataHandler:
     @staticmethod
-    def get_config(model_type: str) -> SimpleNamespace:
+    def get_config(model_type: str, stage: str = None) -> SimpleNamespace:
         config_path = IndividualDataHandler._get_config_path(model_type)
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
@@ -30,11 +30,17 @@ class IndividualDataHandler:
 
         # set same seq_len
         if "G" in model_names:
-            config.model.G.seq_len = config.seq_len
+            config.model.G.seq_len = config.dataset.seq_len
         if "D" in model_names:
-            config.model.D.seq_len = config.seq_len
+            config.model.D.seq_len = config.dataset.seq_len
         if "E" in model_names:
-            config.model.E.seq_len = config.seq_len
+            config.model.E.seq_len = config.dataset.seq_len
+
+        # set batch_size
+        if stage == "train":
+            config.dataset.batch_size = config.train.batch_size
+        else:
+            config.dataset.batch_size = config.inference.batch_size
 
         return config
 

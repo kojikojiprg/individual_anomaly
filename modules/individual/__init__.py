@@ -27,13 +27,14 @@ class IndividualActivityRecognition:
         self._model_type = model_type.casefold()
         self._logger = logger
 
-        self._config = IndividualDataHandler.get_config(model_type)
+        self._config = IndividualDataHandler.get_config(model_type, stage)
         set_random.seed(self._config.seed)
 
         self._logger.info("=> creating dataset")
         self._datamodule = IndividualDataHandler.create_datamodule(
-            data_dir, self._config, stage
+            data_dir, self._config.dataset, stage
         )
+
         self._create_model()
         if checkpoint_path is not None:
             self._logger.info("=> loading model")
@@ -78,8 +79,24 @@ class IndividualActivityRecognition:
     def train(self):
         self._trainer.fit(self._model, datamodule=self._datamodule)
 
-    def inference(self, batch_size):
-        train_results, test_results = self._trainer.predict(
-            self._model, dataloaders=self._datamodule.predict_dataloader(batch_size)
+    @staticmethod
+    def collect_result(preds):
+        results = {}
+        for pred in preds:
+            for key, vals in pred.items():
+                if key not in results:
+                    results[key] = []
+                results[key] += vals
+        return results
+
+    def inference(self):
+        train_preds, test_preds = self._trainer.predict(
+            self._model,
+            dataloaders=self._datamodule.predict_dataloader(),
+            return_predictions=True,
         )
+
+        train_results = self.collect_result(train_preds)
+        test_results = self.collect_result(test_preds)
+
         return train_results, test_results
