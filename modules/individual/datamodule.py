@@ -9,7 +9,7 @@ from modules.utils import video
 from numpy.typing import NDArray
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 
 class IndividualDataModule(LightningDataModule):
@@ -33,20 +33,17 @@ class IndividualDataModule(LightningDataModule):
                 self._test_pose_data_lst, frame_shape, "test"
             )
 
-    def train_dataloader(self):
-        return DataLoader(self._train_dataset, self._config.batch_size, shuffle=True)
+    def train_dataloader(self, shuffle: bool = True):
+        assert self._stage is None or self._stage == "train"
+        return DataLoader(self._train_dataset, self._config.batch_size, shuffle=shuffle)
 
     def test_dataloader(self):
+        assert self._stage is None or self._stage == "test"
         return DataLoader(self._test_dataset, self._config.batch_size, shuffle=False)
 
     def predict_dataloader(self):
-        if self._stage == "train":
-            dataset = self._train_dataset
-        elif self._stage == "test":
-            dataset = self._test_dataset
-        else:
-            dataset = self._train_dataset + self._test_dataset
-        return DataLoader(dataset, self._config.batch_size, shuffle=False)
+        assert self._stage is None
+        return [self.train_dataloader(shuffle=False), self.test_dataloader()]
 
     @staticmethod
     def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
@@ -105,7 +102,7 @@ class IndividualDataset(Dataset):
         th_split: int,
         frame_shape_xy: Tuple[int, int],
     ):
-        for pose_data in tqdm(pose_data_lst, ncols=100, desc=self._stage):
+        for pose_data in tqdm(pose_data_lst, ncols=100, desc=self._stage, leave=False):
             # sort data by id
             pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
 
