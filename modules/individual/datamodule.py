@@ -102,66 +102,69 @@ class IndividualDataset(Dataset):
         self._stage = stage
         self._data: List[Tuple[int, int, NDArray]] = []
 
-        self._create_dataset(pose_data_lst, seq_len, th_split, frame_shape_xy)
+        for video_num, pose_data in enumerate(tqdm(pose_data_lst, desc=self._stage)):
+            video_num += 1
+            self._create_dataset(
+                video_num, pose_data, seq_len, th_split, frame_shape_xy
+            )
 
     def _create_dataset(
         self,
-        pose_data_lst: List[List[Dict[str, Any]]],
+        video_num,
+        pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
         frame_shape_xy: Tuple[int, int],
     ):
-        for video_num, pose_data in enumerate(tqdm(pose_data_lst, desc=self._stage)):
-            video_num += 1
-            # sort data by frame_num
-            pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
-            # sort data by id
-            pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
+        # sort data by frame_num
+        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
+        # sort data by id
+        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
 
-            # get frame_num and id of first data
-            pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
-            pre_pid = pose_data[0][PoseDataFormat.id]
-            pre_kps = pose_data[0][PoseDataFormat.keypoints]
+        # get frame_num and id of first data
+        pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
+        pre_pid = pose_data[0][PoseDataFormat.id]
+        pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
-            seq_data: list = []
-            for item in pose_data:
-                # get values
-                frame_num = item[PoseDataFormat.frame_num]
-                pid = item[PoseDataFormat.id]
-                keypoints = item[PoseDataFormat.keypoints]
+        seq_data: list = []
+        for item in pose_data:
+            # get values
+            frame_num = item[PoseDataFormat.frame_num]
+            pid = item[PoseDataFormat.id]
+            keypoints = item[PoseDataFormat.keypoints]
 
-                if pid != pre_pid:
+            if pid != pre_pid:
+                if len(seq_data) > seq_len:
+                    self._append(video_num, seq_data, seq_len)
+                # reset seq_data
+                seq_data = []
+            else:
+                if (
+                    1 < frame_num - pre_frame_num
+                    and frame_num - pre_frame_num <= th_split
+                ):
+                    # fill brank with nan
+                    seq_data += [
+                        (num, pid, pre_kps)
+                        for num in range(pre_frame_num + 1, frame_num)
+                    ]
+                elif th_split < frame_num - pre_frame_num:
                     if len(seq_data) > seq_len:
                         self._append(video_num, seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
-                    if (
-                        1 < frame_num - pre_frame_num
-                        and frame_num - pre_frame_num <= th_split
-                    ):
-                        # fill brank with nan
-                        seq_data += [
-                            (num, pid, pre_kps)
-                            for num in range(pre_frame_num + 1, frame_num)
-                        ]
-                    elif th_split < frame_num - pre_frame_num:
-                        if len(seq_data) > seq_len:
-                            self._append(video_num, seq_data, seq_len)
-                        # reset seq_data
-                        seq_data = []
-                    else:
-                        pass
+                    pass
 
-                # append keypoints to seq_data
-                keypoints = keypoints[:, :2] / frame_shape_xy  # 0-1 scalling
-                keypoints = keypoints.astype(np.float32)
-                seq_data.append((frame_num, pid, keypoints))
+            # append keypoints to seq_data
+            keypoints = keypoints[:, :2] / frame_shape_xy  # 0-1 scalling
+            keypoints = keypoints.astype(np.float32)
+            seq_data.append((frame_num, pid, keypoints))
 
-                # update frame_num and id
-                pre_frame_num = frame_num
-                pre_pid = pid
-                pre_kps = keypoints
+            # update frame_num and id
+            pre_frame_num = frame_num
+            pre_pid = pid
+            pre_kps = keypoints
         else:
             self._append(video_num, seq_data, seq_len)
 
