@@ -111,7 +111,8 @@ class IndividualDataset(Dataset):
         th_split: int,
         frame_shape_xy: Tuple[int, int],
     ):
-        for pose_data in tqdm(pose_data_lst, desc=self._stage):
+        for video_num, pose_data in enumerate(tqdm(pose_data_lst, desc=self._stage)):
+            video_num += 1
             # sort data by frame_num
             pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
             # sort data by id
@@ -131,7 +132,7 @@ class IndividualDataset(Dataset):
 
                 if pid != pre_pid:
                     if len(seq_data) > seq_len:
-                        self._append(seq_data, seq_len)
+                        self._append(video_num, seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
@@ -146,7 +147,7 @@ class IndividualDataset(Dataset):
                         ]
                     elif th_split < frame_num - pre_frame_num:
                         if len(seq_data) > seq_len:
-                            self._append(seq_data, seq_len)
+                            self._append(video_num, seq_data, seq_len)
                         # reset seq_data
                         seq_data = []
                     else:
@@ -162,15 +163,15 @@ class IndividualDataset(Dataset):
                 pre_pid = pid
                 pre_kps = keypoints
         else:
-            self._append(seq_data, seq_len)
+            self._append(video_num, seq_data, seq_len)
 
-    def _append(self, seq_data, seq_len):
+    def _append(self, video_num, seq_data, seq_len):
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
             self._data.append(
                 (
                     seq_data[i + seq_len - 1][0],
-                    f"{self._stage}_{seq_data[i + seq_len - 1][1]}",
+                    f"{self._stage}_{video_num:02d}_{seq_data[i + seq_len - 1][1]}",
                     np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :, :2],
                 )
             )
