@@ -37,7 +37,7 @@ def main():
     data_dir = os.path.join("data", args.dataset)
 
     iar = IndividualActivityRecognition(
-        args.model_type, data_dir, args.gpus, logger, "train"
+        args.model_type, data_dir, args.gpus, logger, stage="train"
     )
     iar.train()
 
