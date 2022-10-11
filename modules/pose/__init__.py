@@ -23,7 +23,7 @@ class PoseEstimation:
     def __del__(self):
         del self._model
 
-    def infer(self, video_path: str, data_dir: str = None):
+    def inference(self, video_path: str, data_dir: str = None):
         cap = PoseDataHandler.create_video_capture(video_path, self._logger)
 
         results = self._model.predict(cap)
