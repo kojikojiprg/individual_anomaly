@@ -10,7 +10,6 @@ class IndividualDataFormat:
     z: str = "z"
     w_spat: str = "weights_spatial"
     w_temp: str = "weights_temporal"
-    conf: str = "confidence"
     anomaly: str = "anomaly"
 
     @classmethod
