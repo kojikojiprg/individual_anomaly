@@ -1,4 +1,7 @@
+from typing import Any, Dict, List
+
 import torch
+from modules.individual import IndividualDataFormat
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 
@@ -20,23 +23,28 @@ class IndividualEGAN(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{g_loss:.5f}",
+                filename="egan_gloss_{fold}_{epoch}",
                 monitor="g_loss",
                 mode="max",
+                save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{d_loss:.5f}",
+                filename="egan_dloss_{fold}_{epoch}",
                 monitor="d_loss",
                 mode="min",
+                save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{e_loss:.5f}",
+                filename="egan_eloss_{fold}_{epoch}",
                 monitor="e_loss",
                 mode="max",
+                save_last=True,
             ),
         ]
+        self._train_preds = {}
+        self._test_preds = {}
 
     @property
     def Generator(self):
@@ -54,9 +62,17 @@ class IndividualEGAN(LightningModule):
     def callbacks(self) -> list:
         return self._callbacks
 
+    @property
+    def train_preds(self) -> Dict[str, List[Dict[str, Any]]]:
+        return self._train_preds
+
+    @property
+    def test_preds(self) -> Dict[str, List[Dict[str, Any]]]:
+        return self._test_preds
+
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, keypoints = batch
-        batch_size = keypoints.size()[0]
+        frame_nums, pids, kps_batch = batch
+        batch_size = kps_batch.size()[0]
 
         # make random noise
         z = torch.randn(batch_size, self._d_z).to(self.device)
@@ -76,8 +92,8 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 1:
             # train Discriminator
-            z_out_real, _, _, _ = self._E(keypoints)
-            d_out_real, _ = self._D(keypoints, z_out_real)
+            z_out_real, _, _, _ = self._E(kps_batch)
+            d_out_real, _ = self._D(kps_batch, z_out_real)
 
             fake_keypoints, _ = self._G(z)
             d_out_fake, _ = self._D(fake_keypoints, z)
@@ -90,12 +106,64 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 2:
             # train Encoder
-            z_out_real, _, _, _ = self._E(keypoints)
-            d_out_real, _ = self._D(keypoints, z_out_real)
+            z_out_real, _, _, _ = self._E(kps_batch)
+            d_out_real, _ = self._D(kps_batch, z_out_real)
 
             e_loss = self._criterion(d_out_real.view(-1), label_fake)
             self.log("e_loss", e_loss, prog_bar=True, on_step=True)
             return e_loss
+
+    @staticmethod
+    def to_numpy(tensor):
+        return tensor.cpu().numpy()
+
+    def predict_step(self, batch, batch_idx, dataloader_idx, eps=0.1):
+        frame_nums, pids, kps_batch = batch
+        # predict
+        z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real, f_fake = self(kps_batch)
+        anomaly_lst = self.anomaly_score(
+            kps_batch, fake_kps_batch, f_real, f_fake, eps=eps
+        )
+
+        # to numpy
+        frame_nums = self.to_numpy(frame_nums)
+        kps_batch = self.to_numpy(kps_batch)
+        fake_kps_batch = self.to_numpy(fake_kps_batch)
+        z_lst = self.to_numpy(z_lst)
+        w_sp_lst = self.to_numpy(w_sp_lst)
+        w_tm_lst = self.to_numpy(w_tm_lst)
+        anomaly_lst = self.to_numpy(anomaly_lst)
+
+        for frame_num, pid, z, w_sp, w_tm, a in zip(
+            frame_nums,
+            pids,
+            z_lst,
+            w_sp_lst,
+            w_tm_lst,
+            anomaly_lst,
+        ):
+            video_num = pid.split("_")[1]
+            data = {
+                IndividualDataFormat.frame_num: frame_num,
+                IndividualDataFormat.id: pid,
+                IndividualDataFormat.z: z,
+                IndividualDataFormat.w_spat: w_sp,
+                IndividualDataFormat.w_temp: w_tm,
+                IndividualDataFormat.anomaly: a,
+            }
+
+            if dataloader_idx == 0:
+                # train data
+                if video_num not in self._train_preds:
+                    self._train_preds[video_num] = []
+                self._train_preds[video_num].append(data)
+            if dataloader_idx == 1:
+                # test data
+                if video_num not in self._test_preds:
+                    self._test_preds[video_num] = []
+                self._test_preds[video_num].append(data)
+
+        return self._train_preds, self._test_preds
 
     def configure_optimizers(self):
         g_optim = torch.optim.Adam(
@@ -116,12 +184,35 @@ class IndividualEGAN(LightningModule):
 
         return [g_optim, d_optim, e_optim], []
 
-    # def infer_generator(self, num_individual: int) -> List[Dict[str, Any]]:
-    #     results = infer_generator(
-    #         self._G, num_individual, self._config.model.G.d_z, self._device
-    #     )
-    #     return results
+    def forward(self, real_kps):
+        # predict Z and fake keypoints
+        z, _, w_sp, w_tm = self._E(real_kps)
+        fake_kps, _ = self._G(z)
 
-    # def infer_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
-    #     results = infer_discriminator(self._D, test_dataloader)
-    #     return results
+        # extract feature maps of real keypoints and fake keypoints from D
+        _, f_real = self._D(real_kps, z)
+        _, f_fake = self._D(fake_kps, z)
+
+        return z, w_sp, w_tm, fake_kps, f_real, f_fake
+
+    @staticmethod
+    def anomaly_score(real_kps, fake_kps, f_real, f_fake, eps=0.1):
+        real_kps = real_kps.view(real_kps.size()[0], real_kps.size()[1], 17, 2)
+        fake_kps = fake_kps.view(fake_kps.size()[0], fake_kps.size()[1], 17, 2)
+
+        # calc the difference between real keypoints and fake keypoints
+        residual_loss = torch.norm(real_kps - fake_kps, dim=3)
+        residual_loss = residual_loss.view(residual_loss.size()[0], -1)
+        residual_loss = torch.mean(residual_loss, dim=1)
+
+        # calc the absolute difference between real feature and fake feature
+        discrimination_loss = torch.abs(f_real - f_fake)
+        discrimination_loss = discrimination_loss.view(
+            discrimination_loss.size()[0], -1
+        )
+        discrimination_loss = torch.mean(discrimination_loss, dim=1)
+
+        # sum losses
+        loss_each = (1 - eps) * residual_loss + eps * discrimination_loss
+
+        return loss_each

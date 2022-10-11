@@ -37,18 +37,16 @@ class IndividualDataModule(LightningDataModule):
         assert self._stage is None or self._stage == "train"
         if batch_size is None:
             batch_size = self._config.batch_size
-        return DataLoader(self._train_dataset, batch_size, shuffle=shuffle)
+        return DataLoader(
+            self._train_dataset, batch_size, shuffle=shuffle, num_workers=8
+        )
 
-    def test_dataloader(self, batch_size: int = None):
+    def test_dataloader(self, batch_size):
         assert self._stage is None or self._stage == "test"
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._test_dataset, batch_size, shuffle=False)
+        return DataLoader(self._test_dataset, batch_size, shuffle=False, num_workers=8)
 
-    def predict_dataloader(self, batch_size: int = None):
+    def predict_dataloader(self, batch_size):
         assert self._stage is None
-        if batch_size is None:
-            batch_size = 1
         return [
             self.train_dataloader(batch_size, shuffle=False),
             self.test_dataloader(batch_size),
