@@ -25,6 +25,7 @@ class IndividualActivityRecognition:
         assert IndividualModelTypes.includes(model_type)
 
         self._model_type = model_type.casefold()
+        self._datadir = data_dir
         self._logger = logger
 
         self._config = IndividualDataHandler.get_config(model_type, stage)
@@ -48,7 +49,7 @@ class IndividualActivityRecognition:
         self._trainer = Trainer(
             TensorBoardLogger(log_path, name=self._model_type),
             callbacks=self._model.callbacks,
-            max_epochs=self._config.epochs,
+            max_epochs=self._config.train.epochs,
             devices=gpu_ids,
             accelerator="gpu",
             strategy=strategy,
@@ -98,5 +99,12 @@ class IndividualActivityRecognition:
 
         train_results = self.collect_result(train_preds)
         test_results = self.collect_result(test_preds)
+
+        self._logger.info("=> saving results")
+        IndividualDataHandler.save_data(
+            self._model_type,
+            self._datadir,
+            {"train": train_results, "test": test_results},
+        )
 
         return train_results, test_results
