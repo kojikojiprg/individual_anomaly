@@ -1,6 +1,6 @@
 import torch
 from pytorch_lightning import LightningModule
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 
 from .decoder import Decoder
 from .encoder import Encoder
@@ -17,9 +17,11 @@ class IndividualAutoencoder(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{loss:.5f}",
+                filename="autoencoder_{fold}_{epoch}",
                 monitor="loss",
-            )
+                save_last=True,
+            ),
+            EarlyStopping(monitor="loss"),
         ]
 
     @property
@@ -41,13 +43,26 @@ class IndividualAutoencoder(LightningModule):
 
     def training_step(self, batch, batch_idx):
         frame_nums, pids, keypoints = batch
-
         y, _, _, _, _ = self(keypoints)
         loss = self._criterion(keypoints, y)
 
-        self.log("loss", loss, prog_bar=True, on_step=True, on_epoch=True)
+        self.log("loss", loss, prog_bar=True, on_epoch=True)
 
         return loss
+
+    def test_step(self, batch, batch_idx):
+        pass
+
+    def predict_step(self, batch, batch_idx, dataloader_idx):
+        frame_nums, pids, keypoints = batch
+        out = self(keypoints)
+
+        if dataloader_idx == 0:
+            # train data
+            return {"stage": "train", "frame_num": frame_nums, "pid": pids, "pred": out}
+        if dataloader_idx == 1:
+            # train data
+            return {"stage": "test", "frame_num": frame_nums, "pid": pids, "pred": out}
 
     def configure_optimizers(self):
         optim = torch.optim.Adam(
@@ -56,28 +71,3 @@ class IndividualAutoencoder(LightningModule):
             (self._config.optim.beta1, self._config.optim.beta2),
         )
         return optim
-
-    # def infer(
-    #     self, test_dataloader: torch.utils.data.DataLoader
-    # ) -> List[Dict[str, Any]]:
-    #     results = []
-    #     super().eval()
-    #     with torch.no_grad():
-    #         for frame_nums, ids, kps in test_dataloader:
-    #             _, features, weights_spat, weights_temp = self(kps)
-
-    #             for frame_num, i, feature, w_spat, w_temp in zip(
-    #                 frame_nums, ids, features, weights_spat, weights_temp
-    #             ):
-    #                 results.append(
-    #                     {
-    #                         IndividualDataFormat.frame_num: frame_num,
-    #                         IndividualDataFormat.id: i,
-    #                         IndividualDataFormat.keypoints: kps,
-    #                         IndividualDataFormat.feature: feature,
-    #                         IndividualDataFormat.w_spat: w_spat,
-    #                         IndividualDataFormat.w_temp: w_temp,
-    #                     }
-    #                 )
-
-    #     return results

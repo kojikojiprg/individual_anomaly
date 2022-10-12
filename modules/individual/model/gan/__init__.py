@@ -17,15 +17,17 @@ class IndividualGAN(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{g_loss:.5f}",
+                filename="gan_gloss_{epoch}",
                 monitor="g_loss",
                 mode="max",
+                save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="{epoch}_{d_loss:.5f}",
+                filename="gan_dloss_{epoch}",
                 monitor="d_loss",
                 mode="min",
+                save_last=True,
             ),
         ]
 
@@ -70,6 +72,16 @@ class IndividualGAN(LightningModule):
             self.log("d_loss", d_loss, prog_bar=True, on_step=True)
             return d_loss
 
+    def predict_step(self, batch, batch_idx, dataloader_idx):
+        frame_nums, pids, keypoints = batch
+        out = self._D(keypoints)
+        if dataloader_idx == 0:
+            # train data
+            return {"stage": "train", "frame_num": frame_nums, "pid": pids, "pred": out}
+        if dataloader_idx == 1:
+            # train data
+            return {"stage": "test", "frame_num": frame_nums, "pid": pids, "pred": out}
+
     def configure_optimizers(self):
         g_optim = torch.optim.Adam(
             self._G.parameters(),
@@ -83,13 +95,3 @@ class IndividualGAN(LightningModule):
         )
 
         return [g_optim, d_optim], []
-
-    # def infer_generator(self, num_individual: int) -> List[Dict[str, Any]]:
-    #     results = infer_generator(
-    #         self._G, num_individual, self._config.model.G.d_z, self._device
-    #     )
-    #     return results
-
-    # def infer_discriminator(self, test_dataloader) -> List[Dict[str, Any]]:
-    #     results = infer_discriminator(self._D, test_dataloader)
-    #     return results
