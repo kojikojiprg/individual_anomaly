@@ -25,7 +25,6 @@ class IndividualEGAN(LightningModule):
                 filename="egan_gloss_{fold}_{epoch}",
                 monitor="g_loss",
                 mode="max",
-                save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
@@ -39,7 +38,6 @@ class IndividualEGAN(LightningModule):
                 filename="egan_eloss_{fold}_{epoch}",
                 monitor="e_loss",
                 mode="max",
-                save_last=True,
             ),
         ]
 
@@ -59,16 +57,16 @@ class IndividualEGAN(LightningModule):
     def callbacks(self) -> list:
         return self._callbacks
 
-    def forward(self, real_kps):
+    def forward(self, kps_real):
         # predict Z and fake keypoints
-        z, _, w_sp, w_tm = self._E(real_kps)
-        fake_kps, _ = self._G(z)
+        z, _, w_sp, w_tm = self._E(kps_real)
+        kps_fake, _ = self._G(z)
 
         # extract feature maps of real keypoints and fake keypoints from D
-        _, f_real = self._D(real_kps, z)
-        _, f_fake = self._D(fake_kps, z)
+        _, f_real = self._D(kps_real, z)
+        _, f_fake = self._D(kps_fake, z)
 
-        return z, w_sp, w_tm, fake_kps, f_real, f_fake
+        return z, w_sp, w_tm, kps_fake, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, kps_batch = batch
@@ -118,33 +116,35 @@ class IndividualEGAN(LightningModule):
         return tensor.cpu().numpy()
 
     @staticmethod
-    def anomaly_score(real_kps, fake_kps, f_real, f_fake, lmd):
-        real_kps = real_kps.view(real_kps.size()[0], real_kps.size()[1], 17, 2)
-        fake_kps = fake_kps.view(fake_kps.size()[0], fake_kps.size()[1], 17, 2)
+    def anomaly_score(kps_real, kps_fake, f_real, f_fake, lmd):
+        kps_real = kps_real.view(kps_real.size()[0], kps_real.size()[1], 17, 2)
+        kps_fake = kps_fake.view(kps_fake.size()[0], kps_fake.size()[1], 17, 2)
 
         # calc the difference between real keypoints and fake keypoints
-        residual_loss = torch.norm(real_kps - fake_kps, dim=3)
-        residual_loss = residual_loss.view(residual_loss.size()[0], -1)
-        residual_loss = torch.mean(residual_loss, dim=1)
+        loss_residual = torch.norm(kps_real - kps_fake, dim=3)
+        loss_residual = loss_residual.view(loss_residual.size()[0], -1)
+        loss_residual = torch.mean(loss_residual, dim=1)
 
         # calc the absolute difference between real feature and fake feature
-        discrimination_loss = torch.abs(f_real - f_fake)
-        discrimination_loss = discrimination_loss.view(
-            discrimination_loss.size()[0], -1
+        loss_discrimination = torch.abs(f_real - f_fake)
+        loss_discrimination = loss_discrimination.view(
+            loss_discrimination.size()[0], -1
         )
-        discrimination_loss = torch.mean(discrimination_loss, dim=1)
+        loss_discrimination = torch.mean(loss_discrimination, dim=1)
 
         # sum losses
-        loss_each = (1 - lmd) * residual_loss + lmd * discrimination_loss
+        loss_each = (1 - lmd) * loss_residual + lmd * loss_discrimination
 
         return loss_each
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx, dataloader_idx):
         frame_nums, pids, kps_batch = batch
         # predict
-        z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real, f_fake = self(kps_batch)
+        z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real_lst, f_fake_lst = self(
+            kps_batch
+        )
         anomaly_lst = self.anomaly_score(
-            kps_batch, fake_kps_batch, f_real, f_fake, lmd=self._anomaly_lambda
+            kps_batch, fake_kps_batch, f_real_lst, f_fake_lst, lmd=self._anomaly_lambda
         )
 
         # to numpy
@@ -157,12 +157,16 @@ class IndividualEGAN(LightningModule):
         anomaly_lst = self._to_numpy(anomaly_lst)
 
         preds = {}
-        for frame_num, pid, z, w_sp, w_tm, a in zip(
+        for frame_num, pid, z, kps_real, kps_fake, f_real, f_fake, w_sp, w_tm, a in zip(
             frame_nums,
             pids,
+            kps_batch,
+            fake_kps_batch,
             z_lst,
             w_sp_lst,
             w_tm_lst,
+            f_real_lst,
+            f_fake_lst,
             anomaly_lst,
         ):
             video_num = pid.split("_")[1]
@@ -172,9 +176,13 @@ class IndividualEGAN(LightningModule):
             data = {
                 IndividualDataFormat.frame_num: frame_num,
                 IndividualDataFormat.id: pid,
+                IndividualDataFormat.kps_real: kps_real,
+                IndividualDataFormat.kps_fake: kps_fake,
                 IndividualDataFormat.z: z,
                 IndividualDataFormat.w_spat: w_sp,
                 IndividualDataFormat.w_temp: w_tm,
+                IndividualDataFormat.f_real: f_real,
+                IndividualDataFormat.f_fake: f_fake,
                 IndividualDataFormat.anomaly: a,
             }
             preds[video_num].append(data)
