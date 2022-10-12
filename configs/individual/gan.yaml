@@ -3,7 +3,7 @@ seed: 42  # random seed
 
 dataset:
   seq_len: 300
-  th_split: 10  # split keypoints sequence of an individual
+  th_split: 30  # split keypoints sequence of an individual
 
 train:
   batch_size: 128
