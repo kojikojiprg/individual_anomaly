@@ -1,12 +1,18 @@
 import torch.nn as nn
+from modules.individual import IndividualDataTypes
 from modules.layers.embedding import Embedding
 from modules.layers.positional_encoding import PositionalEncoding
 from modules.layers.transformer import Encoder as TransformerEncoder
 
 
 class Decoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, data_type):
         super().__init__()
+
+        if data_type == IndividualDataTypes.both:
+            self.n_kps = 34  # both
+        else:
+            self.n_kps = 17  # abs or rel
         self.seq_len = config.seq_len
         self.d_model = config.d_model
 
@@ -27,7 +33,7 @@ class Decoder(nn.Module):
                 )
             )
 
-        self.fc = nn.Linear(config.d_model, 17 * 2)
+        self.fc = nn.Linear(config.d_model, self.n_kps * 2)
 
     def forward(self, z):
         B = z.shape[0]
@@ -44,6 +50,6 @@ class Decoder(nn.Module):
             z, weights = self.tr[i](z)
 
         z = self.fc(z)
-        z = z.view(B, -1, 17, 2)  # B, T, 17, 2
+        z = z.view(B, -1, self.n_kps, 2)  # B, T, 17, 2
 
         return z

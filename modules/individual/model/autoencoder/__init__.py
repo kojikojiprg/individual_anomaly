@@ -7,12 +7,13 @@ from .encoder import Encoder
 
 
 class IndividualAutoencoder(LightningModule):
-    def __init__(self, config):
+    def __init__(self, config, data_type):
         super().__init__()
 
         self._config = config
-        self._E = Encoder(config.model.E)
-        self._D = Decoder(config.model.D)
+        self._data_type = data_type
+        self._E = Encoder(config.model.E, data_type)
+        self._D = Decoder(config.model.D, data_type)
         self._criterion = torch.nn.MSELoss()
         self._callbacks = [
             ModelCheckpoint(

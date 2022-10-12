@@ -24,6 +24,7 @@ class IndividualActivityRecognition:
         stage: str = None,
     ):
         assert IndividualModelTypes.includes(model_type)
+        assert IndividualDataTypes.includes(data_type)
 
         self._model_type = model_type.casefold()
         self._datadir = data_dir
@@ -67,11 +68,11 @@ class IndividualActivityRecognition:
 
     def _create_model(self):
         if self._model_type == IndividualModelTypes.gan:
-            self._model = IndividualGAN(self._config)
+            self._model = IndividualGAN(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.egan:
-            self._model = IndividualEGAN(self._config)
+            self._model = IndividualEGAN(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.autoencoder:
-            self._model = IndividualAutoencoder(self._config)
+            self._model = IndividualAutoencoder(self._config, self._data_type)
         else:
             raise NameError
 

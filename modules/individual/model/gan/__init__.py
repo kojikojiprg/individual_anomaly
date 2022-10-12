@@ -7,12 +7,13 @@ from .generator import Generator
 
 
 class IndividualGAN(LightningModule):
-    def __init__(self, config):
+    def __init__(self, config, data_type):
         super().__init__()
 
         self._config = config
-        self._G = Generator(config.model.G)
-        self._D = Discriminator(config.model.D)
+        self._data_type = data_type
+        self._G = Generator(config.model.G, data_type)
+        self._D = Discriminator(config.model.D, data_type)
         self._d_z = config.model.G.d_z
         self._callbacks = [
             ModelCheckpoint(
