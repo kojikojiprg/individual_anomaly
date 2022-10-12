@@ -5,7 +5,7 @@ from modules.utils import set_random
 from pytorch_lightning import LightningDataModule, LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 
-from .constants import IndividualDataFormat, IndividualModelTypes
+from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .model.autoencoder import IndividualAutoencoder
 from .model.egan import IndividualEGAN
@@ -20,6 +20,7 @@ class IndividualActivityRecognition:
         gpu_ids: list,
         logger: Logger,
         checkpoint_path: str = None,
+        data_type: str = "both",
         stage: str = None,
     ):
         assert IndividualModelTypes.includes(model_type)
@@ -27,13 +28,14 @@ class IndividualActivityRecognition:
         self._model_type = model_type.casefold()
         self._datadir = data_dir
         self._logger = logger
+        self._data_type = data_type
 
         self._config = IndividualDataHandler.get_config(model_type, stage)
         set_random.seed(self._config.seed)
 
         self._logger.info("=> creating dataset")
         self._datamodule = IndividualDataHandler.create_datamodule(
-            data_dir, self._config.dataset, stage
+            data_dir, self._config.dataset, data_type, stage
         )
 
         self._create_model()

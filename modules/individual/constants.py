@@ -21,6 +21,21 @@ class IndividualDataFormat:
 
 
 @dataclass(frozen=True)
+class IndividualDataTypes:
+    abs: str = "abs"
+    rel: str = "rel"
+    both: str = "both"
+
+    @classmethod
+    def get_types(cls) -> List[str]:
+        return [cls.__dict__[key] for key in cls.__annotations__.keys()]
+
+    @classmethod
+    def includes(cls, data_type: str) -> bool:
+        return data_type.casefold() in cls.get_types()
+
+
+@dataclass(frozen=True)
 class IndividualModelTypes:
     gan: str = "gan"
     egan: str = "egan"

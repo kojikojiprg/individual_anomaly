@@ -64,9 +64,12 @@ class IndividualDataHandler:
 
     @staticmethod
     def create_datamodule(
-        data_dir: str, config: SimpleNamespace, stage: str = None
+        data_dir: str,
+        config: SimpleNamespace,
+        data_type: str = "both",
+        stage: str = None,
     ) -> LightningDataModule:
-        return IndividualDataModule(data_dir, config, stage)
+        return IndividualDataModule(data_dir, config, data_type, stage)
 
     @staticmethod
     def _load_data_each_stage(model_type, data_dir, stage):
