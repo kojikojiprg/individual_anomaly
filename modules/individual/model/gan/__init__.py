@@ -21,7 +21,6 @@ class IndividualGAN(LightningModule):
                 filename="gan_gloss_{epoch}",
                 monitor="g_loss",
                 mode="max",
-                save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
