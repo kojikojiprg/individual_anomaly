@@ -23,24 +23,27 @@ class IndividualEGAN(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="egan_gloss_{fold}_{epoch}",
+                filename=f"egan_{data_type}_" + "{g_loss:.2f}_{epoch}",
                 monitor="g_loss",
                 mode="max",
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="egan_dloss_{fold}_{epoch}",
+                filename=f"egan_{data_type}_" + "{d_loss:.2f}_{epoch}",
                 monitor="d_loss",
                 mode="min",
                 save_last=True,
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="egan_eloss_{fold}_{epoch}",
+                filename=f"egan_{data_type}_" + "{e_loss:.2f}_{epoch}",
                 monitor="e_loss",
                 mode="max",
             ),
         ]
+        self._callbacks[1].CHECKPOINT_NAME_LAST = (
+            f"egan_{data_type}_" + "{d_loss:.2f}_{epoch}"
+        )
 
     @property
     def Generator(self):

@@ -18,18 +18,21 @@ class IndividualGAN(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="gan_gloss_{epoch}",
+                filename=f"gan_{data_type}_" + "{g_loss:.2f}_{epoch}",
                 monitor="g_loss",
                 mode="max",
             ),
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="gan_dloss_{epoch}",
+                filename=f"gan_{data_type}_" + "{d_loss:.2f}_{epoch}",
                 monitor="d_loss",
                 mode="min",
                 save_last=True,
             ),
         ]
+        self._callbacks[1].CHECKPOINT_NAME_LAST = (
+            f"gan_{data_type}_" + "{d_loss:.2f}_{epoch}"
+        )
 
     @property
     def Generator(self):

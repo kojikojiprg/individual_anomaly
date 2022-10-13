@@ -18,12 +18,15 @@ class IndividualAutoencoder(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename="autoencoder_{fold}_{epoch}",
+                filename=f"autoencoder_{data_type}_" + "{loss:.2f}_{epoch}",
                 monitor="loss",
                 save_last=True,
             ),
             EarlyStopping(monitor="loss"),
         ]
+        self._callbacks[0].CHECKPOINT_NAME_LAST = (
+            f"autoencoder_{data_type}_" + "{loss:.2f}_{epoch}"
+        )
 
     @property
     def Decoder(self):
