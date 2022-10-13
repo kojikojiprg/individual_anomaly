@@ -4,11 +4,7 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules.individual import (
-    IndividualActivityRecognition,
-    IndividualDataTypes,
-    IndividualModelTypes,
-)
+from modules.individual import IndividualActivityRecognition
 from modules.utils.logger import logger
 
 warnings.simplefilter("ignore")
@@ -18,7 +14,9 @@ def parser():
     parser = argparse.ArgumentParser()
 
     # requires
-    parser.add_argument("-d", "--dataset", required=True, type=str, help="dataset name")
+    parser.add_argument(
+        "-dp", "--data_dir", required=True, type=str, help="path of input data"
+    )
     parser.add_argument(
         "-mt",
         "--model_type",
@@ -36,11 +34,10 @@ def parser():
         default="both",
         help="Input data type. Selected by 'abs', 'rel' or 'both', by defualt is 'both'.",
     )
-    parser.add_argument("--gpus", type=int, nargs="*", default=None, help="gpu ids")
+    parser.add_argument(
+        "-g", "--gpus", type=int, nargs="*", default=None, help="gpu ids"
+    )
     args = parser.parse_args()
-
-    assert IndividualModelTypes.includes(args.model_type)
-    assert IndividualDataTypes.includes(args.data_type)
 
     return args
 
@@ -48,17 +45,13 @@ def parser():
 def main():
     args = parser()
 
-    data_dir = os.path.join("data", args.dataset)
-
     iar = IndividualActivityRecognition(
         args.model_type,
-        data_dir,
-        args.gpus,
         logger,
         data_type=args.data_type,
         stage="train",
     )
-    iar.train()
+    iar.train(args.data_dir, args.gpus)
 
 
 if __name__ == "__main__":

@@ -4,13 +4,15 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from modules.individual import IndividualDataTypes
 from modules.pose import PoseDataFormat, PoseDataHandler
 from modules.utils import video
+from modules.utils.constants import Stages
 from numpy.typing import NDArray
 from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 from tqdm.auto import tqdm
+
+from .constants import IndividualDataTypes
 
 
 class IndividualDataModule(LightningDataModule):
@@ -18,48 +20,37 @@ class IndividualDataModule(LightningDataModule):
         self,
         data_dir: str,
         config: SimpleNamespace,
-        data_type: str = "both",
-        stage: str = None,
+        data_type: str = IndividualDataTypes.both,
+        stage: str = Stages.inference,
     ):
         super().__init__()
-        self._config = config
+        self._config = config.dataset
         self._stage = stage
 
-        if stage is None or stage == "train":
-            train_data_dirs = glob(os.path.join(data_dir, "train", "*"))
-            self._train_pose_data_lst = self._load_pose_data(train_data_dirs)
-            frame_shape = self._get_frame_shape(train_data_dirs)
-            self._train_dataset = self._create_dataset(
-                self._train_pose_data_lst, frame_shape, data_type, "train"
+        self._data_dirs = sorted(glob(os.path.join(data_dir, "*")))
+
+        pose_data_lst = self._load_pose_data(self._data_dirs)
+        frame_shape = self._get_frame_shape(self._data_dirs)
+
+        self._datasets = []
+        if stage == Stages.train:
+            pose_data = []
+            for data in pose_data_lst:
+                pose_data += data
+            self._datasets.append(
+                self._create_dataset(pose_data, frame_shape, data_type)
             )
-        if stage is None or stage == "test":
-            test_data_dirs = glob(os.path.join(data_dir, "test", "*"))
-            self._test_pose_data_lst = self._load_pose_data(test_data_dirs)
-            frame_shape = self._get_frame_shape(test_data_dirs)
-            self._test_dataset = self._create_dataset(
-                self._test_pose_data_lst, frame_shape, data_type, "test"
-            )
+        elif stage == Stages.test or stage == Stages.inference:
+            for pose_data in pose_data_lst:
+                self._datasets.append(
+                    self._create_dataset(pose_data, frame_shape, data_type)
+                )
+        else:
+            raise NameError
 
-    def train_dataloader(self, batch_size: int = None, shuffle: bool = True):
-        assert self._stage is None or self._stage == "train"
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(
-            self._train_dataset, batch_size, shuffle=shuffle, num_workers=8
-        )
-
-    def test_dataloader(self, batch_size: int = None):
-        assert self._stage is None or self._stage == "test"
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._test_dataset, batch_size, shuffle=False, num_workers=8)
-
-    def predict_dataloader(self, batch_size: int = None):
-        assert self._stage is None
-        return [
-            self.train_dataloader(batch_size, shuffle=False),
-            self.test_dataloader(batch_size),
-        ]
+    @property
+    def data_dirs(self) -> List[str]:
+        return self._data_dirs
 
     @staticmethod
     def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
@@ -80,19 +71,37 @@ class IndividualDataModule(LightningDataModule):
 
     def _create_dataset(
         self,
-        pose_data_lst: List[List[Dict[str, Any]]],
+        pose_data: List[Dict[str, Any]],
         frame_shape: Tuple[int, int],
-        data_type: str = "both",
-        stage: str = None,
+        data_type: str = IndividualDataTypes.both,
     ):
         return IndividualDataset(
-            pose_data_lst,
+            pose_data,
             self._config.seq_len,
             self._config.th_split,
             frame_shape,
             data_type,
-            stage,
         )
+
+    def train_dataloader(self, batch_size: int = None):
+        assert self._stage == Stages.train
+        if batch_size is None:
+            batch_size = self._config.batch_size
+        return DataLoader(self._datasets[0], batch_size, shuffle=True, num_workers=8)
+
+    def _test_predict_dataloader(self, batch_size: int = None):
+        assert self._stage is Stages.test or self._stage == Stages.inference
+        if batch_size is None:
+            batch_size = self._config.batch_size
+
+        for dataset in self._datasets:
+            yield DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
+
+    def test_dataloader(self, batch_size: int = None):
+        return self._test_predict_dataloader(batch_size)
+
+    def predict_dataloader(self, batch_size: int = None):
+        return self._test_predict_dataloader(batch_size)
 
 
 class IndividualDataset(Dataset):
@@ -100,28 +109,23 @@ class IndividualDataset(Dataset):
 
     def __init__(
         self,
-        pose_data_lst: List[List[Dict[str, Any]]],
+        pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
         frame_shape_xy: Tuple[int, int],
-        data_type: str = "both",
-        stage: str = None,
+        data_type: str,
     ):
         super().__init__()
 
         self._frame_shape_xy = frame_shape_xy
         self._data_type = data_type
-        self._stage = stage
 
         self._data: List[Tuple[int, int, NDArray, NDArray]] = []
 
-        for video_num, pose_data in enumerate(tqdm(pose_data_lst, desc=stage)):
-            video_num += 1
-            self._create_dataset(video_num, pose_data, seq_len, th_split)
+        self._create_dataset(pose_data, seq_len, th_split)
 
     def _create_dataset(
         self,
-        video_num,
         pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
@@ -138,7 +142,7 @@ class IndividualDataset(Dataset):
         pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
         seq_data: list = []
-        for item in pose_data:
+        for item in tqdm(pose_data, leave=False):
             # get values
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
@@ -147,7 +151,7 @@ class IndividualDataset(Dataset):
 
             if pid != pre_pid:
                 if len(seq_data) > seq_len:
-                    self._append(video_num, seq_data, seq_len)
+                    self._append(seq_data, seq_len)
                 # reset seq_data
                 seq_data = []
             else:
@@ -162,7 +166,7 @@ class IndividualDataset(Dataset):
                     ]
                 elif th_split < frame_num - pre_frame_num:
                     if len(seq_data) > seq_len:
-                        self._append(video_num, seq_data, seq_len)
+                        self._append(seq_data, seq_len)
                     # reset seq_data
                     seq_data = []
                 else:
@@ -177,15 +181,16 @@ class IndividualDataset(Dataset):
             pre_bbox = bbox
             pre_kps = keypoints
         else:
-            self._append(video_num, seq_data, seq_len)
+            self._append(seq_data, seq_len)
 
-    def _append(self, video_num, seq_data, seq_len):
+    def _append(self, seq_data, seq_len):
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
             self._data.append(
+                # (frame_num, pid, bbox, keypoints)
                 (
                     seq_data[i + seq_len - 1][0],
-                    f"{self._stage}_{video_num:02d}_{seq_data[i + seq_len - 1][1]}",
+                    f"{seq_data[i + seq_len - 1][1]}",
                     np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4],
                     np.array([item[3] for item in seq_data[i : i + seq_len]])[:, :, :2],
                 )
