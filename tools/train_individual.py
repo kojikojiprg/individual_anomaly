@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 import warnings
 
@@ -15,7 +14,7 @@ def parser():
 
     # requires
     parser.add_argument(
-        "-dp", "--data_dir", required=True, type=str, help="path of input data"
+        "-dir", "--data_dir", required=True, type=str, help="path of input data"
     )
     parser.add_argument(
         "-mt",
