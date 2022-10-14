@@ -30,9 +30,7 @@ class IndividualGAN(LightningModule):
                 save_last=True,
             ),
         ]
-        self._callbacks[1].CHECKPOINT_NAME_LAST = (
-            f"gan_{data_type}_" + "{d_loss:.2f}_{epoch}"
-        )
+        self._callbacks[1].CHECKPOINT_NAME_LAST = f"gan_last-{data_type}"
 
     @property
     def Generator(self):

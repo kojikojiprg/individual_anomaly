@@ -41,9 +41,7 @@ class IndividualEGAN(LightningModule):
                 mode="max",
             ),
         ]
-        self._callbacks[1].CHECKPOINT_NAME_LAST = (
-            f"egan_{data_type}_" + "{d_loss:.2f}_{epoch}"
-        )
+        self._callbacks[1].CHECKPOINT_NAME_LAST = f"egan_last-{data_type}"
 
     @property
     def Generator(self):

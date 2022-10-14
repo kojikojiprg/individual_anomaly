@@ -24,9 +24,7 @@ class IndividualAutoencoder(LightningModule):
             ),
             EarlyStopping(monitor="loss"),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = (
-            f"autoencoder_{data_type}_" + "{loss:.2f}_{epoch}"
-        )
+        self._callbacks[0].CHECKPOINT_NAME_LAST = f"autoencoder_last-{data_type}"
 
     @property
     def Decoder(self):
