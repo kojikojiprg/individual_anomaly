@@ -18,7 +18,9 @@ def parser():
     parser = argparse.ArgumentParser()
 
     # requires
-    parser.add_argument("-d", "--dataset", required=True, type=str, help="dataset name")
+    parser.add_argument(
+        "-dir", "--data_dir", required=True, type=str, help="path of input data"
+    )
 
     # options
     parser.add_argument("-c", "--cfg_path", type=str, default="configs/pose/pose.yaml")
@@ -49,9 +51,8 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # load video paths
-    video_dir = os.path.join("/raid6/surgery-video", args.dataset)
-    video_paths = sorted(glob(os.path.join(video_dir, "train", "*.mp4")))
-    video_paths += sorted(glob(os.path.join(video_dir, "test", "*.mp4")))
+    video_dir = os.path.join("/raid6/surgery-video", args.data_dir)
+    video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
     logger.info(f"=> video paths:\n{video_paths}")
 
     # prepairing output data dirs
