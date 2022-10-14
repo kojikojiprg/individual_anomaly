@@ -41,7 +41,7 @@ class IndividualDataModule(LightningDataModule):
                 self._create_dataset(pose_data, frame_shape, data_type)
             )
         elif stage == Stages.test or stage == Stages.inference:
-            for pose_data in pose_data_lst:
+            for pose_data in tqdm(pose_data_lst):
                 self._datasets.append(
                     self._create_dataset(pose_data, frame_shape, data_type)
                 )
@@ -63,7 +63,7 @@ class IndividualDataModule(LightningDataModule):
 
     @staticmethod
     def _get_frame_shape(data_dirs: List[str]):
-        video_path = data_dirs[0].replace("data/", "/raid6/surgery-video/") + ".mp4"
+        video_path = os.path.join(data_dirs[0], f"{os.path.basename(data_dirs[0])}.mp4")
         cap = video.Capture(video_path)
         frame_shape = cap.size
         del cap
@@ -94,8 +94,11 @@ class IndividualDataModule(LightningDataModule):
         if batch_size is None:
             batch_size = self._config.batch_size
 
-        for dataset in self._datasets:
-            yield DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
+        dataloaders = [
+            DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
+            for dataset in self._datasets
+        ]
+        return dataloaders
 
     def test_dataloader(self, batch_size: int = None):
         return self._test_predict_dataloader(batch_size)

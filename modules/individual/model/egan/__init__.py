@@ -158,10 +158,12 @@ class IndividualEGAN(LightningModule):
         z_lst = self._to_numpy(z_lst)
         w_sp_lst = self._to_numpy(w_sp_lst)
         w_tm_lst = self._to_numpy(w_tm_lst)
+        f_real_lst = self._to_numpy(f_real_lst)
+        f_fake_lst = self._to_numpy(f_fake_lst)
         anomaly_lst = self._to_numpy(anomaly_lst)
 
-        preds = {}
-        for frame_num, pid, z, kps_real, kps_fake, f_real, f_fake, w_sp, w_tm, a in zip(
+        preds = []
+        for frame_num, pid, kps_real, kps_fake, z, w_sp, w_tm, f_real, f_fake, a in zip(
             frame_nums,
             pids,
             kps_batch,
@@ -173,23 +175,20 @@ class IndividualEGAN(LightningModule):
             f_fake_lst,
             anomaly_lst,
         ):
-            video_num = pid.split("_")[1]
-            if video_num not in preds:
-                preds[video_num] = []
-
-            data = {
-                IndividualDataFormat.frame_num: frame_num,
-                IndividualDataFormat.id: pid,
-                IndividualDataFormat.kps_real: kps_real,
-                IndividualDataFormat.kps_fake: kps_fake,
-                IndividualDataFormat.z: z,
-                IndividualDataFormat.w_spat: w_sp,
-                IndividualDataFormat.w_temp: w_tm,
-                IndividualDataFormat.f_real: f_real,
-                IndividualDataFormat.f_fake: f_fake,
-                IndividualDataFormat.anomaly: a,
-            }
-            preds[video_num].append(data)
+            preds.append(
+                {
+                    IndividualDataFormat.frame_num: frame_num,
+                    IndividualDataFormat.id: pid,
+                    IndividualDataFormat.kps_real: kps_real,
+                    IndividualDataFormat.kps_fake: kps_fake,
+                    IndividualDataFormat.z: z,
+                    IndividualDataFormat.w_spat: w_sp,
+                    IndividualDataFormat.w_temp: w_tm,
+                    IndividualDataFormat.f_real: f_real,
+                    IndividualDataFormat.f_fake: f_fake,
+                    IndividualDataFormat.anomaly: a,
+                }
+            )
 
         return preds
 

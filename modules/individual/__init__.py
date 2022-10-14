@@ -2,6 +2,7 @@ import os
 from logging import Logger
 from typing import List
 
+import torch
 from modules.utils import set_random
 from modules.utils.constants import Stages
 from pytorch_lightning import LightningModule, Trainer
@@ -36,13 +37,23 @@ class IndividualActivityRecognition:
         self._config = IndividualDataHandler.get_config(model_type, stage)
         set_random.seed(self._config.seed)
 
+        self._model: LightningModule
+        self._trainer: Trainer
+
         self._create_model()
         if checkpoint_path is not None:
             self.load_model(checkpoint_path)
 
+    def __del__(self):
+        del self._model, self._trainer
+        torch.cuda.empty_cache()
+
     @property
     def model(self) -> LightningModule:
-        return self._model
+        if hasattr(self, "_model"):
+            return self._model
+        else:
+            raise AttributeError
 
     def _create_model(self):
         if self._model_type == IndividualModelTypes.gan:
@@ -56,7 +67,9 @@ class IndividualActivityRecognition:
 
     def load_model(self, checkpoint_path: str) -> LightningModule:
         self._logger.info("=> loading model")
-        self._model.load_from_checkpoint(checkpoint_path, config=self._config)
+        self._model.load_from_checkpoint(
+            checkpoint_path, config=self._config, data_type=self._data_type
+        )
         return self._model
 
     def _create_datamodule(self, data_dir: str) -> IndividualDataModule:
@@ -66,7 +79,8 @@ class IndividualActivityRecognition:
         )
 
     def _build_trainer(self, data_dir, gpu_ids):
-        log_path = os.path.join(data_dir, "logs")
+        dataset_dir = os.path.dirname(data_dir)
+        log_path = os.path.join(dataset_dir, "logs")
         if len(gpu_ids) > 1:
             strategy = "ddp"
         else:
@@ -82,21 +96,40 @@ class IndividualActivityRecognition:
 
     def train(self, data_dir: str, gpu_ids: List[int]):
         datamodule = self._create_datamodule(data_dir)
-        trainer = self._build_trainer(data_dir, gpu_ids)
-        trainer.fit(self._model, datamodule=datamodule)
+        if not hasattr(self, "_trainer"):
+            self._trainer = self._build_trainer(data_dir, gpu_ids)
+        self._trainer.fit(self._model, datamodule=datamodule)
+
+        del datamodule
+        torch.cuda.empty_cache()
+
+    @staticmethod
+    def _collect_results(preds_lst):
+        results_lst = []
+        for preds in preds_lst:
+            results = []
+            for batch in preds:
+                results += batch
+            results_lst.append(results)
+        return results_lst
 
     def inference(self, data_dir: str, gpu_ids: List[int]):
         datamodule = self._create_datamodule(data_dir)
-        trainer = self._build_trainer(data_dir, gpu_ids)
-        preds_lst = trainer.predict(
+        if not hasattr(self, "_trainer"):
+            self._trainer = self._build_trainer(data_dir, gpu_ids)
+        preds_lst = self._trainer.predict(
             self._model,
             dataloaders=datamodule.predict_dataloader(),
             return_predictions=True,
         )
+        results_lst = self._collect_results(preds_lst)
         data_dirs = datamodule.data_dirs
 
         self._logger.info("=> saving results")
-        for path, preds in tqdm(zip(data_dirs, preds_lst)):
-            IndividualDataHandler.save(path, preds, self._model_type, self._data_type)
+        for path, results in zip(tqdm(data_dirs), results_lst):
+            IndividualDataHandler.save(path, results, self._model_type, self._data_type)
 
-        return preds_lst
+        del datamodule
+        torch.cuda.empty_cache()
+
+        return results_lst
