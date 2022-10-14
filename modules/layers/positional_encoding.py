@@ -8,9 +8,6 @@ class PositionalEncoding(nn.Module):
     def __init__(self, d_model, length):
         super().__init__()
 
-        self.d_model = d_model
-        self.length = length
-
         pe = torch.zeros(length, d_model)
         for pos in range(length):
             for i in range(0, d_model, 2):

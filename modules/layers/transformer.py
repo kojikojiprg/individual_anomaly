@@ -7,6 +7,8 @@ class SpatialTemporalTransformer(nn.Module):
     def __init__(self, d_model, n_heads, d_ff, dropout, activation):
         super().__init__()
 
+        self.n_heads = n_heads
+
         self.en_spat = Encoder(d_model, n_heads, d_ff, dropout, activation)
         self.en_temp = Encoder(d_model, n_heads, d_ff, dropout, activation)
 
@@ -20,14 +22,30 @@ class SpatialTemporalTransformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, x_spat, x_temp):
+    def forward(self, x_spat, x_temp, mask_spat=None, mask_temp=None):
         # encoder
         memory_spat, _ = self.en_spat(x_spat)
         memory_temp, _ = self.en_temp(x_temp)
 
+        # repeat mask by n_heads
+        shape = mask_spat.size()
+        mask_spat = (
+            mask_spat.unsqueeze(0)
+            .expand(self.n_heads, shape[0], shape[1], shape[2])
+            .contiguous()
+            .view(self.n_heads * shape[0], shape[1], shape[2])
+        )
+        shape = mask_temp.size()
+        mask_temp = (
+            mask_temp.unsqueeze(0)
+            .expand(self.n_heads, shape[0], shape[1], shape[2])
+            .contiguous()
+            .view(self.n_heads * shape[0], shape[1], shape[2])
+        )
+
         # decoder
-        x_spat, weights_spat = self.de_spat(memory_spat, memory_temp)
-        x_temp, weights_temp = self.de_temp(memory_temp, memory_spat)
+        x_spat, weights_spat = self.de_spat(memory_spat, memory_temp, mask_spat)
+        x_temp, weights_temp = self.de_temp(memory_temp, memory_spat, mask_temp)
 
         return x_spat, x_temp, weights_spat, weights_temp
 
@@ -92,7 +110,7 @@ class Decoder(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, tgt, src):
+    def forward(self, tgt, src, attn_mask=None):
         # attention1
         x_norm = self.norm1(tgt)
         attn, _ = self.attn1(x_norm, x_norm, x_norm)
@@ -101,7 +119,7 @@ class Decoder(nn.Module):
         # attention2
         x_norm = self.norm2_1(tgt)
         k = v = self.norm2_2(src)
-        attn, weights = self.attn2(x_norm, k, v)
+        attn, weights = self.attn2(x_norm, k, v, attn_mask=attn_mask)
         tgt = tgt + self.dropout2(attn)
 
         # feed forward

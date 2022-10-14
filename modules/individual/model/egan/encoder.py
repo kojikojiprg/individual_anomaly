@@ -39,11 +39,15 @@ class Encoder(nn.Module):
         self.fc = nn.Linear(config.seq_len * self.n_kps * 2, config.d_z)
         self.norm = nn.LayerNorm(config.d_z)
 
-    def forward(self, x):
+    def forward(self, x, mask=None):
         B, T, P, D = x.shape  # batch, frame, num_points=17(or 34), dim=2
         x = x.view(B, T, P * D)
         x_spat = x  # spatial(B, T, 34(or 68))
         x_temp = x.permute(0, 2, 1)  # temporal(B, 34(or 68), T)
+
+        mask = mask.view(B, T, P * D)
+        mask_spat = mask
+        mask_temp = mask.permute(0, 2, 1)
 
         # embedding
         x_spat = self.emb_spat(x_spat)
@@ -55,7 +59,9 @@ class Encoder(nn.Module):
 
         # spatial-temporal transformer
         for i in range(self.n_sttr):
-            x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](x_spat, x_temp)
+            x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](
+                x_spat, x_temp, mask_spat, mask_temp
+            )
         x_spat = self.fc_spat(x_spat)
         x_temp = self.fc_temp(x_temp)
 

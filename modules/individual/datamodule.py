@@ -79,6 +79,7 @@ class IndividualDataModule(LightningDataModule):
             pose_data,
             self._config.seq_len,
             self._config.th_split,
+            self._config.th_mask,
             frame_shape,
             data_type,
         )
@@ -115,12 +116,14 @@ class IndividualDataset(Dataset):
         pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
+        th_mask: float,
         frame_shape_xy: Tuple[int, int],
         data_type: str,
     ):
         super().__init__()
 
         self._frame_shape_xy = frame_shape_xy
+        self._th_mask = th_mask
         self._data_type = data_type
 
         self._data: List[Tuple[int, int, NDArray, NDArray]] = []
@@ -195,7 +198,7 @@ class IndividualDataset(Dataset):
                     seq_data[i + seq_len - 1][0],
                     f"{seq_data[i + seq_len - 1][1]}",
                     np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4],
-                    np.array([item[3] for item in seq_data[i : i + seq_len]])[:, :, :2],
+                    np.array([item[3] for item in seq_data[i : i + seq_len]]),
                 )
             )
 
@@ -204,7 +207,7 @@ class IndividualDataset(Dataset):
 
     @staticmethod
     def _calc_absolute_keypoints(kps, frame_shape_xy):
-        abs_kps = kps / frame_shape_xy  # 0-1 scalling
+        abs_kps = kps[:, :, :2] / frame_shape_xy  # 0-1 scalling
         abs_kps = abs_kps.astype(np.float32)
         return abs_kps
 
@@ -212,24 +215,31 @@ class IndividualDataset(Dataset):
     def _calc_relative_keypoints(bbox, kps):
         org = bbox[:, :2]
         wh = bbox[:, 2:] - bbox[:, :2]
-        rel_kps = kps - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
+        rel_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
         rel_kps = rel_kps / np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
         rel_kps = rel_kps.astype(np.float32)
         return rel_kps
 
-    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray]:
+    def _create_mask(self, kps):
+        mask = np.where(kps[:, :, 2] < self._th_mask, True, False)
+        seq_len, points = mask.shape
+        mask = np.repeat(mask, 2, axis=1).reshape(seq_len, points, 2)
+        return mask
+
+    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
         frame_nums, ids, bbox, kps = self._data[idx]
 
         abs_kps = self._calc_absolute_keypoints(kps, self._frame_shape_xy)
         rel_kps = self._calc_relative_keypoints(bbox, kps)
+        mask = self._create_mask(kps)
 
         if self._data_type == IndividualDataTypes.abs:
             # absolute
-            return frame_nums, ids, abs_kps
+            return frame_nums, ids, abs_kps, mask
         elif self._data_type == IndividualDataTypes.rel:
             # relative
-            return frame_nums, ids, rel_kps
+            return frame_nums, ids, rel_kps, mask
         else:
             # both
             kps = np.concatenate([abs_kps, rel_kps], axis=1)
-            return frame_nums, ids, kps
+            return frame_nums, ids, kps, mask

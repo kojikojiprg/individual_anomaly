@@ -47,11 +47,15 @@ class Discriminator(nn.Module):
         )
         self.out_layer = nn.Linear(config.d_ff, 1)
 
-    def forward(self, x, z):
+    def forward(self, x, z, mask=None):
         B, T, P, D = x.shape  # batch, frame, num_points=17(or 34), dim=2
         x = x.view(B, T, P * D)
         x_spat = x  # spatial(B, T, 34(or 68))
         x_temp = x.permute(0, 2, 1)  # temporal(B, 34(or 68), T)
+
+        mask = mask.view(B, T, P * D)
+        mask_spat = mask
+        mask_temp = mask.permute(0, 2, 1)
 
         # embedding
         x_spat = self.emb_in_spat(x_spat)
@@ -63,7 +67,7 @@ class Discriminator(nn.Module):
 
         # spatial-temporal transformer
         for i in range(self.n_sttr):
-            x_spat, x_temp, _, _ = self.sttr[i](x_spat, x_temp)
+            x_spat, x_temp, _, _ = self.sttr[i](x_spat, x_temp, mask_spat, mask_temp)
         x_spat = self.emb_out_spat(x_spat)
         x_temp = self.emb_out_temp(x_temp)
         x = x_spat + x_temp.permute(0, 2, 1)
