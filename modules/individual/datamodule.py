@@ -223,7 +223,7 @@ class IndividualDataset(Dataset):
     def _create_mask(self, kps):
         mask = np.where(
             kps[:, :, 2] < self._th_mask, -1e10, 0.0
-        )  # -inf to nan in softmax
+        )  # -inf to nan in softmax of attention module
         seq_len, points = mask.shape
         mask = np.repeat(mask, 2, axis=1).reshape(seq_len, points, 2)
         if self._data_type == IndividualDataTypes.both:
