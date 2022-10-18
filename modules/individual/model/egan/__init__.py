@@ -1,5 +1,5 @@
 import torch
-from modules.individual import IndividualDataFormat
+from modules.individual import IndividualDataFormat, IndividualDataTypes
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 
@@ -12,6 +12,10 @@ class IndividualEGAN(LightningModule):
     def __init__(self, config, data_type):
         super().__init__()
 
+        if data_type == IndividualDataTypes.both:
+            self.n_kps = 34  # both
+        else:
+            self.n_kps = 17  # abs or rel
         self._config = config
         self._data_type = data_type
         self._G = Generator(config.model.G, data_type)
@@ -117,10 +121,13 @@ class IndividualEGAN(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    @staticmethod
-    def anomaly_score(kps_real, kps_fake, f_real, f_fake, lmd):
-        kps_real = kps_real.view(kps_real.size()[0], kps_real.size()[1], 17, 2)
-        kps_fake = kps_fake.view(kps_fake.size()[0], kps_fake.size()[1], 17, 2)
+    def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake, lmd):
+        kps_real = kps_real.view(kps_real.size()[0], kps_real.size()[1], self.n_kps, 2)
+        kps_fake = kps_fake.view(kps_fake.size()[0], kps_fake.size()[1], self.n_kps, 2)
+
+        # apply mask
+        kps_real *= kps_mask
+        kps_fake *= kps_mask
 
         # calc the difference between real keypoints and fake keypoints
         loss_residual = torch.norm(kps_real - kps_fake, dim=3)
@@ -141,12 +148,20 @@ class IndividualEGAN(LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
         frame_nums, pids, kps_batch, mask_batch = batch
+
         # predict
         z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real_lst, f_fake_lst = self(
             kps_batch, mask_batch
         )
+
+        mask_batch_bool = torch.where(mask_batch < 0, False, True)
         anomaly_lst = self.anomaly_score(
-            kps_batch, fake_kps_batch, f_real_lst, f_fake_lst, lmd=self._anomaly_lambda
+            kps_batch,
+            fake_kps_batch,
+            mask_batch_bool,
+            f_real_lst,
+            f_fake_lst,
+            lmd=self._anomaly_lambda,
         )
 
         # to numpy
