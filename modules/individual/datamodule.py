@@ -226,8 +226,6 @@ class IndividualDataset(Dataset):
         )  # -inf to nan in softmax of attention module
         seq_len, points = mask.shape
         mask = np.repeat(mask, 2, axis=1).reshape(seq_len, points, 2)
-        if self._data_type == IndividualDataTypes.both:
-            mask = np.repeat(mask, 2, axis=0)
         return mask
 
     def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
@@ -235,6 +233,7 @@ class IndividualDataset(Dataset):
 
         abs_kps = self._calc_absolute_keypoints(kps, self._frame_shape_xy)
         rel_kps = self._calc_relative_keypoints(bbox, kps)
+
         mask = self._create_mask(kps)
 
         if self._data_type == IndividualDataTypes.abs:
@@ -246,4 +245,5 @@ class IndividualDataset(Dataset):
         else:
             # both
             kps = np.concatenate([abs_kps, rel_kps], axis=1)
+            mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
             return frame_nums, ids, kps, mask
