@@ -65,7 +65,7 @@ class IndividualDataHandler:
     def create_datamodule(
         data_dir: str,
         config: SimpleNamespace,
-        data_type: str = IndividualDataTypes.both,
+        data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
     ) -> IndividualDataModule:
         return IndividualDataModule(data_dir, config, data_type, stage)

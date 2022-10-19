@@ -20,7 +20,7 @@ model:
     d_model: 128
     d_ff: 256
     n_heads: 8
-    n_tre: 3
+    n_tr: 3
     dropout: 0.1
     activation: ReLU
   D:
@@ -28,7 +28,7 @@ model:
     d_model: 128
     d_ff: 256
     n_heads: 8
-    n_sttr: 2
+    n_tr: 2
     dropout: 0.1
     activation: SELU
   E:
@@ -36,7 +36,7 @@ model:
     d_model: 128
     d_ff: 256
     n_heads: 8
-    n_sttr: 3
+    n_tr: 3
     dropout: 0.1
     activation: SELU
 

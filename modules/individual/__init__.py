@@ -14,6 +14,7 @@ from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
 from .model.autoencoder import IndividualAutoencoder
 from .model.egan import IndividualEGAN
+from .model.egan_bbox import IndividualEganBbox
 from .model.gan import IndividualGAN
 
 
@@ -23,7 +24,7 @@ class IndividualActivityRecognition:
         model_type: str,
         logger: Logger,
         checkpoint_path: str = None,
-        data_type: str = IndividualDataTypes.both,
+        data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
     ):
         assert IndividualModelTypes.includes(model_type)
@@ -59,7 +60,10 @@ class IndividualActivityRecognition:
         if self._model_type == IndividualModelTypes.gan:
             self._model = IndividualGAN(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.egan:
-            self._model = IndividualEGAN(self._config, self._data_type)
+            if self._data_type == IndividualDataTypes.global_bbox:
+                self._model = IndividualEganBbox(self._config)
+            else:
+                self._model = IndividualEGAN(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.autoencoder:
             self._model = IndividualAutoencoder(self._config, self._data_type)
         else:

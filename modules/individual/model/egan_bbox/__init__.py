@@ -8,44 +8,30 @@ from .encoder import Encoder
 from .generator import Generator
 
 
-class IndividualEGAN(LightningModule):
-    def __init__(self, config, data_type):
+class IndividualEganBbox(LightningModule):
+    def __init__(self, config):
         super().__init__()
 
-        if data_type == IndividualDataTypes.both:
-            self.n_kps = 34  # both
-        else:
-            self.n_kps = 17  # abs or rel
         self._config = config
-        self._data_type = data_type
-        self._G = Generator(config.model.G, data_type)
-        self._D = Discriminator(config.model.D, data_type)
-        self._E = Encoder(config.model.E, data_type)
+        self._G = Generator(config.model.G)
+        self._D = Discriminator(config.model.D)
+        self._E = Encoder(config.model.E)
         self._d_z = config.model.G.d_z
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._criterion = torch.nn.BCEWithLogitsLoss(reduction="mean")
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"egan_{data_type}_" + "{d_loss:.2f}_{epoch}",
+                filename=f"egan_{IndividualDataTypes.global_bbox}_"
+                + "{d_loss:.2f}_{epoch}",
                 monitor="d_loss",
                 mode="min",
                 save_last=True,
             ),
-            # ModelCheckpoint(
-            #     config.checkpoint_dir,
-            #     filename=f"egan_{data_type}_" + "{g_loss:.2f}_{epoch}",
-            #     monitor="g_loss",
-            #     mode="max",
-            # ),
-            # ModelCheckpoint(
-            #     config.checkpoint_dir,
-            #     filename=f"egan_{data_type}_" + "{e_loss:.2f}_{epoch}",
-            #     monitor="e_loss",
-            #     mode="max",
-            # ),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = f"egan_last-{data_type}"
+        self._callbacks[
+            0
+        ].CHECKPOINT_NAME_LAST = f"egan_last-{IndividualDataTypes.global_bbox}"
 
     @property
     def Generator(self):
@@ -63,20 +49,20 @@ class IndividualEGAN(LightningModule):
     def callbacks(self) -> list:
         return self._callbacks
 
-    def forward(self, kps_real, mask_batch):
+    def forward(self, bbox_real):
         # predict Z and fake keypoints
-        z, _, w_sp, w_tm = self._E(kps_real, mask_batch)
-        kps_fake, _ = self._G(z)
+        z, w_e = self._E(bbox_real)
+        bbox_fake, _ = self._G(z)
 
         # extract feature maps of real keypoints and fake keypoints from D
-        _, f_real = self._D(kps_real, z, mask_batch)
-        _, f_fake = self._D(kps_fake, z, mask_batch)
+        _, f_real = self._D(bbox_real, z)
+        _, f_fake = self._D(bbox_fake, z)
 
-        return z, w_sp, w_tm, kps_fake, f_real, f_fake
+        return z, w_e, bbox_fake, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, kps_batch, mask_batch = batch
-        batch_size = kps_batch.size()[0]
+        frame_nums, pids, bbox_batch, _ = batch
+        batch_size = bbox_batch.size()[0]
 
         # make random noise
         z = torch.randn(batch_size, self._d_z).to(self.device)
@@ -87,8 +73,8 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 0:
             # train Generator
-            fake_keypoints, _ = self._G(z)
-            d_out_fake, _ = self._D(fake_keypoints, z, mask_batch)
+            fake_bbox, _ = self._G(z)
+            d_out_fake, _ = self._D(fake_bbox, z)
 
             g_loss = self._criterion(d_out_fake.view(-1), label_real)
             self.log("g_loss", g_loss, prog_bar=True, on_step=True)
@@ -96,11 +82,11 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 1:
             # train Discriminator
-            z_out_real, _, _, _ = self._E(kps_batch, mask_batch)
-            d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
+            z_out_real, _ = self._E(bbox_batch)
+            d_out_real, _ = self._D(bbox_batch, z_out_real)
 
-            fake_keypoints, _ = self._G(z)
-            d_out_fake, _ = self._D(fake_keypoints, z, mask_batch)
+            fake_bbox, _ = self._G(z)
+            d_out_fake, _ = self._D(fake_bbox, z)
 
             d_loss_real = self._criterion(d_out_real.view(-1), label_real)
             d_loss_fake = self._criterion(d_out_fake.view(-1), label_fake)
@@ -110,8 +96,8 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 2:
             # train Encoder
-            z_out_real, _, _, _ = self._E(kps_batch, mask_batch)
-            d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
+            z_out_real, _ = self._E(bbox_batch)
+            d_out_real, _ = self._D(bbox_batch, z_out_real)
 
             e_loss = self._criterion(d_out_real.view(-1), label_fake)
             self.log("e_loss", e_loss, prog_bar=True, on_step=True)
@@ -121,16 +107,16 @@ class IndividualEGAN(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake, lmd):
-        kps_real = kps_real.view(kps_real.size()[0], kps_real.size()[1], self.n_kps, 2)
-        kps_fake = kps_fake.view(kps_fake.size()[0], kps_fake.size()[1], self.n_kps, 2)
-
-        # apply mask
-        kps_real *= kps_mask
-        kps_fake *= kps_mask
+    def anomaly_score(self, bbox_real, bbox_fake, f_real, f_fake, lmd):
+        bbox_real = bbox_real.view(
+            bbox_real.size()[0], bbox_real.size()[1], self.n_kps, 2
+        )
+        bbox_fake = bbox_fake.view(
+            bbox_fake.size()[0], bbox_fake.size()[1], self.n_kps, 2
+        )
 
         # calc the difference between real keypoints and fake keypoints
-        loss_residual = torch.norm(kps_real - kps_fake, dim=3)
+        loss_residual = torch.norm(bbox_real - bbox_fake, dim=3)
         loss_residual = loss_residual.view(loss_residual.size()[0], -1)
         loss_residual = torch.mean(loss_residual, dim=1)
 
@@ -147,18 +133,14 @@ class IndividualEGAN(LightningModule):
         return loss_each, loss_residual, loss_discrimination
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        frame_nums, pids, kps_batch, mask_batch = batch
+        frame_nums, pids, bbox_batch, _ = batch
 
         # predict
-        z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real_lst, f_fake_lst = self(
-            kps_batch, mask_batch
-        )
+        z_lst, w_lst, fake_kps_batch, f_real_lst, f_fake_lst = self(bbox_batch)
 
-        mask_batch_bool = torch.where(mask_batch < 0, False, True)
         anomaly_lst, resi_lst, disc_lst = self.anomaly_score(
-            kps_batch,
+            bbox_batch,
             fake_kps_batch,
-            mask_batch_bool,
             f_real_lst,
             f_fake_lst,
             lmd=self._anomaly_lambda,
@@ -169,8 +151,7 @@ class IndividualEGAN(LightningModule):
         # kps_batch = self._to_numpy(kps_batch)
         # fake_kps_batch = self._to_numpy(fake_kps_batch)
         # z_lst = self._to_numpy(z_lst)
-        # w_sp_lst = self._to_numpy(w_sp_lst)
-        # w_tm_lst = self._to_numpy(w_tm_lst)
+        # w_lst = self._to_numpy(w_lst)
         # f_real_lst = self._to_numpy(f_real_lst)
         # f_fake_lst = self._to_numpy(f_fake_lst)
         anomaly_lst = self._to_numpy(anomaly_lst)

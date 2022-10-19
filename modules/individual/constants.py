@@ -14,6 +14,8 @@ class IndividualDataFormat:
     f_real: str = "d_feature_real"
     f_fake: str = "d_feature_fake"
     anomaly: str = "anomaly"
+    loss_r: str = "loss_resitudal"
+    loss_d: str = "loss_discrimination"
 
     @classmethod
     def get_keys(cls) -> List[str]:
@@ -22,8 +24,9 @@ class IndividualDataFormat:
 
 @dataclass(frozen=True)
 class IndividualDataTypes:
-    abs: str = "abs"
-    rel: str = "rel"
+    global_: str = "global"
+    global_bbox: str = "global_bbox"
+    local: str = "local"
     both: str = "both"
 
     @classmethod

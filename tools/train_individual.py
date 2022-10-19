@@ -24,18 +24,20 @@ def parser():
         default="GAN",
         help="'GAN(gan)', 'EGAN(egan)' or 'Autoencoder(autoencoder)'",
     )
-
-    # options
     parser.add_argument(
         "-dt",
         "--data_type",
+        required=True,
         type=str,
-        default="both",
-        help="Input data type. Selected by 'abs', 'rel' or 'both', by defualt is 'both'.",
+        default="local",
+        help="Input data type. Selected by 'global', 'global_bbox', 'local' or 'both', by defualt is 'local'.",
     )
+
+    # options
     parser.add_argument(
         "-g", "--gpus", type=int, nargs="*", default=None, help="gpu ids"
     )
+
     args = parser.parse_args()
 
     return args

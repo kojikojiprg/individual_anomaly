@@ -1,18 +1,13 @@
 import torch.nn as nn
-from modules.individual import IndividualDataTypes
 from modules.layers.embedding import Embedding
 from modules.layers.positional_encoding import PositionalEncoding
 from modules.layers.transformer import Encoder as TransformerEncoder
 
 
 class Generator(nn.Module):
-    def __init__(self, config, data_type):
+    def __init__(self, config):
         super().__init__()
 
-        if data_type == IndividualDataTypes.both:
-            self.n_kps = 34  # both
-        else:
-            self.n_kps = 17  # abs or rel
         self.seq_len = config.seq_len
         self.d_model = config.d_model
 
@@ -20,10 +15,10 @@ class Generator(nn.Module):
 
         self.pe = PositionalEncoding(config.d_model, config.seq_len)
 
-        self.tr = nn.ModuleList()
+        self.tre = nn.ModuleList()
         self.n_tr = config.n_tr
         for _ in range(self.n_tr):
-            self.tr.append(
+            self.tre.append(
                 TransformerEncoder(
                     config.d_model,
                     config.n_heads,
@@ -33,7 +28,7 @@ class Generator(nn.Module):
                 )
             )
 
-        self.fc = nn.Linear(config.d_model, self.n_kps * 2)
+        self.fc = nn.Linear(config.d_model, 4)
 
     def forward(self, z):
         B = z.shape[0]
@@ -47,9 +42,9 @@ class Generator(nn.Module):
 
         # spatial-temporal transformer
         for i in range(self.n_tr):
-            z, weights = self.tr[i](z)
+            z, weights = self.tre[i](z)
 
         z = self.fc(z)
-        z = z.view(B, -1, self.n_kps, 2)  # B, T, 17(or 34), 2
+        z = z.view(B, -1, 4)  # B, T, 4
 
         return z, weights

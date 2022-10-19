@@ -23,8 +23,8 @@ class Discriminator(nn.Module):
         self.pe_temp = PositionalEncoding(config.d_model, self.n_kps * 2)
 
         self.sttr = nn.ModuleList()
-        self.n_sttr = config.n_sttr
-        for _ in range(config.n_sttr):
+        self.n_tr = config.n_tr
+        for _ in range(config.n_tr):
             self.sttr.append(
                 SpatialTemporalTransformer(
                     config.d_model,
@@ -66,7 +66,7 @@ class Discriminator(nn.Module):
         x_temp = self.pe_temp(x_temp)
 
         # spatial-temporal transformer
-        for i in range(self.n_sttr):
+        for i in range(self.n_tr):
             x_spat, x_temp, _, _ = self.sttr[i](x_spat, x_temp, mask_spat, mask_temp)
         x_spat = self.emb_out_spat(x_spat)
         x_temp = self.emb_out_temp(x_temp)

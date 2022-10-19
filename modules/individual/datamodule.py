@@ -20,7 +20,7 @@ class IndividualDataModule(LightningDataModule):
         self,
         data_dir: str,
         config: SimpleNamespace,
-        data_type: str = IndividualDataTypes.both,
+        data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
     ):
         super().__init__()
@@ -73,7 +73,7 @@ class IndividualDataModule(LightningDataModule):
         self,
         pose_data: List[Dict[str, Any]],
         frame_shape: Tuple[int, int],
-        data_type: str = IndividualDataTypes.both,
+        data_type: str = IndividualDataTypes.local,
     ):
         return IndividualDataset(
             pose_data,
@@ -206,19 +206,29 @@ class IndividualDataset(Dataset):
         return len(self._data)
 
     @staticmethod
-    def _calc_absolute_keypoints(kps, frame_shape_xy):
-        abs_kps = kps[:, :, :2] / frame_shape_xy  # 0-1 scalling
-        abs_kps = abs_kps.astype(np.float32)
-        return abs_kps
+    def _scaling_keypoints_global(kps, frame_shape_xy):
+        glb_kps = kps[:, :, :2] / frame_shape_xy  # 0-1 scalling
+        glb_kps = glb_kps.astype(np.float32)
+        return glb_kps
 
     @staticmethod
-    def _calc_relative_keypoints(bbox, kps):
+    def _scaling_keypoints_local(bbox, kps):
         org = bbox[:, :2]
         wh = bbox[:, 2:] - bbox[:, :2]
-        rel_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
-        rel_kps = rel_kps / np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
-        rel_kps = rel_kps.astype(np.float32)
-        return rel_kps
+        lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
+        lcl_kps = lcl_kps / np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
+        lcl_kps = lcl_kps.astype(np.float32)
+        return lcl_kps
+
+    @staticmethod
+    def _scaling_bbox_global(bbox, frame_shape_xy):
+        # xyxy -> xywh
+        bbox[:, 2] = bbox[:, 2] - bbox[:, 0]
+        bbox[:, 3] = bbox[:, 3] - bbox[:, 1]
+
+        bbox = bbox.reshape(-1, 2, 2) / frame_shape_xy  # 0-1 scalling
+        bbox = bbox.astype(np.float32).reshape(-1, 4)
+        return bbox
 
     def _create_mask(self, kps):
         mask = np.where(
@@ -231,19 +241,25 @@ class IndividualDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
         frame_nums, ids, bbox, kps = self._data[idx]
 
-        abs_kps = self._calc_absolute_keypoints(kps, self._frame_shape_xy)
-        rel_kps = self._calc_relative_keypoints(bbox, kps)
-
-        mask = self._create_mask(kps)
-
-        if self._data_type == IndividualDataTypes.abs:
-            # absolute
-            return frame_nums, ids, abs_kps, mask
-        elif self._data_type == IndividualDataTypes.rel:
-            # relative
-            return frame_nums, ids, rel_kps, mask
+        if self._data_type == IndividualDataTypes.global_:
+            # global
+            glb_kps = self._scaling_keypoints_global(kps, self._frame_shape_xy)
+            mask = self._create_mask(kps)
+            return frame_nums, ids, glb_kps, mask
+        elif self._data_type == IndividualDataTypes.global_bbox:
+            # global_bbox
+            glb_bbox = self._scaling_bbox_global(bbox, self._frame_shape_xy)
+            return frame_nums, ids, glb_bbox, np.empty((0,))
+        elif self._data_type == IndividualDataTypes.local:
+            # local
+            lcl_kps = self._scaling_keypoints_local(bbox, kps)
+            mask = self._create_mask(kps)
+            return frame_nums, ids, lcl_kps, mask
         else:
             # both
-            kps = np.concatenate([abs_kps, rel_kps], axis=1)
+            glb_kps = self._scaling_keypoints_global(kps, self._frame_shape_xy)
+            lcl_kps = self._scaling_keypoints_local(bbox, kps)
+            kps = np.concatenate([glb_kps, lcl_kps], axis=1)
+            mask = self._create_mask(kps)
             mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
             return frame_nums, ids, kps, mask
