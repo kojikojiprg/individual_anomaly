@@ -35,12 +35,13 @@ class Visualizer:
         video_capture.set_pos_frame_count(0)
 
         out_paths = []
+        video_num = os.path.basename(video_path).split(".")[0]
         # create video writer for pose estimation results
         if self._do_pose_estimation:
             if not self._no_bg:
-                out_path = os.path.join(data_dir, "pose.mp4")
+                out_path = os.path.join(data_dir, f"{video_num}_pose.mp4")
             else:
-                out_path = os.path.join(data_dir, "pose_nobg.mp4")
+                out_path = os.path.join(data_dir, f"{video_num}_pose_nobg.mp4")
 
             pose_video_writer = Writer(
                 out_path, video_capture.fps, tmp_frame.shape[1::-1]
