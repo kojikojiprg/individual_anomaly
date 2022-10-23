@@ -130,7 +130,7 @@ class IndividualEGAN(LightningModule):
         kps_fake *= kps_mask
 
         # calc the difference between real keypoints and fake keypoints
-        loss_residual = torch.norm(kps_real - kps_fake, dim=3)
+        loss_residual = torch.abs(kps_real - kps_fake)
         loss_residual = loss_residual.view(loss_residual.size()[0], -1)
         loss_residual = torch.mean(loss_residual, dim=1)
 

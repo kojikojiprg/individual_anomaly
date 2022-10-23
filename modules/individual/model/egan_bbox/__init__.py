@@ -108,15 +108,11 @@ class IndividualEganBbox(LightningModule):
         return tensor.cpu().numpy()
 
     def anomaly_score(self, bbox_real, bbox_fake, f_real, f_fake, lmd):
-        bbox_real = bbox_real.view(
-            bbox_real.size()[0], bbox_real.size()[1], self.n_kps, 2
-        )
-        bbox_fake = bbox_fake.view(
-            bbox_fake.size()[0], bbox_fake.size()[1], self.n_kps, 2
-        )
+        bbox_real = bbox_real.view(bbox_real.size()[0], bbox_real.size()[1], 4)
+        bbox_fake = bbox_fake.view(bbox_fake.size()[0], bbox_fake.size()[1], 4)
 
         # calc the difference between real keypoints and fake keypoints
-        loss_residual = torch.norm(bbox_real - bbox_fake, dim=3)
+        loss_residual = torch.abs(bbox_real - bbox_fake)
         loss_residual = loss_residual.view(loss_residual.size()[0], -1)
         loss_residual = torch.mean(loss_residual, dim=1)
 
