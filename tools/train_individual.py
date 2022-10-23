@@ -14,7 +14,12 @@ def parser():
 
     # requires
     parser.add_argument(
-        "-dir", "--data_dir", required=True, type=str, help="path of input data"
+        "-dir",
+        "--data_dir",
+        required=True,
+        type=str,
+        default="data/dataset/01/train",
+        help="path of input data",
     )
     parser.add_argument(
         "-mt",
@@ -39,6 +44,9 @@ def parser():
     )
 
     args = parser.parse_args()
+
+    # delete last slash
+    args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
 
     return args
 
