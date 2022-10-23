@@ -122,23 +122,24 @@ class IndividualEGAN(LightningModule):
         return tensor.cpu().numpy()
 
     def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake, lmd):
-        kps_real = kps_real.view(kps_real.size()[0], kps_real.size()[1], self.n_kps, 2)
-        kps_fake = kps_fake.view(kps_fake.size()[0], kps_fake.size()[1], self.n_kps, 2)
+        B, T = kps_real.size()[:2]
+
+        kps_real = kps_real.view(B, T, self.n_kps, 2)
+        kps_fake = kps_fake.view(B, T, self.n_kps, 2)
 
         # apply mask
         kps_real *= kps_mask
         kps_fake *= kps_mask
 
         # calc the difference between real keypoints and fake keypoints
+        n_nomasked = torch.sum(kps_mask.int().view(B, -1), dim=1)
         loss_residual = torch.abs(kps_real - kps_fake)
-        loss_residual = loss_residual.view(loss_residual.size()[0], -1)
-        loss_residual = torch.mean(loss_residual, dim=1)
+        loss_residual = loss_residual.view(B, -1)
+        loss_residual = torch.sum(loss_residual, dim=1) / n_nomasked  # mean
 
         # calc the absolute difference between real feature and fake feature
         loss_discrimination = torch.abs(f_real - f_fake)
-        loss_discrimination = loss_discrimination.view(
-            loss_discrimination.size()[0], -1
-        )
+        loss_discrimination = loss_discrimination.view(B, -1)
         loss_discrimination = torch.mean(loss_discrimination, dim=1)
 
         # sum losses
