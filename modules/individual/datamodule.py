@@ -186,7 +186,7 @@ class IndividualDataset(Dataset):
     def _append(self, seq_data, seq_len):
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
-            frame_num = (seq_data[i + seq_len - 1][0],)
+            frame_num = seq_data[i + seq_len - 1][0]
             pid = f"{seq_data[i + seq_len - 1][1]}"
             bbox = np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4]
             kps = np.array([item[3] for item in seq_data[i : i + seq_len]])

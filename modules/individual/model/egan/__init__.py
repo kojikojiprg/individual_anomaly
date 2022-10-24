@@ -148,7 +148,7 @@ class IndividualEGAN(LightningModule):
         )
 
         # to numpy
-        # frame_nums = self._to_numpy(frame_nums)
+        frame_nums = self._to_numpy(frame_nums)
         z = self._to_numpy(z)
         attn = self._to_numpy(attn)
         f_real = self._to_numpy(f_real)
