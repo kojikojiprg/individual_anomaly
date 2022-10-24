@@ -5,6 +5,7 @@ import warnings
 
 sys.path.append(".")
 from modules.individual import IndividualActivityRecognition
+from modules.individual.constants import IndividualDataTypes
 from modules.utils.logger import logger
 
 warnings.simplefilter("ignore")
@@ -15,17 +16,18 @@ def parser():
 
     # requires
     parser.add_argument(
-        "-dir",
+        "-dd",
         "--data_dir",
         required=True,
         type=str,
-        default="data/dataset/01/train",
         help="path of input data",
     )
+
+    # options
+    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
     parser.add_argument(
         "-mt",
         "--model_type",
-        required=True,
         type=str,
         default="egan",
         help="'egan' or 'ganomaly'",
@@ -33,19 +35,29 @@ def parser():
     parser.add_argument(
         "-dt",
         "--data_type",
-        required=True,
         type=str,
         default="local",
         help="Input data type. Selected by 'global', 'global_bbox', 'local' or 'both', by defualt is 'local'.",
     )
-
-    # options
-    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
+    parser.add_argument(
+        "-vd",
+        "--video_dir",
+        type=str,
+        default=None,
+        help="path of input video directory",
+    )
 
     args = parser.parse_args()
 
     # delete last slash
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
+
+    args.model_type = args.model_type.lower()
+
+    if args.data_type in [IndividualDataTypes.global_, IndividualDataTypes.both]:
+        assert (
+            args.video_dir is not None
+        ), f"Input video frame shape is required for data_type:{args.data_type}"
 
     return args
 
@@ -53,7 +65,7 @@ def parser():
 def main():
     args = parser()
 
-    model_type = args.model_type.lower()
+    model_type = args.model_type
     data_type = args.data_type
     checkpoint_path = os.path.join(
         "models",
@@ -68,7 +80,7 @@ def main():
         data_type=data_type,
         stage="inference",
     )
-    iar.inference(args.data_dir, args.gpu_id)
+    iar.inference(args.data_dir, [args.gpu], args.video_dir)
 
 
 if __name__ == "__main__":

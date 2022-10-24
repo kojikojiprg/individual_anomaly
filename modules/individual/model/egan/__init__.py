@@ -32,18 +32,6 @@ class IndividualEGAN(LightningModule):
                 mode="min",
                 save_last=True,
             ),
-            # ModelCheckpoint(
-            #     config.checkpoint_dir,
-            #     filename=f"egan_{data_type}_" + "{g_loss:.2f}_{epoch}",
-            #     monitor="g_loss",
-            #     mode="max",
-            # ),
-            # ModelCheckpoint(
-            #     config.checkpoint_dir,
-            #     filename=f"egan_{data_type}_" + "{e_loss:.2f}_{epoch}",
-            #     monitor="e_loss",
-            #     mode="max",
-            # ),
         ]
         self._callbacks[0].CHECKPOINT_NAME_LAST = f"egan_last-{data_type}"
 
@@ -65,14 +53,14 @@ class IndividualEGAN(LightningModule):
 
     def forward(self, kps_real, mask_batch):
         # predict Z and fake keypoints
-        z, _, w_sp, w_tm = self._E(kps_real, mask_batch)
+        z, attn = self._E(kps_real, mask_batch)
         kps_fake, _ = self._G(z)
 
         # extract feature maps of real keypoints and fake keypoints from D
         _, f_real = self._D(kps_real, z, mask_batch)
         _, f_fake = self._D(kps_fake, z, mask_batch)
 
-        return z, w_sp, w_tm, kps_fake, f_real, f_fake
+        return z, attn, kps_fake, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, kps_batch, mask_batch = batch
@@ -96,7 +84,7 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 1:
             # train Discriminator
-            z_out_real, _, _, _ = self._E(kps_batch, mask_batch)
+            z_out_real, _ = self._E(kps_batch, mask_batch)
             d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
 
             fake_keypoints, _ = self._G(z)
@@ -110,7 +98,7 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 2:
             # train Encoder
-            z_out_real, _, _, _ = self._E(kps_batch, mask_batch)
+            z_out_real, _ = self._E(kps_batch, mask_batch)
             d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
 
             e_loss = self._criterion(d_out_real.view(-1), label_fake)
@@ -121,7 +109,7 @@ class IndividualEGAN(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake, lmd):
+    def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake):
         B, T = kps_real.size()[:2]
 
         kps_real = kps_real.view(B, T, self.n_kps, 2)
@@ -142,57 +130,53 @@ class IndividualEGAN(LightningModule):
         loss_discrimination = loss_discrimination.view(B, -1)
         loss_discrimination = torch.mean(loss_discrimination, dim=1)
 
-        # sum losses
-        loss_each = (1 - lmd) * loss_residual + lmd * loss_discrimination
-
-        return loss_each, loss_residual, loss_discrimination
+        return loss_residual, loss_discrimination
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        frame_nums, pids, kps_batch, mask_batch = batch
+        frame_nums, pids, kps_real, mask = batch
 
         # predict
-        z_lst, w_sp_lst, w_tm_lst, fake_kps_batch, f_real_lst, f_fake_lst = self(
-            kps_batch, mask_batch
-        )
+        z, attn, kps_fake, f_real, f_fake = self(kps_real, mask)
 
-        mask_batch_bool = torch.where(mask_batch < 0, False, True)
-        anomaly_lst, resi_lst, disc_lst = self.anomaly_score(
-            kps_batch,
-            fake_kps_batch,
+        mask_batch_bool = torch.where(mask < 0, False, True)
+        l_resi, l_disc = self.anomaly_score(
+            kps_real,
+            kps_fake,
             mask_batch_bool,
-            f_real_lst,
-            f_fake_lst,
-            lmd=self._anomaly_lambda,
+            f_real,
+            f_fake,
         )
 
         # to numpy
-        frame_nums = self._to_numpy(frame_nums)
-        # kps_batch = self._to_numpy(kps_batch)
-        # fake_kps_batch = self._to_numpy(fake_kps_batch)
-        # z_lst = self._to_numpy(z_lst)
-        # w_sp_lst = self._to_numpy(w_sp_lst)
-        # w_tm_lst = self._to_numpy(w_tm_lst)
-        # f_real_lst = self._to_numpy(f_real_lst)
-        # f_fake_lst = self._to_numpy(f_fake_lst)
-        anomaly_lst = self._to_numpy(anomaly_lst)
-        resi_lst = self._to_numpy(resi_lst)
-        disc_lst = self._to_numpy(disc_lst)
+        # frame_nums = self._to_numpy(frame_nums)
+        z = self._to_numpy(z)
+        attn = self._to_numpy(attn)
+        f_real = self._to_numpy(f_real)
+        f_fake = self._to_numpy(f_fake)
+        l_resi = self._to_numpy(l_resi)
+        l_disc = self._to_numpy(l_disc)
 
         preds = []
-        for frame_num, pid, a, r, d in zip(
+        for frame_num, pid, z_, a, fr, ff, lr, ld in zip(
             frame_nums,
             pids,
-            anomaly_lst,
-            resi_lst,
-            disc_lst,
+            z,
+            attn,
+            f_real,
+            f_fake,
+            l_resi,
+            l_disc,
         ):
             preds.append(
                 {
                     IndividualDataFormat.frame_num: frame_num,
                     IndividualDataFormat.id: pid,
-                    IndividualDataFormat.anomaly: a,
-                    IndividualDataFormat.loss_r: r,
-                    IndividualDataFormat.loss_d: d,
+                    IndividualDataFormat.z: z_,
+                    IndividualDataFormat.attn: a,
+                    IndividualDataFormat.f_real: fr,
+                    IndividualDataFormat.f_fake: ff,
+                    IndividualDataFormat.loss_r: lr,
+                    IndividualDataFormat.loss_d: ld,
                 }
             )
 

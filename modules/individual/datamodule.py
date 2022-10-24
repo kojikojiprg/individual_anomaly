@@ -5,7 +5,6 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from modules.pose import PoseDataFormat, PoseDataHandler
-from modules.utils import video
 from modules.utils.constants import Stages
 from numpy.typing import NDArray
 from pytorch_lightning import LightningDataModule
@@ -22,7 +21,11 @@ class IndividualDataModule(LightningDataModule):
         config: SimpleNamespace,
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
+        frame_shape: Tuple[int, int] = None,
     ):
+        if data_type in [IndividualDataTypes.global_, IndividualDataTypes.both]:
+            assert frame_shape is not None
+
         super().__init__()
         self._config = config.dataset
         self._stage = stage
@@ -30,7 +33,6 @@ class IndividualDataModule(LightningDataModule):
         self._data_dirs = sorted(glob(os.path.join(data_dir, "*")))
 
         pose_data_lst = self._load_pose_data(self._data_dirs)
-        frame_shape = self._get_frame_shape(self._data_dirs)
 
         self._datasets = []
         if stage == Stages.train:
@@ -38,12 +40,12 @@ class IndividualDataModule(LightningDataModule):
             for data in pose_data_lst:
                 pose_data += data
             self._datasets.append(
-                self._create_dataset(pose_data, frame_shape, data_type)
+                self._create_dataset(pose_data, data_type, frame_shape)
             )
         elif stage == Stages.test or stage == Stages.inference:
             for pose_data in tqdm(pose_data_lst):
                 self._datasets.append(
-                    self._create_dataset(pose_data, frame_shape, data_type)
+                    self._create_dataset(pose_data, data_type, frame_shape)
                 )
         else:
             raise NameError
@@ -61,27 +63,19 @@ class IndividualDataModule(LightningDataModule):
                 pose_data_lst.append(data)
         return pose_data_lst
 
-    @staticmethod
-    def _get_frame_shape(data_dirs: List[str]):
-        video_path = os.path.join(data_dirs[0], f"{os.path.basename(data_dirs[0])}.mp4")
-        cap = video.Capture(video_path)
-        frame_shape = cap.size
-        del cap
-        return frame_shape
-
     def _create_dataset(
         self,
         pose_data: List[Dict[str, Any]],
-        frame_shape: Tuple[int, int],
         data_type: str = IndividualDataTypes.local,
+        frame_shape: Tuple[int, int] = None,
     ):
         return IndividualDataset(
             pose_data,
             self._config.seq_len,
             self._config.th_split,
             self._config.th_mask,
-            frame_shape,
             data_type,
+            frame_shape,
         )
 
     def train_dataloader(self, batch_size: int = None):
@@ -117,14 +111,14 @@ class IndividualDataset(Dataset):
         seq_len: int,
         th_split: int,
         th_mask: float,
-        frame_shape_xy: Tuple[int, int],
         data_type: str,
+        frame_shape: Tuple[int, int] = None,
     ):
         super().__init__()
 
-        self._frame_shape_xy = frame_shape_xy
         self._th_mask = th_mask
         self._data_type = data_type
+        self._frame_shape = frame_shape
 
         self._data: List[Tuple[int, int, NDArray, NDArray]] = []
 
@@ -192,22 +186,30 @@ class IndividualDataset(Dataset):
     def _append(self, seq_data, seq_len):
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
-            self._data.append(
-                # (frame_num, pid, bbox, keypoints)
-                (
-                    seq_data[i + seq_len - 1][0],
-                    f"{seq_data[i + seq_len - 1][1]}",
-                    np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4],
-                    np.array([item[3] for item in seq_data[i : i + seq_len]]),
-                )
-            )
+            frame_num = (seq_data[i + seq_len - 1][0],)
+            pid = f"{seq_data[i + seq_len - 1][1]}"
+            bbox = np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4]
+            kps = np.array([item[3] for item in seq_data[i : i + seq_len]])
+            mask = self._create_mask(kps)
 
-    def __len__(self):
-        return len(self._data)
+            if self._data_type == IndividualDataTypes.global_:
+                # global
+                kps = self._scaling_keypoints_global(kps, self._frame_shape)
+            elif self._data_type == IndividualDataTypes.local:
+                # local
+                kps = self._scaling_keypoints_local(bbox, kps)
+            else:
+                # both
+                glb_kps = self._scaling_keypoints_global(kps, self._frame_shape)
+                lcl_kps = self._scaling_keypoints_local(bbox, kps)
+                kps = np.concatenate([glb_kps, lcl_kps], axis=1)
+                mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
+
+            self._data.append((frame_num, pid, kps, mask))
 
     @staticmethod
-    def _scaling_keypoints_global(kps, frame_shape_xy):
-        glb_kps = kps[:, :, :2] / frame_shape_xy  # 0-1 scalling
+    def _scaling_keypoints_global(kps, frame_shape):
+        glb_kps = kps[:, :, :2] / frame_shape  # 0-1 scalling
         glb_kps = glb_kps.astype(np.float32)
         return glb_kps
 
@@ -228,24 +230,9 @@ class IndividualDataset(Dataset):
         mask = np.repeat(mask, 2, axis=1).reshape(seq_len, points, 2)
         return mask
 
-    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
-        frame_nums, ids, bbox, kps = self._data[idx]
+    def __len__(self):
+        return len(self._data)
 
-        if self._data_type == IndividualDataTypes.global_:
-            # global
-            glb_kps = self._scaling_keypoints_global(kps, self._frame_shape_xy)
-            mask = self._create_mask(kps)
-            return frame_nums, ids, glb_kps, mask
-        elif self._data_type == IndividualDataTypes.local:
-            # local
-            lcl_kps = self._scaling_keypoints_local(bbox, kps)
-            mask = self._create_mask(kps)
-            return frame_nums, ids, lcl_kps, mask
-        else:
-            # both
-            glb_kps = self._scaling_keypoints_global(kps, self._frame_shape_xy)
-            lcl_kps = self._scaling_keypoints_local(bbox, kps)
-            kps = np.concatenate([glb_kps, lcl_kps], axis=1)
-            mask = self._create_mask(kps)
-            mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
-            return frame_nums, ids, kps, mask
+    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
+        frame_nums, ids, kps, mask = self._data[idx]
+        return frame_nums, ids, kps, mask

@@ -1,6 +1,6 @@
 import os
 from logging import Logger
-from typing import List
+from typing import List, Tuple
 
 import torch
 from modules.utils import set_random
@@ -44,7 +44,10 @@ class IndividualActivityRecognition:
             self.load_model(checkpoint_path)
 
     def __del__(self):
-        del self._model, self._trainer
+        if hasattr(self, "_model"):
+            del self._model
+        if hasattr(self, "_trainer"):
+            del self._trainer
         torch.cuda.empty_cache()
 
     @property
@@ -69,10 +72,12 @@ class IndividualActivityRecognition:
         )
         return self._model
 
-    def _create_datamodule(self, data_dir: str) -> IndividualDataModule:
+    def _create_datamodule(
+        self, data_dir: str, frame_shape: Tuple[int, int] = None
+    ) -> IndividualDataModule:
         self._logger.info("=> creating dataset")
         return IndividualDataHandler.create_datamodule(
-            data_dir, self._config, self._data_type, self._stage
+            data_dir, self._config, self._data_type, self._stage, frame_shape
         )
 
     def _build_trainer(self, data_dir, gpu_ids):
@@ -110,8 +115,13 @@ class IndividualActivityRecognition:
             results_lst.append(results)
         return results_lst
 
-    def inference(self, data_dir: str, gpu_ids: List[int]):
-        datamodule = self._create_datamodule(data_dir)
+    def inference(self, data_dir: str, gpu_ids: List[int], video_dir: str = None):
+        frame_shape = None
+        if video_dir is not None:
+            frame_shape = IndividualDataHandler.get_frame_shape(video_dir)
+
+        datamodule = self._create_datamodule(data_dir, frame_shape)
+
         if not hasattr(self, "_trainer"):
             self._trainer = self._build_trainer(data_dir, gpu_ids)
         preds_lst = self._trainer.predict(

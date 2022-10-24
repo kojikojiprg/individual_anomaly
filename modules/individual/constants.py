@@ -9,11 +9,9 @@ class IndividualDataFormat:
     kps_real: str = "keypoints_real"
     kps_fake: str = "keypoints_fake"
     z: str = "z"
-    w_spat: str = "weights_spatial"
-    w_temp: str = "weights_temporal"
+    attn: str = "attn_weights"
     f_real: str = "d_feature_real"
     f_fake: str = "d_feature_fake"
-    anomaly: str = "anomaly"
     loss_r: str = "loss_resitudal"
     loss_d: str = "loss_discrimination"
 

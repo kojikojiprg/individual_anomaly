@@ -67,7 +67,7 @@ class Discriminator(nn.Module):
 
         # spatial-temporal transformer
         for i in range(self.n_tr):
-            x_spat, x_temp, _, _ = self.sttr[i](x_spat, x_temp, mask_spat, mask_temp)
+            x_spat, x_temp, _ = self.sttr[i](x_spat, x_temp, mask_spat, mask_temp)
         x_spat = self.emb_out_spat(x_spat)
         x_temp = self.emb_out_temp(x_temp)
         x = x_spat + x_temp.permute(0, 2, 1)

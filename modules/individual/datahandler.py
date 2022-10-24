@@ -1,10 +1,12 @@
 import os
+from glob import glob
 from types import SimpleNamespace
-from typing import List
+from typing import List, Tuple
 
 import yaml
 from modules.utils import pickle_handler
 from modules.utils.constants import Stages
+from modules.utils.video import Capture
 
 from .constants import IndividualDataTypes
 from .datamodule import IndividualDataModule
@@ -67,8 +69,9 @@ class IndividualDataHandler:
         config: SimpleNamespace,
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
+        frame_shape: Tuple[int, int] = None,
     ) -> IndividualDataModule:
-        return IndividualDataModule(data_dir, config, data_type, stage)
+        return IndividualDataModule(data_dir, config, data_type, stage, frame_shape)
 
     @staticmethod
     def load(data_dir: str, model_type: str, data_type: str) -> List[dict]:
@@ -84,3 +87,12 @@ class IndividualDataHandler:
         )
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
         pickle_handler.dump(data, pkl_path)
+
+    @staticmethod
+    def get_frame_shape(video_dir: str):
+        # for 0-1 scaling keypoints
+        video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
+        cap = Capture(video_paths[0])
+        frame_shape = cap.size
+        del cap
+        return frame_shape

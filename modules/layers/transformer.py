@@ -46,10 +46,12 @@ class SpatialTemporalTransformer(nn.Module):
             )
 
         # decoder
-        x_spat, weights_spat = self.de_spat(memory_spat, memory_temp, mask_spat)
-        x_temp, weights_temp = self.de_temp(memory_temp, memory_spat, mask_temp)
+        x_spat, attn_spat = self.de_spat(memory_spat, memory_temp, mask_spat)
+        x_temp, attn_temp = self.de_temp(memory_temp, memory_spat, mask_temp)
 
-        return x_spat, x_temp, weights_spat, weights_temp
+        attn_weights = attn_spat * attn_temp.permute(0, 2, 1)
+
+        return x_spat, x_temp, attn_weights
 
 
 class Encoder(nn.Module):

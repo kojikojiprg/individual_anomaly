@@ -59,14 +59,15 @@ class Encoder(nn.Module):
 
         # spatial-temporal transformer
         for i in range(self.n_tr):
-            x_spat, x_temp, weights_spat, weights_temp = self.sttr[i](
+            x_spat, x_temp, attn_weights = self.sttr[i](
                 x_spat, x_temp, mask_spat, mask_temp
             )
+
         x_spat = self.fc_spat(x_spat)
         x_temp = self.fc_temp(x_temp)
 
-        feature = x_spat + x_temp.permute(0, 2, 1)
-        z = self.fc(feature.view(B, -1))
+        x = x_spat + x_temp.permute(0, 2, 1)
+        z = self.fc(x.view(B, -1))
         z = self.norm(z)
 
-        return z, feature, weights_spat, weights_temp
+        return z, attn_weights
