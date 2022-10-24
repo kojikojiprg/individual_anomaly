@@ -19,12 +19,23 @@ def parser():
 
     # requires
     parser.add_argument(
-        "-dir", "--data_dir", required=True, type=str, help="path of input data"
+        "-vd",
+        "--video_dir",
+        required=True,
+        type=str,
+        help="path of input video directory",
+    )
+    parser.add_argument(
+        "-od",
+        "--output_dir",
+        required=True,
+        type=str,
+        help="path of output data directory",
     )
 
     # options
     parser.add_argument("-c", "--cfg_path", type=str, default="configs/pose/pose.yaml")
-    parser.add_argument("--gpu", type=int, default=0, help="gpu number")
+    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu number")
     parser.add_argument(
         "-v", "--video", default=False, action="store_true", help="with writing video"
     )
@@ -51,7 +62,7 @@ def main():
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     # load video paths
-    video_dir = os.path.join("/raid6/surgery-video", args.data_dir)
+    video_dir = args.video_dir
     video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
     logger.info(f"=> video paths:\n{video_paths}")
 
@@ -59,9 +70,7 @@ def main():
     data_dirs = []
     for video_path in video_paths:
         name = os.path.basename(video_path).replace(".mp4", "")
-        data_dir = os.path.join(
-            "data", args.room_num, args.surgery_num, args.expand_name, name
-        )
+        data_dir = os.path.join(args.output_dir, name)
         data_dirs.append(data_dir)
         os.makedirs(data_dir, exist_ok=True)
 

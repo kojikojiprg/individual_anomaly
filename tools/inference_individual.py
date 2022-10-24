@@ -1,4 +1,5 @@
 import argparse
+import os
 import sys
 import warnings
 
@@ -39,9 +40,7 @@ def parser():
     )
 
     # options
-    parser.add_argument(
-        "-g", "--gpus", type=int, nargs="*", default=None, help="gpu ids"
-    )
+    parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
 
     args = parser.parse_args()
 
@@ -54,13 +53,22 @@ def parser():
 def main():
     args = parser()
 
-    iar = IndividualActivityRecognition(
-        args.model_type,
-        logger,
-        data_type=args.data_type,
-        stage="train",
+    model_type = args.model_type.lower()
+    data_type = args.data_type
+    checkpoint_path = os.path.join(
+        "models",
+        "individual",
+        model_type,
+        f"{model_type}_last-{data_type}.ckpt",
     )
-    iar.train(args.data_dir, args.gpus)
+    iar = IndividualActivityRecognition(
+        model_type,
+        logger,
+        checkpoint_path,
+        data_type=data_type,
+        stage="inference",
+    )
+    iar.inference(args.data_dir, args.gpu_id)
 
 
 if __name__ == "__main__":
