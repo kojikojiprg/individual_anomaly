@@ -15,8 +15,8 @@ class IndividualGanomaly(LightningModule):
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
 
-        self._G = Generator(config.model.G)
-        self._D = Discriminator(config.model.D)
+        self._G = Generator(config.model.G, data_type)
+        self._D = Discriminator(config.model.D, data_type)
         self._l_adv = torch.nn.BCEWithLogitsLoss(reduction="mean")
         self._l_con = torch.nn.L1Loss()
         self._l_lat = torch.nn.MSELoss()
@@ -57,22 +57,22 @@ class IndividualGanomaly(LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, kps_real, mask = batch
-        print(kps_real.shape)
-        print(mask.shape)
         batch_size = kps_real.size()[0]
 
         # make true data
-        label_real = torch.full((batch_size,), 1, dtype=torch.float32).to(self.device)
-        label_fake = torch.full((batch_size,), 0, dtype=torch.float32).to(self.device)
+        label_real = torch.ones((batch_size,), dtype=torch.float32).to(self.device)
+        label_fake = torch.zeros((batch_size,), dtype=torch.float32).to(self.device)
 
-        # forward
-        kps_fake, _, _ = self._G(kps_real, mask)
-        pred_fake, feature_fake, _ = self._D(kps_fake, mask)
-        pred_real, feature_real, _ = self._D(kps_fake, mask)
+        # pred real
+        pred_real, feature_real = self._D(kps_real, mask)
+
+        # pred fake
+        kps_fake, _, _ = self._G(kps_real)
+        pred_fake, feature_fake = self._D(kps_fake, mask)
 
         if optimizer_idx == 0:
             # generator loss
-            l_adv = self._l_adv(pred_fake, label_real)
+            l_adv = self._l_adv(pred_fake.view(-1), label_real)
             l_con = self._l_con(kps_fake, kps_real)
             l_lat = self._l_lat(feature_fake, feature_real)
             g_loss = l_adv + l_con + l_lat
@@ -81,9 +81,9 @@ class IndividualGanomaly(LightningModule):
 
         if optimizer_idx == 1:
             # discriminator loss
-            l_adv_real = self._l_adv(pred_real, label_real)
-            d_loss_fake = self._l_adv(pred_fake, label_fake)
-            d_loss = l_adv_real + d_loss_fake
+            l_adv_real = self._l_adv(pred_real.view(-1), label_real)
+            l_adv_fake = self._l_adv(pred_fake.view(-1), label_fake)
+            d_loss = l_adv_real + l_adv_fake
             self.log("d_loss", d_loss, prog_bar=True, on_step=True)
             return d_loss
 

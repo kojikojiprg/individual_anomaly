@@ -1,26 +1,31 @@
-import torch
 import torch.nn as nn
+from modules.individual import IndividualDataTypes
+from modules.layers.activation import Activation
 from modules.layers.embedding import Embedding
 from modules.layers.positional_encoding import PositionalEncoding
-from modules.layers.transformer import Encoder as TransformerEncoder
+from modules.layers.transformer import SpatialTemporalTransformer
 
 
 class Discriminator(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, data_type):
         super().__init__()
 
-        self.seq_len = config.seq_len * 17 + 1  # add [cls] token
-        self.d_model = config.d_model
+        if data_type == IndividualDataTypes.both:
+            self.n_kps = 34  # both
+        else:
+            self.n_kps = 17  # abs or rel
 
-        self.emb = Embedding(2, config.d_model)
-        self.pe = PositionalEncoding(config.d_model, self.seq_len)
-        self.adversarial_token = nn.Parameter(torch.randn(1, 1, config.d_model))
+        self.emb_in_spat = Embedding(self.n_kps * 2, config.d_model)
+        self.emb_in_temp = Embedding(config.seq_len, config.d_model)
 
-        self.tr = nn.ModuleList()
+        self.pe_spat = PositionalEncoding(config.d_model, config.seq_len)
+        self.pe_temp = PositionalEncoding(config.d_model, self.n_kps * 2)
+
+        self.sttr = nn.ModuleList()
         self.n_tr = config.n_tr
-        for _ in range(self.n_tr):
-            self.tr.append(
-                TransformerEncoder(
+        for _ in range(config.n_tr):
+            self.sttr.append(
+                SpatialTemporalTransformer(
                     config.d_model,
                     config.n_heads,
                     config.d_ff,
@@ -29,33 +34,47 @@ class Discriminator(nn.Module):
                 )
             )
 
-        self.out = nn.Sequential(
-            nn.Linear(config.d_model, 1),
-            nn.Sigmoid(),
+        self.emb_out_spat = Embedding(config.d_model, self.n_kps * 2)
+        self.emb_out_temp = Embedding(config.d_model, config.seq_len)
+        self.x_norm = nn.LayerNorm(config.seq_len * self.n_kps * 2)
+
+        self.ff = nn.Sequential(
+            nn.Linear(config.seq_len * self.n_kps * 2, config.d_ff),
+            Activation(config.activation),
         )
+        self.out_layer = nn.Linear(config.d_ff, 1)
 
     def forward(self, x, mask=None):
-        B = x.size()[0]
+        B, T, P, D = x.shape  # batch, frame, num_points=17(or 34), dim=2
+        x = x.view(B, T, P * D)
+        x_spat = x  # spatial(B, T, 34(or 68))
+        x_temp = x.permute(0, 2, 1)  # temporal(B, 34(or 68), T)
+
+        if mask is not None:
+            mask = mask.view(B, T, P * D)
+            mask_spat = mask
+            mask_temp = mask.permute(0, 2, 1)
 
         # embedding
-        x = self.emb(x)
-
-        # add adversarial token
-        adv_tkn_batch = self.adversarial_token.repeat(B)
-        x = torch.cat([adv_tkn_batch, x], dim=1)
+        x_spat = self.emb_in_spat(x_spat)
+        x_temp = self.emb_in_temp(x_temp)
 
         # positional encoding
-        x = x.view(B, self.seq_len, self.d_model)
-        x = self.pe(x)
+        x_spat = self.pe_spat(x_spat)
+        x_temp = self.pe_temp(x_temp)
 
+        # spatial-temporal transformer
         for i in range(self.n_tr):
-            x, attn = self.tr[i](x, mask)
+            x_spat, x_temp, _ = self.sttr[i](x_spat, x_temp, mask_spat, mask_temp)
+        x_spat = self.emb_out_spat(x_spat)
+        x_temp = self.emb_out_temp(x_temp)
+        x = x_spat + x_temp.permute(0, 2, 1)
+        x = self.x_norm(x.view(B, -1))
 
-        # extract adversarial attention weights and feature
-        adv_attn = attn[:, 0]
-        adv_tkn_feature = x.view(B, self.seq_len, self.d_model)[:, 0]
+        # concat x and z
+        feature = self.ff(x)
 
-        # predict real or fake
-        pred = self.out(adv_tkn_feature)
+        # last layer
+        pred = self.out_layer(feature)
 
-        return pred, adv_tkn_feature, adv_attn
+        return pred, feature
