@@ -1,0 +1,40 @@
+checkpoint_dir: "models/individual/ganomaly/"
+seed: 42  # random seed
+
+dataset:
+  seq_len: 300
+  th_split: 30  # split keypoints sequence of an individual
+  th_mask: 0.2
+
+train:
+  batch_size: 128
+  epochs: 200
+
+inference:
+  batch_size: 512
+  anomaly_lambda: 0.5
+
+model:
+  G:
+    d_z: 16
+    d_model: 32
+    d_ff: 64
+    n_heads: 8
+    n_tr_e: 1
+    n_tr_d: 1
+    dropout: 0.1
+    activation: ReLU
+  D:
+    d_model: 64
+    d_ff: 128
+    n_heads: 8
+    n_tr: 3
+    dropout: 0.1
+    activation: SELU
+
+optim:
+  lr_g: 0.0001
+  lr_d: 0.0001
+  lr_e: 0.0001
+  beta1: 0.9
+  beta2: 0.999

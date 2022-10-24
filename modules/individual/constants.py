@@ -43,6 +43,7 @@ class IndividualModelTypes:
     gan: str = "gan"
     egan: str = "egan"
     autoencoder: str = "autoencoder"
+    ganomaly: str = "ganomaly"
 
     @classmethod
     def get_types(cls) -> List[str]:
