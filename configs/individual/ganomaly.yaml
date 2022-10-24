@@ -7,7 +7,7 @@ dataset:
   th_mask: 0.2
 
 train:
-  batch_size: 128
+  batch_size: 100
   epochs: 200
 
 inference:
@@ -16,17 +16,17 @@ inference:
 
 model:
   G:
-    d_z: 16
-    d_model: 32
-    d_ff: 64
+    d_z: 256
+    d_model: 128
+    d_ff: 256
     n_heads: 8
-    n_tr_e: 1
-    n_tr_d: 1
+    n_tr_e: 3
+    n_tr_d: 3
     dropout: 0.1
     activation: ReLU
   D:
-    d_model: 64
-    d_ff: 128
+    d_model: 128
+    d_ff: 256
     n_heads: 8
     n_tr: 3
     dropout: 0.1
@@ -35,6 +35,5 @@ model:
 optim:
   lr_g: 0.0001
   lr_d: 0.0001
-  lr_e: 0.0001
   beta1: 0.9
   beta2: 0.999
