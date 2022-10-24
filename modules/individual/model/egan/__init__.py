@@ -70,8 +70,8 @@ class IndividualEGAN(LightningModule):
         z = torch.randn(batch_size, self._d_z).to(self.device)
 
         # make true data
-        label_real = torch.full((batch_size,), 1, dtype=torch.float32).to(self.device)
-        label_fake = torch.full((batch_size,), 0, dtype=torch.float32).to(self.device)
+        label_real = torch.ones((batch_size,), dtype=torch.float32).to(self.device)
+        label_fake = torch.zeros((batch_size,), dtype=torch.float32).to(self.device)
 
         if optimizer_idx == 0:
             # train Generator

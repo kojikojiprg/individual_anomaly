@@ -14,11 +14,10 @@ def parser():
 
     # requires
     parser.add_argument(
-        "-dir",
+        "-dd",
         "--data_dir",
         required=True,
         type=str,
-        default="data/dataset/01/train",
         help="path of input data",
     )
     parser.add_argument(
