@@ -88,6 +88,6 @@ def concat_frames(frame1: NDArray, frame2: NDArray) -> NDArray:
     return frame1
 
 
-def get_size(frame: NDArray, field: NDArray) -> Tuple[int, ...]:
+def get_concat_frame_size(frame: NDArray, field: NDArray) -> Tuple[int, ...]:
     cmb_img = concat_frames(frame, field)
     return cmb_img.shape[1::-1]
