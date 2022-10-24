@@ -15,6 +15,7 @@ pytorch-lightning
 mmcv-full==1.6.1
 mmdet
 mmpose
+umap-learn
 
 black
 flake8
