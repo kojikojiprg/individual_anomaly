@@ -12,9 +12,7 @@ from tqdm.auto import tqdm
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
-from .model.autoencoder import IndividualAutoencoder
 from .model.egan import IndividualEGAN
-from .model.gan import IndividualGAN
 from .model.ganomaly import IndividualGanomaly
 
 
@@ -57,12 +55,8 @@ class IndividualActivityRecognition:
             raise AttributeError
 
     def _create_model(self):
-        if self._model_type == IndividualModelTypes.gan:
-            self._model = IndividualGAN(self._config, self._data_type)
-        elif self._model_type == IndividualModelTypes.egan:
+        if self._model_type == IndividualModelTypes.egan:
             self._model = IndividualEGAN(self._config, self._data_type)
-        elif self._model_type == IndividualModelTypes.autoencoder:
-            self._model = IndividualAutoencoder(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.ganomaly:
             self._model = IndividualGanomaly(self._config, self._data_type)
         else:

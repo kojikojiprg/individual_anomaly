@@ -220,16 +220,6 @@ class IndividualDataset(Dataset):
         lcl_kps = lcl_kps.astype(np.float32)
         return lcl_kps
 
-    @staticmethod
-    def _scaling_bbox_global(bbox, frame_shape_xy):
-        # xyxy -> xywh
-        bbox[:, 2] = bbox[:, 2] - bbox[:, 0]
-        bbox[:, 3] = bbox[:, 3] - bbox[:, 1]
-
-        bbox = bbox.reshape(-1, 2, 2) / frame_shape_xy  # 0-1 scalling
-        bbox = bbox.astype(np.float32).reshape(-1, 4)
-        return bbox
-
     def _create_mask(self, kps):
         mask = np.where(
             kps[:, :, 2] < self._th_mask, -1e10, 0.0
@@ -246,10 +236,6 @@ class IndividualDataset(Dataset):
             glb_kps = self._scaling_keypoints_global(kps, self._frame_shape_xy)
             mask = self._create_mask(kps)
             return frame_nums, ids, glb_kps, mask
-        elif self._data_type == IndividualDataTypes.global_bbox:
-            # global_bbox
-            glb_bbox = self._scaling_bbox_global(bbox, self._frame_shape_xy)
-            return frame_nums, ids, glb_bbox, np.empty((0,))
         elif self._data_type == IndividualDataTypes.local:
             # local
             lcl_kps = self._scaling_keypoints_local(bbox, kps)

@@ -27,8 +27,8 @@ def parser():
         "--model_type",
         required=True,
         type=str,
-        default="EGAN",
-        help="'GAN(gan)', 'EGAN(egan)' or 'Autoencoder(autoencoder)'",
+        default="egan",
+        help="'egan' or 'ganomaly'",
     )
     parser.add_argument(
         "-dt",

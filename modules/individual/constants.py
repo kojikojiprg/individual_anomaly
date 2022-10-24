@@ -25,7 +25,6 @@ class IndividualDataFormat:
 @dataclass(frozen=True)
 class IndividualDataTypes:
     global_: str = "global"
-    global_bbox: str = "global_bbox"
     local: str = "local"
     both: str = "both"
 
@@ -40,9 +39,7 @@ class IndividualDataTypes:
 
 @dataclass(frozen=True)
 class IndividualModelTypes:
-    gan: str = "gan"
     egan: str = "egan"
-    autoencoder: str = "autoencoder"
     ganomaly: str = "ganomaly"
 
     @classmethod
