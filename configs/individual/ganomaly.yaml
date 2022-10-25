@@ -8,7 +8,7 @@ dataset:
 
 train:
   batch_size: 100
-  epochs: 200
+  epochs: 100
 
 inference:
   batch_size: 512
@@ -16,7 +16,7 @@ inference:
 
 model:
   G:
-    d_z: 256
+    d_z: 32
     d_model: 128
     d_ff: 256
     n_heads: 8
@@ -27,10 +27,17 @@ model:
   D:
     d_model: 128
     d_ff: 256
+    d_out_feature: 32
     n_heads: 8
     n_tr: 3
     dropout: 0.1
     activation: SELU
+
+loss:
+  G:
+    w_adv: 1
+    w_con: 10
+    w_lat: 1
 
 optim:
   lr_g: 0.0001

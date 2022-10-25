@@ -36,13 +36,13 @@ class Discriminator(nn.Module):
 
         self.emb_out_spat = Embedding(config.d_model, self.n_kps * 2)
         self.emb_out_temp = Embedding(config.d_model, config.seq_len)
-        self.x_norm = nn.LayerNorm(config.seq_len * self.n_kps * 2)
+        self.x_norm = nn.LayerNorm((config.seq_len, self.n_kps * 2))
 
         self.ff = nn.Sequential(
-            nn.Linear(config.seq_len * self.n_kps * 2, config.d_ff),
+            nn.Linear(config.seq_len * self.n_kps * 2, config.d_out_feature),
             Activation(config.activation),
         )
-        self.out_layer = nn.Linear(config.d_ff, 1)
+        self.out = nn.Linear(config.d_out_feature, 1)
 
     def forward(self, x, mask=None):
         B, T, P, D = x.shape  # batch, frame, num_points=17(or 34), dim=2
@@ -69,12 +69,12 @@ class Discriminator(nn.Module):
         x_spat = self.emb_out_spat(x_spat)
         x_temp = self.emb_out_temp(x_temp)
         x = x_spat + x_temp.permute(0, 2, 1)
-        x = self.x_norm(x.view(B, -1))
+        x = self.x_norm(x)
 
         # concat x and z
-        feature = self.ff(x)
+        feature = self.ff(x.view(B, -1))
 
         # last layer
-        pred = self.out_layer(feature)
+        pred = self.out(feature)
 
         return pred, feature
