@@ -23,7 +23,7 @@ model:
     n_tr_e: 3
     n_tr_d: 3
     dropout: 0.1
-    activation: ReLU
+    activation: SELU
   D:
     d_model: 128
     d_ff: 256
@@ -36,11 +36,11 @@ model:
 loss:
   G:
     w_adv: 1
-    w_con: 10
+    w_con: 40
     w_lat: 1
 
 optim:
-  lr_g: 0.0001
+  lr_g: 0.0004
   lr_d: 0.0001
   beta1: 0.9
   beta2: 0.999
