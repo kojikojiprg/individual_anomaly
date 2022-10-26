@@ -7,7 +7,9 @@ dataset:
   th_mask: 0.2
 
 train:
-  batch_size: 100
+  # actual_batch_size = batch_size * accumulate_grad_batches
+  batch_size: 32
+  accumulate_grad_batches: 128
   epochs: 100
 
 inference:
@@ -17,19 +19,19 @@ inference:
 model:
   G:
     d_z: 32
-    d_model: 128
-    d_ff: 256
+    d_model: 256
+    d_ff: 1024
     n_heads: 8
-    n_tr_e: 3
+    n_tr_e: 6
     n_tr_d: 3
     dropout: 0.1
     activation: SELU
   D:
-    d_model: 128
-    d_ff: 256
+    d_model: 256
+    d_ff: 1024
     d_out_feature: 32
     n_heads: 8
-    n_tr: 3
+    n_tr: 6
     dropout: 0.1
     activation: SELU
 
@@ -40,7 +42,7 @@ loss:
     w_lat: 1
 
 optim:
-  lr_g: 0.0004
+  lr_g: 0.0002
   lr_d: 0.0001
   beta1: 0.9
   beta2: 0.999

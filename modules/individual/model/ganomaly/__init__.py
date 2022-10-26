@@ -18,7 +18,7 @@ class IndividualGanomaly(LightningModule):
         self._G = Generator(config.model.G, data_type)
         self._D = Discriminator(config.model.D, data_type)
         self._l_adv = torch.nn.BCEWithLogitsLoss()
-        self._l_con = torch.nn.L1Loss()
+        self._l_con = torch.nn.MSELoss()
         self._l_lat = torch.nn.MSELoss()
 
         self._callbacks = [
@@ -78,7 +78,18 @@ class IndividualGanomaly(LightningModule):
             l_con = self._l_con(kps_fake, kps_real) * self._config.loss.G.w_con
             l_lat = self._l_lat(feature_fake, feature_real) * self._config.loss.G.w_lat
             g_loss = l_adv + l_con + l_lat
-            self.log("g_loss", g_loss, prog_bar=True, on_step=True)
+            # self.log("g_loss", g_loss, prog_bar=True, on_step=True)
+            self.log_dict(
+                {
+                    "g_loss": g_loss,
+                    "g_l_adv": l_adv,
+                    "g_l_con": l_con,
+                    "g_l_lat": l_lat,
+                },
+                prog_bar=True,
+                on_step=True,
+                on_epoch=True,
+            )
             return g_loss
 
         if optimizer_idx == 1:
@@ -86,7 +97,17 @@ class IndividualGanomaly(LightningModule):
             l_adv_real = self._l_adv(pred_real.view(-1), label_real)
             l_adv_fake = self._l_adv(pred_fake.view(-1), label_fake)
             d_loss = l_adv_real + l_adv_fake
-            self.log("d_loss", d_loss, prog_bar=True, on_step=True)
+            # self.log("d_loss", d_loss, prog_bar=True, on_step=True)
+            self.log_dict(
+                {
+                    "d_loss": d_loss,
+                    "d_l_adv_real": l_adv_real,
+                    "d_l_adv_fake": l_adv_fake,
+                },
+                prog_bar=True,
+                on_step=True,
+                on_epoch=True,
+            )
             return d_loss
 
     @staticmethod
