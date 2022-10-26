@@ -153,6 +153,7 @@ class IndividualDataset(Dataset):
                 if len(seq_data) > seq_len:
                     self._append(seq_data, seq_len)
                 # reset seq_data
+                del seq_data
                 seq_data = []
             else:
                 if (
@@ -168,6 +169,7 @@ class IndividualDataset(Dataset):
                     if len(seq_data) > seq_len:
                         self._append(seq_data, seq_len)
                     # reset seq_data
+                    del seq_data
                     seq_data = []
                 else:
                     pass
@@ -180,8 +182,13 @@ class IndividualDataset(Dataset):
             pre_pid = pid
             pre_bbox = bbox
             pre_kps = keypoints
+            del frame_num, pid, bbox, keypoints
         else:
             self._append(seq_data, seq_len)
+            del seq_data
+
+        del pre_frame_num, pre_pid, pre_bbox, pre_kps
+        del pose_data
 
     def _append(self, seq_data, seq_len):
         # append data with creating sequential data
@@ -204,8 +211,10 @@ class IndividualDataset(Dataset):
                 lcl_kps = self._scaling_keypoints_local(bbox, kps)
                 kps = np.concatenate([glb_kps, lcl_kps], axis=1)
                 mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
+                del glb_kps, lcl_kps
 
             self._data.append((frame_num, pid, kps, mask))
+            del frame_num, pid, bbox, kps, mask
 
     @staticmethod
     def _scaling_keypoints_global(kps, frame_shape):
@@ -218,21 +227,20 @@ class IndividualDataset(Dataset):
         org = bbox[:, :2]
         wh = bbox[:, 2:] - bbox[:, :2]
         lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
-        lcl_kps = lcl_kps / np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
+        lcl_kps /= np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps = lcl_kps.astype(np.float32)
+        del org, wh
         return lcl_kps
 
     def _create_mask(self, kps):
         mask = np.where(
             kps[:, :, 2] < self._th_mask, -1e10, 0.0
         )  # -inf to nan in softmax of attention module
-        seq_len, points = mask.shape
-        mask = np.repeat(mask, 2, axis=1).reshape(seq_len, points, 2)
+        mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
 
     def __len__(self):
         return len(self._data)
 
     def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
-        frame_nums, ids, kps, mask = self._data[idx]
-        return frame_nums, ids, kps, mask
+        return self._data[idx]
