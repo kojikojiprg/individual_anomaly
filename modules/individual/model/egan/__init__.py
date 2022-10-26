@@ -63,11 +63,11 @@ class IndividualEGAN(LightningModule):
         return z, attn, kps_fake, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, kps_batch, mask_batch = batch
-        batch_size = kps_batch.size()[0]
+        frame_nums, pids, kps_real, mask = batch
+        batch_size = kps_real.size()[0]
 
         # make random noise
-        z = torch.randn(batch_size, self._d_z).to(self.device)
+        z_fake = torch.randn(batch_size, self._d_z).to(self.device)
 
         # make true data
         label_real = torch.ones((batch_size,), dtype=torch.float32).to(self.device)
@@ -75,33 +75,33 @@ class IndividualEGAN(LightningModule):
 
         if optimizer_idx == 0:
             # train Generator
-            fake_keypoints, _ = self._G(z)
-            d_out_fake, _ = self._D(fake_keypoints, z, mask_batch)
+            kps_fake, _ = self._G(z_fake)
+            pred_fake, _ = self._D(kps_fake, z_fake, mask)
 
-            g_loss = self._criterion(d_out_fake.view(-1), label_real)
+            g_loss = self._criterion(pred_fake.view(-1), label_real)
             self.log("g_loss", g_loss, prog_bar=True, on_step=True)
             return g_loss
 
         if optimizer_idx == 1:
             # train Discriminator
-            z_out_real, _ = self._E(kps_batch, mask_batch)
-            d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
+            z_real, _ = self._E(kps_real, mask)
+            pred_real, _ = self._D(kps_real, z_real, mask)
 
-            fake_keypoints, _ = self._G(z)
-            d_out_fake, _ = self._D(fake_keypoints, z, mask_batch)
+            kps_fake, _ = self._G(z_fake)
+            pred_fake, _ = self._D(kps_fake, z_fake, mask)
 
-            d_loss_real = self._criterion(d_out_real.view(-1), label_real)
-            d_loss_fake = self._criterion(d_out_fake.view(-1), label_fake)
+            d_loss_real = self._criterion(pred_real.view(-1), label_real)
+            d_loss_fake = self._criterion(pred_fake.view(-1), label_fake)
             d_loss = d_loss_real + d_loss_fake
             self.log("d_loss", d_loss, prog_bar=True, on_step=True)
             return d_loss
 
         if optimizer_idx == 2:
             # train Encoder
-            z_out_real, _ = self._E(kps_batch, mask_batch)
-            d_out_real, _ = self._D(kps_batch, z_out_real, mask_batch)
+            z_real, _ = self._E(kps_real, mask)
+            pred_real, _ = self._D(kps_real, z_real, mask)
 
-            e_loss = self._criterion(d_out_real.view(-1), label_fake)
+            e_loss = self._criterion(pred_real.view(-1), label_fake)
             self.log("e_loss", e_loss, prog_bar=True, on_step=True)
             return e_loss
 
@@ -151,15 +151,19 @@ class IndividualEGAN(LightningModule):
         frame_nums = self._to_numpy(frame_nums)
         z = self._to_numpy(z)
         attn = self._to_numpy(attn)
+        kps_real = self._to_numpy(kps_real)
+        kps_fake = self._to_numpy(kps_fake)
         f_real = self._to_numpy(f_real)
         f_fake = self._to_numpy(f_fake)
         l_resi = self._to_numpy(l_resi)
         l_disc = self._to_numpy(l_disc)
 
         preds = []
-        for frame_num, pid, z_, a, fr, ff, lr, ld in zip(
+        for frame_num, pid, kr, kf, z_, a, fr, ff, lr, ld in zip(
             frame_nums,
             pids,
+            kps_real,
+            kps_fake,
             z,
             attn,
             f_real,
@@ -171,6 +175,8 @@ class IndividualEGAN(LightningModule):
                 {
                     IndividualDataFormat.frame_num: frame_num,
                     IndividualDataFormat.id: pid,
+                    IndividualDataFormat.kps_real: kr,
+                    IndividualDataFormat.kps_fake: kf,
                     IndividualDataFormat.z: z_,
                     IndividualDataFormat.attn: a,
                     IndividualDataFormat.f_real: fr,
