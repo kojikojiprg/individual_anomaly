@@ -82,7 +82,7 @@ class IndividualActivityRecognition:
 
     def _build_trainer(self, data_dir, gpu_ids):
         dataset_dir = os.path.dirname(data_dir)
-        log_path = os.path.join(dataset_dir, "logs")
+        log_path = os.path.join(dataset_dir, "logs", self._data_type)
 
         if hasattr(self._config.train, "accumulate_grad_batches"):
             accumulate_grad_batches = self._config.train.accumulate_grad_batches
