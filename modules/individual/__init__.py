@@ -82,7 +82,7 @@ class IndividualActivityRecognition:
 
     def _build_trainer(self, data_dir, gpu_ids):
         dataset_dir = os.path.dirname(data_dir)
-        log_path = os.path.join(dataset_dir, "logs", self._model_type, self._data_type)
+        log_path = os.path.join(dataset_dir, "logs", self._model_type)
 
         if hasattr(self._config.train, "accumulate_grad_batches"):
             accumulate_grad_batches = self._config.train.accumulate_grad_batches
@@ -95,7 +95,7 @@ class IndividualActivityRecognition:
             strategy = None
 
         return Trainer(
-            TensorBoardLogger(log_path, name=self._model_type),
+            TensorBoardLogger(log_path, name=self._data_type),
             callbacks=self._model.callbacks,
             max_epochs=self._config.train.epochs,
             accumulate_grad_batches=accumulate_grad_batches,
