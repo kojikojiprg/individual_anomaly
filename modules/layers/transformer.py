@@ -64,7 +64,6 @@ class Encoder(nn.Module):
 
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
-        self.norm3 = nn.LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
 
@@ -77,15 +76,11 @@ class Encoder(nn.Module):
 
     def forward(self, src):
         # attention
-        x_norm = self.norm1(src)
-        attn_out, weights = self.attn(x_norm, x_norm, x_norm)
-        src = src + self.dropout1(attn_out)
+        attn_out, weights = self.attn(src, src, src)
+        src = self.norm1(src + self.dropout1(attn_out))
 
         # feed forward
-        x_norm = self.norm2(src)
-        src = src + self.dropout2(self.ff(x_norm))
-
-        src = self.norm3(src)
+        src = self.norm2(src + self.dropout2(self.ff(src)))
 
         return src, weights
 
@@ -100,10 +95,8 @@ class Decoder(nn.Module):
         self.ff = FeedFoward(d_model, d_ff, dropout, activation)
 
         self.norm1 = nn.LayerNorm(d_model)
-        self.norm2_1 = nn.LayerNorm(d_model)
-        self.norm2_2 = nn.LayerNorm(d_model)
+        self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
-        self.norm4 = nn.LayerNorm(d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.dropout3 = nn.Dropout(dropout)
@@ -114,23 +107,17 @@ class Decoder(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, tgt, src, attn_mask=None):
+    def forward(self, tgt, memory, memory_mask=None):
         # attention1
-        x_norm = self.norm1(tgt)
-        attn_out, _ = self.attn1(x_norm, x_norm, x_norm)
-        tgt = tgt + self.dropout1(attn_out)
+        attn_out, _ = self.attn1(tgt, tgt, tgt)
+        tgt = self.norm1(tgt + self.dropout1(attn_out))
 
         # attention2
-        x_norm = self.norm2_1(tgt)
-        k = v = self.norm2_2(src)
-        attn_out, weights = self.attn2(x_norm, k, v, attn_mask=attn_mask)
-        tgt = tgt + self.dropout2(attn_out)
+        attn_out, weights = self.attn2(tgt, memory, memory, attn_mask=memory_mask)
+        tgt = self.norm2(tgt + self.dropout2(attn_out))
 
         # feed forward
-        x_norm = self.norm3(tgt)
-        tgt = tgt + self.dropout3(self.ff(x_norm))
-
-        tgt = self.norm4(tgt)
+        tgt = self.norm3(tgt + self.dropout3(self.ff(tgt)))
 
         return tgt, weights
 
