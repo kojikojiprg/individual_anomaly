@@ -13,16 +13,16 @@ class Visualizer:
     def __init__(self, args, logger: Logger):
         self._logger = logger
 
-        self._do_pose_estimation = args.pose
-        self._do_individual = args.individual
+        self._do_pose_estimation = True
+        # self._do_individual = args.individual
         self._no_bg = args.video_no_background
 
     def pose(self, video_path: str, data_dir: str):
         # load data
         if self._do_pose_estimation:
             pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
-        if self._do_individual:
-            ind_data_lst = IndividualDataHandler.load(data_dir, self._logger)
+        # if self._do_individual:
+        #     ind_data_lst = IndividualDataHandler.load(data_dir, self._logger)
 
         # create video capture
         self._logger.info(f"=> loading video from {video_path}.")
@@ -49,13 +49,13 @@ class Visualizer:
             out_paths.append(out_path)
 
         # create video writer for individual results
-        if self._do_individual:
-            # out_path = os.path.join(data_dir, f"individual_{}.mp4")
+        # if self._do_individual:
+        #     out_path = os.path.join(data_dir, f"individual_{}.mp4")
 
-            pose_video_writer = Writer(
-                out_path, video_capture.fps, tmp_frame.shape[1::-1]
-            )
-            out_paths.append(out_path)
+        #     pose_video_writer = Writer(
+        #         out_path, video_capture.fps, tmp_frame.shape[1::-1]
+        #     )
+        #     out_paths.append(out_path)
 
         self._logger.info(f"=> writing video into {out_paths}.")
         for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
