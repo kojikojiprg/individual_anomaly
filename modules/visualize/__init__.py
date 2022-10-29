@@ -1,8 +1,8 @@
 import os
 from logging import Logger
 
-from modules.pose import PoseDataHandler
 from modules.individual import IndividualDataHandler
+from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
 from tqdm import tqdm
 
@@ -20,7 +20,7 @@ class Visualizer:
     def visualise(self, video_path: str, data_dir: str):
         # load data
         if self._do_pose_estimation:
-            pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
+            pose_data_lst = PoseDataHandler.load(data_dir)
         # if self._do_individual:
         #     ind_data_lst = IndividualDataHandler.load(data_dir, self._logger)
 
