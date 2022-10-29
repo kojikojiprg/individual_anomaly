@@ -17,7 +17,7 @@ class Visualizer:
         # self._do_individual = args.individual
         self._no_bg = args.video_no_background
 
-    def pose(self, video_path: str, data_dir: str):
+    def visualise(self, video_path: str, data_dir: str):
         # load data
         if self._do_pose_estimation:
             pose_data_lst = PoseDataHandler.load(data_dir, self._logger)
