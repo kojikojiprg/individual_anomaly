@@ -14,8 +14,10 @@ from .datamodule import IndividualDataModule
 
 class IndividualDataHandler:
     @staticmethod
-    def get_config(model_type: str, stage: str = Stages.inference) -> SimpleNamespace:
-        config_path = IndividualDataHandler._get_config_path(model_type)
+    def get_config(
+        model_type: str, data_type: str, stage: str = Stages.inference
+    ) -> SimpleNamespace:
+        config_path = IndividualDataHandler._get_config_path(model_type, data_type)
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         config = IndividualDataHandler._get_config_reccursive(config)
@@ -48,8 +50,10 @@ class IndividualDataHandler:
         return config
 
     @staticmethod
-    def _get_config_path(model_type: str):
-        return os.path.join("configs", "individual", f"{model_type.lower()}.yaml")
+    def _get_config_path(model_type: str, data_type: str):
+        return os.path.join(
+            "configs", "individual", f"{model_type.lower()}_{data_type.lower()}.yaml"
+        )
 
     @staticmethod
     def _get_config_reccursive(config: dict):
