@@ -34,17 +34,18 @@ class IndividualDataModule(LightningDataModule):
 
         pose_data_lst = self._load_pose_data(self._data_dirs)
 
-        self._datasets = []
         if stage == Stages.train:
             pose_data = []
             for data in pose_data_lst:
                 pose_data += data
-            self._datasets.append(
-                self._create_dataset(pose_data, data_type, frame_shape)
+            self._train_dataset = self._create_dataset(
+                pose_data, data_type, frame_shape
             )
+            self._val_dataset = IndividualVAlDataset(self._train_dataset)
         elif stage == Stages.test or stage == Stages.inference:
+            self._test_datasets = []
             for pose_data in tqdm(pose_data_lst):
-                self._datasets.append(
+                self._test_datasets.append(
                     self._create_dataset(pose_data, data_type, frame_shape)
                 )
         else:
@@ -82,7 +83,12 @@ class IndividualDataModule(LightningDataModule):
         assert self._stage == Stages.train
         if batch_size is None:
             batch_size = self._config.batch_size
-        return DataLoader(self._datasets[0], batch_size, shuffle=True, num_workers=8)
+        return DataLoader(self._train_dataset, batch_size, shuffle=True, num_workers=8)
+
+    def val_dataloader(self, batch_size: int = None):
+        if batch_size is None:
+            batch_size = self._config.batch_size
+        return DataLoader(self._val_dataset, batch_size=batch_size)
 
     def _test_predict_dataloader(self, batch_size: int = None):
         assert self._stage is Stages.test or self._stage == Stages.inference
@@ -91,7 +97,7 @@ class IndividualDataModule(LightningDataModule):
 
         dataloaders = [
             DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
-            for dataset in self._datasets
+            for dataset in self._test_datasets
         ]
         return dataloaders
 
@@ -123,6 +129,12 @@ class IndividualDataset(Dataset):
         self._data: List[Tuple[int, int, NDArray, NDArray]] = []
 
         self._create_dataset(pose_data, seq_len, th_split)
+
+    def get_data(self, frame_num, pid):
+        for data in self._data:
+            if frame_num == data[0] and pid == data[1]:
+                return data
+        return None
 
     def _create_dataset(
         self,
@@ -236,8 +248,27 @@ class IndividualDataset(Dataset):
         mask = np.where(
             kps[:, :, 2] < self._th_mask, -1e10, 0.0
         )  # -inf to nan in softmax of attention module
-        mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
+        # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
+        return self._data[idx]
+
+
+class IndividualVAlDataset(Dataset):
+    val_dataset_settings = [
+        (1700, "2"),
+        (1700, "9"),
+    ]
+
+    def __init__(self, individual_dataset):
+        super().__init__()
+        self._data = []
+        for frame_num, pid in self.val_dataset_settings:
+            self._data.append(individual_dataset.get_data(frame_num, pid))
 
     def __len__(self):
         return len(self._data)
