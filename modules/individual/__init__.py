@@ -33,7 +33,7 @@ class IndividualActivityRecognition:
         self._data_type = data_type
         self._stage = stage
 
-        self._config = IndividualDataHandler.get_config(model_type, stage)
+        self._config = IndividualDataHandler.get_config(model_type, data_type, stage)
         set_random.seed(self._config.seed)
 
         self._model: LightningModule
