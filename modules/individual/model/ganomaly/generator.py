@@ -38,6 +38,7 @@ class Encoder(nn.Module):
         self.trs = nn.ModuleList([copy.deepcopy(tre) for _ in range(self.n_tr)])
 
         self.ff = nn.Linear(config.d_model, config.d_z)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
         B = x.size()[0]
@@ -47,7 +48,7 @@ class Encoder(nn.Module):
         for i in range(self.n_tr):
             x, attn_w = self.trs[i](x)
 
-        z = self.ff(x[:, 0])
+        z = self.sigmoid(self.ff(x[:, 0]))
         return z, attn_w
 
 
