@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from modules.individual import IndividualDataFormat, IndividualDataTypes
+from modules.visualize.individual import plot_val_kps
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
@@ -128,33 +129,34 @@ class IndividualGanomaly(LightningModule):
         pred_real, _ = self._D(kps_real, mask)
 
         # pred fake
-        print("real", kps_real[:, -1, :2])
-        kps_fake, z, _ = self._G(kps_real)
-        print("fake", kps_fake[:, -1, :2])
-        print("fake z", z[:, :5])
-        print("fake z", z[:, -5:])
+        kps_fake, z, attn = self._G(kps_real)
         pred_fake, _ = self._D(kps_fake, mask)
 
         kps_real = kps_real.cpu().numpy()
         kps_fake = kps_fake.cpu().numpy()
+        z = z.cpu().numpy()
+        attn = attn.cpu().numpy()
         pred_real = pred_real.view(-1).cpu().numpy()
         pred_fake = pred_fake.view(-1).cpu().numpy()
-
-        # g_auc = roc_auc_score(label_real, pred_fake)
-        # self.log("g_auc", g_auc)
 
         label = np.concatenate([label_real, label_fake])
         pred = np.concatenate([pred_real, pred_fake])
         d_auc = roc_auc_score(label, pred)
         self.log("d_auc", d_auc)
 
-        return pids, kps_real, kps_fake
+        return pids, kps_real, kps_fake, z, attn
 
     def validation_epoch_end(self, outputs):
         for out in outputs:
-            pids, kps_real, kps_fake = out
+            pids, kps_real, kps_fake, z, attn = out
             for i in range(len(kps_real)):
-                plot(kps_real[i], kps_fake[i], pids[i], self.current_epoch)
+                plot_val_kps(
+                    kps_real[i],
+                    kps_fake[i],
+                    pids[i],
+                    self.current_epoch,
+                    self._data_type,
+                )
 
     @staticmethod
     def _to_numpy(tensor):
@@ -251,83 +253,15 @@ class IndividualGanomaly(LightningModule):
             (self._config.optim.beta1, self._config.optim.beta2),
         )
 
-        return [g_optim, d_optim], []
+        epochs = self._config.train.epochs
+        m50 = int(epochs * 0.5)
+        m70 = int(epochs * 0.7)
+        m90 = int(epochs * 0.9)
+        g_sdl = torch.optim.lr_scheduler.MultiStepLR(
+            g_optim, [m50, m70, m90], self._config.optim.lr_rate
+        )
+        d_sdl = torch.optim.lr_scheduler.MultiStepLR(
+            d_optim, [m50, m70, m90], self._config.optim.lr_rate
+        )
 
-
-import os
-
-import cv2
-import matplotlib.pyplot as plt
-
-# import numpy as np
-
-graph = [
-    # ========== 4 ============ 9 =========== 14 =====
-    [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Nose
-    [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # LEye
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # REye
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # LEar
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # REar
-    [0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0],  # LShoulder
-    [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],  # RShoulder
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],  # LElbow
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],  # RElbow
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # LWrist
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # RWrist
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],  # LHip
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],  # RHip
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],  # LKnee
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],  # RKnee
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # LAnkle
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # RAnkle
-]
-
-
-def plot_keypoints(img, kps, color):
-    for i in range(len(kps) - 1):
-        for j in range(i + 1, len(kps)):
-            if graph[i][j] == 1:
-                p1 = tuple(kps[i].astype(int))
-                p2 = tuple(kps[j].astype(int))
-                img = cv2.line(img, p1, p2, color, 3)
-    return img
-
-
-def plot(kps_real, kps_fake, pid, epoch, seq_len=10, plot_size=(300, 400)):
-    fig = plt.figure(figsize=(20, 3))
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0)
-
-    kps_real = kps_real[-seq_len:]
-    kps_fake = kps_fake[-seq_len:]
-
-    mins = np.min(
-        np.append(np.min(kps_real, axis=1), np.min(kps_fake, axis=1), axis=0), axis=0
-    )
-    maxs = np.max(
-        np.append(np.max(kps_real, axis=1), np.max(kps_fake, axis=1), axis=0), axis=0
-    )
-    size = maxs - mins
-    ratio = np.array(plot_size) / size
-    kps_real = (kps_real - mins) * ratio
-    kps_fake = (kps_fake - mins) * ratio
-
-    for j in range(seq_len):
-        img = np.full((plot_size[1], plot_size[0], 3), 255, np.uint8)
-        img = plot_keypoints(img, kps_real[j], (0, 255, 0))  # real: green
-        img = plot_keypoints(img, kps_fake[j], (255, 0, 0))  # fake: red
-        ax = fig.add_subplot(1, seq_len, j + 1)
-        ax.imshow(img)
-        ax.axes.xaxis.set_visible(False)
-        ax.axes.yaxis.set_visible(False)
-
-    # save fig
-    path = os.path.join(
-        "data",
-        "images",
-        "individual",
-        "ganomaly",
-        "generator",
-        f"pid{pid}_epoch{epoch}.jpg",
-    )
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    plt.savefig(path, bbox_inches="tight")
+        return [g_optim, d_optim], [g_sdl, d_sdl]
