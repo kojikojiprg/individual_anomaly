@@ -71,7 +71,7 @@ def main():
         "models",
         "individual",
         model_type,
-        f"{model_type}_last-{data_type}.ckpt",
+        f"{model_type}_{data_type}_last.ckpt",
     )
     iar = IndividualActivityRecognition(
         model_type,
