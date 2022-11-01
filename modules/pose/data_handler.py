@@ -4,6 +4,8 @@ from typing import Any, Dict, List, Union
 
 from modules.utils import pickle_handler, video
 
+from .format import Format
+
 
 class PoseDataHandler:
     @staticmethod
@@ -14,14 +16,17 @@ class PoseDataHandler:
         return cap
 
     @staticmethod
-    def load(data_dir) -> Union[List[Dict[str, Any]], None]:
+    def load(data_dir, data_keys: list = None) -> Union[List[Dict[str, Any]], None]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
-        if os.path.exists(pkl_path):
-            pkl_data = pickle_handler.load(pkl_path)
-            return pkl_data
+        data = pickle_handler.load(pkl_path)
+        if data_keys is None:
+            return data
         else:
-            return None
+            data_keys = set(data_keys + [Format.frame_num, Format.id])
+            ret_data = [{k: item[k] for k in data_keys} for item in data]
+            del data
+            return ret_data
 
     @staticmethod
     def save(data_dir, data: List[dict]):

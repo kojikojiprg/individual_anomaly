@@ -59,7 +59,9 @@ class IndividualDataModule(LightningDataModule):
     def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
         pose_data_lst = []
         for pose_data_dir in data_dirs:
-            data = PoseDataHandler.load(pose_data_dir)
+            data = PoseDataHandler.load(
+                pose_data_dir, data_keys=[PoseDataFormat.bbox, PoseDataFormat.keypoints]
+            )
             if data is not None:
                 pose_data_lst.append(data)
         return pose_data_lst
@@ -248,7 +250,7 @@ class IndividualDataset(Dataset):
         mask = np.where(
             kps[:, :, 2] < self._th_mask, -1e10, 0.0
         )  # -inf to nan in softmax of attention module
-        # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
+        mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
 
     def __len__(self):

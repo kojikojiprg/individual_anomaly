@@ -8,7 +8,7 @@ from modules.utils import pickle_handler
 from modules.utils.constants import Stages
 from modules.utils.video import Capture
 
-from .constants import IndividualDataTypes
+from .constants import IndividualDataFormat, IndividualDataTypes
 from .datamodule import IndividualDataModule
 
 
@@ -78,11 +78,22 @@ class IndividualDataHandler:
         return IndividualDataModule(data_dir, config, data_type, stage, frame_shape)
 
     @staticmethod
-    def load(data_dir: str, model_type: str, data_type: str) -> List[dict]:
+    def load(
+        data_dir: str, model_type: str, data_type: str, data_keys: list = None
+    ) -> List[dict]:
         pkl_path = os.path.join(
             data_dir, "pickle", f"individual_{model_type}_{data_type}.pkl"
         )
-        return pickle_handler.load(pkl_path)
+        data = pickle_handler.load(pkl_path)
+        if data_keys is None:
+            return data
+        else:
+            data_keys = set(
+                data_keys + [IndividualDataFormat.frame_num, IndividualDataFormat.id]
+            )
+            ret_data = [{k: item[k] for k in data_keys} for item in data]
+            del data
+            return ret_data
 
     @staticmethod
     def save(data_dir: str, data, model_type: str, data_type: str):

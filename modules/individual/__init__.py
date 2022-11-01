@@ -66,8 +66,8 @@ class IndividualActivityRecognition:
             raise NameError
 
     def load_model(self, checkpoint_path: str) -> LightningModule:
-        self._logger.info("=> loading model")
-        self._model.load_from_checkpoint(
+        self._logger.info(f"=> loading model from {checkpoint_path}")
+        self._model = self._model.load_from_checkpoint(
             checkpoint_path, config=self._config, data_type=self._data_type
         )
         return self._model
