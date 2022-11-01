@@ -32,13 +32,13 @@ class IndividualGanomaly(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_" + "{d_loss:.2f}_{epoch}",
-                monitor="d_loss",
+                filename=f"ganomaly_{data_type}_gloss_min",
+                monitor="g_loss",
                 mode="min",
                 save_last=True,
             ),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_last-{data_type}"
+        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_last"
 
     @property
     def Generator(self):
@@ -52,15 +52,15 @@ class IndividualGanomaly(LightningModule):
     def callbacks(self) -> list:
         return self._callbacks
 
-    def forward(self, kps_real, mask_batch):
-        # predict Z and fake keypoints
+    def forward(self, kps_real, mask):
+        # pred real
+        pred_real, f_real = self._D(kps_real, mask)
+
+        # pred fake
         kps_fake, z, attn_g = self._G(kps_real)
+        pred_fake, f_fake = self._D(kps_fake, mask)
 
-        # extract feature maps of real keypoints and fake keypoints from D
-        _, f_real = self._D(kps_real, mask_batch)
-        _, f_fake = self._D(kps_fake, mask_batch)
-
-        return kps_fake, z, attn_g, f_real, f_fake
+        return pred_real, pred_fake, kps_fake, z, attn_g, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, kps_real, mask = batch
@@ -70,12 +70,8 @@ class IndividualGanomaly(LightningModule):
         label_real = torch.ones((batch_size,), dtype=torch.float32).to(self.device)
         label_fake = torch.zeros((batch_size,), dtype=torch.float32).to(self.device)
 
-        # pred real
-        pred_real, feature_real = self._D(kps_real, mask)
-
-        # pred fake
-        kps_fake, _, _ = self._G(kps_real)
-        pred_fake, feature_fake = self._D(kps_fake, mask)
+        # predict
+        pred_real, pred_fake, kps_fake, _, _, f_real, f_fake = self(kps_real, mask)
 
         if optimizer_idx == 0:
             # generator loss
@@ -83,7 +79,7 @@ class IndividualGanomaly(LightningModule):
                 self._l_adv(pred_fake.view(-1), label_real) * self._config.loss.G.w_adv
             )
             l_con = self._l_con(kps_fake, kps_real) * self._config.loss.G.w_con
-            l_lat = self._l_lat(feature_fake, feature_real) * self._config.loss.G.w_lat
+            l_lat = self._l_lat(f_fake, f_real) * self._config.loss.G.w_lat
             g_loss = l_adv + l_con + l_lat
             # self.log("g_loss", g_loss, prog_bar=True, on_step=True)
             self.log_dict(
@@ -125,12 +121,8 @@ class IndividualGanomaly(LightningModule):
         label_real = np.ones((batch_size,), dtype=np.float32)
         label_fake = np.zeros((batch_size,), dtype=np.float32)
 
-        # pred real
-        pred_real, _ = self._D(kps_real, mask)
-
-        # pred fake
-        kps_fake, z, attn = self._G(kps_real)
-        pred_fake, _ = self._D(kps_fake, mask)
+        # predict
+        pred_real, pred_fake, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
 
         kps_real = kps_real.cpu().numpy()
         kps_fake = kps_fake.cpu().numpy()
@@ -189,7 +181,7 @@ class IndividualGanomaly(LightningModule):
         frame_nums, pids, kps_real, mask = batch
 
         # predict
-        kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
+        _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
 
         mask_batch_bool = torch.where(mask < 0, False, True)
         l_resi, l_disc = self.anomaly_score(
@@ -258,10 +250,10 @@ class IndividualGanomaly(LightningModule):
         m70 = int(epochs * 0.7)
         m90 = int(epochs * 0.9)
         g_sdl = torch.optim.lr_scheduler.MultiStepLR(
-            g_optim, [m50, m70, m90], self._config.optim.lr_rate
+            g_optim, [m50, m70, m90], self._config.optim.lr_rate_g
         )
         d_sdl = torch.optim.lr_scheduler.MultiStepLR(
-            d_optim, [m50, m70, m90], self._config.optim.lr_rate
+            d_optim, [m50, m70, m90], self._config.optim.lr_rate_d
         )
 
         return [g_optim, d_optim], [g_sdl, d_sdl]
