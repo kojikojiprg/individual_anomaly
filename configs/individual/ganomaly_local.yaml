@@ -10,7 +10,7 @@ train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 64
   accumulate_grad_batches: 8
-  epochs: 50
+  epochs: 100
 
 inference:
   batch_size: 768
@@ -46,5 +46,5 @@ optim:
   lr_d: 0.0001
   beta1: 0.5
   beta2: 0.999
-  lr_rate_g: 0.5
-  lr_rate_d: 1.0
+  lr_rate_g: 0.2
+  lr_rate_d: 0.5
