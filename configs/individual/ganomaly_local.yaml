@@ -9,7 +9,7 @@ dataset:
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 64
-  accumulate_grad_batches: 8
+  accumulate_grad_batches: 16
   epochs: 100
 
 inference:
