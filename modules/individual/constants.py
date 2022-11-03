@@ -24,6 +24,7 @@ class IndividualDataFormat:
 class IndividualDataTypes:
     global_: str = "global"
     local: str = "local"
+    local_bbox: str = "local+bbox"
     both: str = "both"
 
     @classmethod

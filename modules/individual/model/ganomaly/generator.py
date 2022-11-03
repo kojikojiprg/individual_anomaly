@@ -9,7 +9,7 @@ from modules.layers.transformer import Encoder as TransformerEncoder
 
 
 class Generator(nn.Module):
-    def __init__(self, config, data_type):
+    def __init__(self, config):
         super().__init__()
         self.en = Encoder(config)
         self.de = Decoder(config)
@@ -23,7 +23,7 @@ class Generator(nn.Module):
 class Encoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.emb = Embedding(17, config.d_model)
+        self.emb = Embedding(config.n_kps, config.d_model)
         self.pe = PositionalEncoding(config.d_model, config.seq_len + 1)
         self.z = nn.Parameter(torch.randn((1, 1, config.d_model)))
 
@@ -55,7 +55,9 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.emb = Embedding(17, config.d_model)
+        self.n_kps = config.n_kps
+
+        self.emb = Embedding(config.n_kps, config.d_model)
         self.pe = PositionalEncoding(config.d_model, config.seq_len)
 
         self.linear_z = nn.Linear(config.d_z, config.d_model)
@@ -70,7 +72,7 @@ class Decoder(nn.Module):
         self.n_tr = config.n_tr_d
         self.trs = nn.ModuleList([copy.deepcopy(trd) for _ in range(self.n_tr)])
 
-        self.ff = nn.Linear(config.d_model, 17 * 2)
+        self.ff = nn.Linear(config.d_model, config.n_kps * 2)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x, z):
@@ -84,5 +86,5 @@ class Decoder(nn.Module):
             x, attn_w = self.trs[i](x, z.unsqueeze(1))
 
         x = self.sigmoid(self.ff(x))
-        x = x.view(B, -1, 17, 2)
+        x = x.view(B, -1, self.n_kps, 2)
         return x

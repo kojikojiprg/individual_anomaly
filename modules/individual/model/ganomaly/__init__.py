@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from modules.individual import IndividualDataFormat, IndividualDataTypes
+from modules.individual import IndividualDataFormat
 from modules.visualize.individual import plot_val_kps
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -14,17 +14,12 @@ class IndividualGanomaly(LightningModule):
     def __init__(self, config, data_type):
         super().__init__()
 
-        if data_type == IndividualDataTypes.both:
-            self.n_kps = 34  # both
-        else:
-            self.n_kps = 17  # abs or rel
-
         self._config = config
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
 
-        self._G = Generator(config.model.G, data_type)
-        self._D = Discriminator(config.model.D, data_type)
+        self._G = Generator(config.model.G)
+        self._D = Discriminator(config.model.D)
         self._l_adv = torch.nn.BCEWithLogitsLoss()
         self._l_con = torch.nn.MSELoss()
         self._l_lat = torch.nn.MSELoss()
@@ -122,7 +117,7 @@ class IndividualGanomaly(LightningModule):
         label_fake = np.zeros((batch_size,), dtype=np.float32)
 
         # predict
-        pred_real, pred_fake, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
+        pred_real, pred_fake, kps_fake, z, attn, _, _ = self(kps_real, mask)
 
         kps_real = kps_real.cpu().numpy()
         kps_fake = kps_fake.cpu().numpy()
