@@ -37,7 +37,7 @@ def parser():
         "--data_type",
         type=str,
         default="local",
-        help="Input data type. Selected by 'global', 'global_bbox', 'local' or 'both', by defualt is 'local'.",
+        help="Input data type. Selected by 'global', 'local', 'local+bbox' or 'both', by defualt is 'local'.",
     )
     parser.add_argument(
         "-vd",
