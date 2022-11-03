@@ -1,0 +1,50 @@
+checkpoint_dir: "models/individual/ganomaly/"
+seed: 42  # random seed
+
+dataset:
+  seq_len: 300
+  th_split: 30  # split keypoints sequence of an individual
+  th_mask: 0.2
+
+train:
+  # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
+  batch_size: 64
+  accumulate_grad_batches: 16
+  epochs: 100
+
+inference:
+  batch_size: 768
+  anomaly_lambda: 0.5
+
+model:
+  G:
+    d_z: 32
+    d_model: 256
+    d_ff: 1024
+    n_heads: 8
+    n_tr_e: 6
+    n_tr_d: 3
+    dropout: 0.1
+    activation: SELU
+  D:
+    d_model: 256
+    d_ff: 1024
+    d_out_feature: 32
+    n_heads: 8
+    n_tr: 6
+    dropout: 0.1
+    activation: SELU
+
+loss:
+  G:
+    w_adv: 1
+    w_con: 50
+    w_lat: 1
+
+optim:
+  lr_g: 0.001
+  lr_d: 0.0001
+  beta1: 0.5
+  beta2: 0.999
+  lr_rate_g: 0.2
+  lr_rate_d: 0.5
