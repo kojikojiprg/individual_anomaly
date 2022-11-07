@@ -226,6 +226,7 @@ class IndividualDataset(Dataset):
                 bbox = bbox.astype(np.float32)
                 kps = np.concatenate([np.expand_dims(bbox, axis=1), kps], axis=1)
                 # kps.shape = (T, 18, 2)
+                mask = np.concatenate([np.zeros((len(kps), 1, 2)), mask], axis=1)
             else:
                 # both
                 glb_kps = self._scaling_keypoints_global(kps, self._frame_shape)

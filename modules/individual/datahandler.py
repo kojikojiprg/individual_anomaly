@@ -42,6 +42,7 @@ class IndividualDataHandler:
             n_kps = 17
 
         # set same seq_len, n_kps
+        config.n_kps = n_kps
         if "G" in model_names:
             config.model.G.seq_len = config.dataset.seq_len
             config.model.G.n_kps = n_kps

@@ -15,6 +15,7 @@ class IndividualGanomaly(LightningModule):
         super().__init__()
 
         self._config = config
+        self.n_kps = config.n_kps
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
 
