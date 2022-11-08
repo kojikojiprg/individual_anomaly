@@ -77,6 +77,7 @@ def main():
         logger,
         data_type=args.data_type,
         stage="train",
+        seq_len=args.seq_len,
     )
     iar.train(args.data_dir, args.gpus, args.video_dir)
 

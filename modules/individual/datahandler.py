@@ -49,6 +49,8 @@ class IndividualDataHandler:
             n_kps = 17
 
         # set same seq_len, n_kps
+        if seq_len is not None:
+            assert seq_len == config.dataset.seq_len
         config.n_kps = n_kps
         if "G" in model_names:
             config.model.G.seq_len = config.dataset.seq_len

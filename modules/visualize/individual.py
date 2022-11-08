@@ -99,3 +99,51 @@ def plot_heatmap(data, pid, epoch, name, vmin=None, vmax=None):
         f"pid{pid}_epoch{epoch}_{name}.jpg",
     )
     plt.savefig(path, bbox_inches="tight")
+
+
+def plot_val_bbox(
+    bbox_real, bbox_fake, pid, epoch, data_type, seq_len=10, plot_size=(300, 400)
+):
+    fig = plt.figure(figsize=(20, 3))
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0)
+
+    step = len(bbox_real) // seq_len
+    bbox_real = bbox_real[step - 1 :: step]
+    bbox_fake = bbox_fake[step - 1 :: step]
+
+    mins = np.min(
+        np.append(np.min(bbox_real, axis=1), np.min(bbox_fake, axis=1), axis=0), axis=0
+    )
+    maxs = np.max(
+        np.append(np.max(bbox_real, axis=1), np.max(bbox_fake, axis=1), axis=0), axis=0
+    )
+    size = maxs - mins
+    ratio = np.array(plot_size) / size
+    bbox_real = (bbox_real - mins) * ratio
+    bbox_fake = (bbox_fake - mins) * ratio
+
+    if data_type == IndividualDataTypes.local_bbox:
+        bbox_real = bbox_real[:, 1:]  # idx0 = bbox top-left
+        bbox_fake = bbox_fake[:, 1:]
+
+    for j in range(seq_len):
+        img = np.full((plot_size[1], plot_size[0], 3), 255, np.uint8)
+        img = _plot_val_kps(img, bbox_real[j], (0, 255, 0))  # real: green
+        img = _plot_val_kps(img, bbox_fake[j], (255, 0, 0))  # fake: red
+        ax = fig.add_subplot(1, seq_len, j + 1)
+        ax.imshow(img)
+        ax.axes.xaxis.set_visible(False)
+        ax.axes.yaxis.set_visible(False)
+
+    # save fig
+    path = os.path.join(
+        "data",
+        "images",
+        "individual",
+        "ganomaly",
+        "generator",
+        data_type,
+        f"pid{pid}_epoch{epoch}.jpg",
+    )
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    plt.savefig(path, bbox_inches="tight")
