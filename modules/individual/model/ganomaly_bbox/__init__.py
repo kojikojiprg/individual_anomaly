@@ -1,10 +1,11 @@
 import numpy as np
 import torch
-from modules.individual import IndividualDataFormat, IndividualDataTypes
-from modules.visualize.individual import plot_val_kps
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
+
+from modules.individual import IndividualDataFormat, IndividualDataTypes
+from modules.visualize.individual import plot_val_kps
 
 from .discriminator import Discriminator
 from .generator import Generator
@@ -25,16 +26,17 @@ class IndividualGanomalyBbox(LightningModule):
         self._l_con = torch.nn.MSELoss()
         self._l_lat = torch.nn.MSELoss()
 
+        seq_len = config.dataset.seq_len
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_gloss_min",
+                filename=f"ganomaly_{data_type}_seq{seq_len}_gloss_min",
                 monitor="g_loss",
                 mode="min",
                 save_last=True,
             ),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_last"
+        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_seq{seq_len}_last"
 
     @property
     def Generator(self):
@@ -48,18 +50,18 @@ class IndividualGanomalyBbox(LightningModule):
     def callbacks(self) -> list:
         return self._callbacks
 
-    def forward(self, bbox_real, mask):
+    def forward(self, bbox_real):
         # pred real
-        pred_real, f_real = self._D(bbox_real, mask)
+        pred_real, f_real = self._D(bbox_real)
 
         # pred fake
         bbox_fake, z, attn_g = self._G(bbox_real)
-        pred_fake, f_fake = self._D(bbox_fake, mask)
+        pred_fake, f_fake = self._D(bbox_fake)
 
         return pred_real, pred_fake, bbox_fake, z, attn_g, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, bbox_real, mask = batch
+        frame_nums, pids, bbox_real, _ = batch
         batch_size = bbox_real.size()[0]
 
         # make true data
@@ -67,7 +69,7 @@ class IndividualGanomalyBbox(LightningModule):
         label_fake = torch.zeros((batch_size,), dtype=torch.float32).to(self.device)
 
         # predict
-        pred_real, pred_fake, bbox_fake, _, _, f_real, f_fake = self(bbox_real, mask)
+        pred_real, pred_fake, bbox_fake, _, _, f_real, f_fake = self(bbox_real)
 
         if optimizer_idx == 0:
             # generator loss
@@ -109,7 +111,7 @@ class IndividualGanomalyBbox(LightningModule):
             return d_loss
 
     def validation_step(self, batch, batch_idx):
-        frame_nums, pids, bbox_real, mask = batch
+        frame_nums, pids, bbox_real, _ = batch
         batch_size = bbox_real.size()[0]
 
         # make true data
@@ -117,7 +119,7 @@ class IndividualGanomalyBbox(LightningModule):
         label_fake = np.zeros((batch_size,), dtype=np.float32)
 
         # predict
-        pred_real, pred_fake, bbox_fake, z, attn, _, _ = self(bbox_real, mask)
+        pred_real, pred_fake, bbox_fake, z, attn, _, _ = self(bbox_real)
 
         bbox_real = bbox_real.cpu().numpy()
         bbox_fake = bbox_fake.cpu().numpy()
@@ -149,21 +151,16 @@ class IndividualGanomalyBbox(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    def anomaly_score(self, bbox_real, bbox_fake, bbox_mask, f_real, f_fake):
+    def anomaly_score(self, bbox_real, bbox_fake, f_real, f_fake):
         B, T = bbox_real.size()[:2]
 
         bbox_real = bbox_real.view(B, T, 2, 2)
         bbox_fake = bbox_fake.view(B, T, 2, 2)
 
-        # apply mask
-        bbox_real *= bbox_mask
-        bbox_fake *= bbox_mask
-
         # calc the difference between real keypoints and fake keypoints
-        n_nomasked = torch.sum(bbox_mask.int().view(B, -1), dim=1)
         loss_residual = torch.abs(bbox_real - bbox_fake)
         loss_residual = loss_residual.view(B, -1)
-        loss_residual = torch.sum(loss_residual, dim=1) / n_nomasked  # mean
+        loss_residual = torch.mean(loss_residual, dim=1)
 
         # calc the absolute difference between real feature and fake feature
         loss_discrimination = torch.abs(f_real - f_fake)
@@ -173,16 +170,14 @@ class IndividualGanomalyBbox(LightningModule):
         return loss_residual, loss_discrimination
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        frame_nums, pids, bbox_real, mask = batch
+        frame_nums, pids, bbox_real, _ = batch
 
         # predict
-        _, _, bbox_fake, z, attn, f_real, f_fake = self(bbox_real, mask)
+        _, _, bbox_fake, z, attn, f_real, f_fake = self(bbox_real)
 
-        mask_batch_bool = torch.where(mask < 0, False, True)
         l_resi, l_disc = self.anomaly_score(
             bbox_real,
             bbox_fake,
-            mask_batch_bool,
             f_real,
             f_fake,
         )
@@ -215,8 +210,8 @@ class IndividualGanomalyBbox(LightningModule):
                 {
                     IndividualDataFormat.frame_num: frame_num,
                     IndividualDataFormat.id: pid,
-                    IndividualDataFormat.bbox_real: kr,
-                    IndividualDataFormat.bbox_fake: kf,
+                    IndividualDataFormat.kps_real: kr,
+                    IndividualDataFormat.kps_fake: kf,
                     IndividualDataFormat.z: z_,
                     IndividualDataFormat.attn: a,
                     IndividualDataFormat.f_real: fr,

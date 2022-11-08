@@ -211,31 +211,39 @@ class IndividualDataset(Dataset):
             pid = f"{seq_data[i + seq_len - 1][1]}"
             bbox = np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4]
             kps = np.array([item[3] for item in seq_data[i : i + seq_len]])
-            mask = self._create_mask(kps)
 
-            if self._data_type == IndividualDataTypes.global_:
+            if self._data_type == IndividualDataTypes.bbox:
                 # global
-                kps = self._scaling_keypoints_global(kps, self._frame_shape)
-            elif self._data_type == IndividualDataTypes.local:
-                # local
-                kps = self._scaling_keypoints_local(bbox, kps)
-            elif self._data_type == IndividualDataTypes.local_bbox:
-                # local+bbox
-                kps = self._scaling_keypoints_local(bbox, kps)
-                bbox = bbox[:, :2] / self._frame_shape  # scalling bbox top-left
+                bbox = bbox.reshape(-1, 2, 2)
+                bbox = bbox / self._frame_shape  # scalling bbox top-left
                 bbox = bbox.astype(np.float32)
-                kps = np.concatenate([np.expand_dims(bbox, axis=1), kps], axis=1)
-                # kps.shape = (T, 18, 2)
-                mask = np.concatenate([np.zeros((len(kps), 1, 2)), mask], axis=1)
+                mask = np.zeros((2, 2))
+                self._data.append((frame_num, pid, bbox, mask))
             else:
-                # both
-                glb_kps = self._scaling_keypoints_global(kps, self._frame_shape)
-                lcl_kps = self._scaling_keypoints_local(bbox, kps)
-                kps = np.concatenate([glb_kps, lcl_kps], axis=1)
-                mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
-                del glb_kps, lcl_kps
+                mask = self._create_mask(kps)
+                if self._data_type == IndividualDataTypes.global_:
+                    # global
+                    kps = self._scaling_keypoints_global(kps, self._frame_shape)
+                elif self._data_type == IndividualDataTypes.local:
+                    # local
+                    kps = self._scaling_keypoints_local(bbox, kps)
+                elif self._data_type == IndividualDataTypes.local_bbox:
+                    # local+bbox
+                    kps = self._scaling_keypoints_local(bbox, kps)
+                    bbox = bbox[:, :2] / self._frame_shape  # scalling bbox top-left
+                    bbox = bbox.astype(np.float32)
+                    kps = np.concatenate([np.expand_dims(bbox, axis=1), kps], axis=1)
+                    # kps.shape = (T, 18, 2)
+                    mask = np.concatenate([np.zeros((len(kps), 1, 2)), mask], axis=1)
+                else:
+                    # both
+                    glb_kps = self._scaling_keypoints_global(kps, self._frame_shape)
+                    lcl_kps = self._scaling_keypoints_local(bbox, kps)
+                    kps = np.concatenate([glb_kps, lcl_kps], axis=1)
+                    mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
+                    del glb_kps, lcl_kps
 
-            self._data.append((frame_num, pid, kps, mask))
+                self._data.append((frame_num, pid, kps, mask))
             del frame_num, pid, bbox, kps, mask
 
     @staticmethod

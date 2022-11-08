@@ -25,16 +25,17 @@ class IndividualGanomaly(LightningModule):
         self._l_con = torch.nn.MSELoss()
         self._l_lat = torch.nn.MSELoss()
 
+        seq_len = config.dataset.seq_len
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_gloss_min",
+                filename=f"ganomaly_{data_type}_seq{seq_len}_gloss_min",
                 monitor="g_loss",
                 mode="min",
                 save_last=True,
             ),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_last"
+        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_seq{seq_len}_last"
 
     @property
     def Generator(self):

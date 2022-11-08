@@ -3,17 +3,19 @@ from logging import Logger
 from typing import List, Tuple
 
 import torch
-from modules.utils import set_random
-from modules.utils.constants import Stages
 from pytorch_lightning import LightningModule, Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
 from tqdm.auto import tqdm
+
+from modules.utils import set_random
+from modules.utils.constants import Stages
 
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
 from .model.egan import IndividualEGAN
 from .model.ganomaly import IndividualGanomaly
+from .model.ganomaly_bbox import IndividualGanomalyBbox
 
 
 class IndividualActivityRecognition:
@@ -24,6 +26,7 @@ class IndividualActivityRecognition:
         checkpoint_path: str = None,
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
+        seq_len: int = None,
     ):
         assert IndividualModelTypes.includes(model_type)
         assert IndividualDataTypes.includes(data_type)
@@ -32,8 +35,11 @@ class IndividualActivityRecognition:
         self._logger = logger
         self._data_type = data_type
         self._stage = stage
+        self._seq_len = seq_len
 
-        self._config = IndividualDataHandler.get_config(model_type, data_type, stage)
+        self._config = IndividualDataHandler.get_config(
+            model_type, data_type, stage, seq_len
+        )
         set_random.seed(self._config.seed)
 
         self._model: LightningModule
@@ -61,7 +67,10 @@ class IndividualActivityRecognition:
         if self._model_type == IndividualModelTypes.egan:
             self._model = IndividualEGAN(self._config, self._data_type)
         elif self._model_type == IndividualModelTypes.ganomaly:
-            self._model = IndividualGanomaly(self._config, self._data_type)
+            if self._data_type != IndividualDataTypes.bbox:
+                self._model = IndividualGanomaly(self._config, self._data_type)
+            else:
+                self._model = IndividualGanomalyBbox(self._config, self._data_type)
         else:
             raise NameError
 
@@ -147,7 +156,9 @@ class IndividualActivityRecognition:
 
         self._logger.info("=> saving results")
         for path, results in zip(tqdm(data_dirs), results_lst):
-            IndividualDataHandler.save(path, results, self._model_type, self._data_type)
+            IndividualDataHandler.save(
+                path, results, self._model_type, self._data_type, self._seq_len
+            )
 
         del datamodule
         torch.cuda.empty_cache()

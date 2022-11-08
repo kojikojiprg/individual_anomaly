@@ -26,6 +26,7 @@ class IndividualDataTypes:
     local: str = "local"
     local_bbox: str = "local+bbox"
     both: str = "both"
+    bbox: str = "bbox"
 
     @classmethod
     def get_types(cls) -> List[str]:

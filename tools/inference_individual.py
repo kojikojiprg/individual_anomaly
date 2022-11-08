@@ -46,6 +46,13 @@ def parser():
         default=None,
         help="path of input video directory",
     )
+    parser.add_argument(
+        "-sl",
+        "--seq_len",
+        type=int,
+        default=None,
+        help="sequential length",
+    )
 
     args = parser.parse_args()
 
@@ -67,18 +74,28 @@ def main():
 
     model_type = args.model_type
     data_type = args.data_type
-    checkpoint_path = os.path.join(
-        "models",
-        "individual",
-        model_type,
-        f"{model_type}_{data_type}_last.ckpt",
-    )
+    seq_len = args.seq_len
+    if seq_len is None:
+        checkpoint_path = os.path.join(
+            "models",
+            "individual",
+            model_type,
+            f"{model_type}_{data_type}_last.ckpt",
+        )
+    else:
+        checkpoint_path = os.path.join(
+            "models",
+            "individual",
+            model_type,
+            f"{model_type}_{data_type}_seq{seq_len}_last.ckpt",
+        )
     iar = IndividualActivityRecognition(
         model_type,
         logger,
         checkpoint_path,
         data_type=data_type,
         stage="inference",
+        seq_len=seq_len,
     )
     iar.inference(args.data_dir, [args.gpu], args.video_dir)
 

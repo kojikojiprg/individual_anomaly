@@ -46,6 +46,13 @@ def parser():
         default=None,
         help="path of input video directory",
     )
+    parser.add_argument(
+        "-sl",
+        "--seq_len",
+        type=int,
+        default=None,
+        help="sequential length",
+    )
 
     args = parser.parse_args()
 

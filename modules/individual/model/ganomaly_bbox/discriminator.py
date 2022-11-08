@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from modules.layers.embedding import Embedding
 from modules.layers.positional_encoding import PositionalEncoding
 from modules.layers.transformer import Encoder as TransformerEncoder
@@ -29,7 +30,7 @@ class Discriminator(nn.Module):
         self.selu = nn.SELU(inplace=True)
         self.out = nn.Linear(config.d_out_feature, 1)
 
-    def forward(self, x, mask):
+    def forward(self, x):
         B = x.size()[0]
         x = self.emb(x)
 
