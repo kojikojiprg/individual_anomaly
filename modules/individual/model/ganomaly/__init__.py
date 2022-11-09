@@ -1,13 +1,15 @@
 import numpy as np
 import torch
-from modules.individual import IndividualDataFormat
-from modules.visualize.individual import plot_val_kps
 from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
+from modules.individual import IndividualDataFormat
+
 from .discriminator import Discriminator
 from .generator import Generator
+
+# from modules.visualize.individual import plot_val_kps
 
 
 class IndividualGanomaly(LightningModule):
@@ -35,7 +37,9 @@ class IndividualGanomaly(LightningModule):
                 save_last=True,
             ),
         ]
-        self._callbacks[0].CHECKPOINT_NAME_LAST = f"ganomaly_{data_type}_seq{seq_len}_last"
+
+        last_name = f"ganomaly_{data_type}_seq{seq_len}_last"
+        self._callbacks[0].CHECKPOINT_NAME_LAST = last_name
 
     @property
     def Generator(self):
@@ -133,19 +137,19 @@ class IndividualGanomaly(LightningModule):
         d_auc = roc_auc_score(label, pred)
         self.log("d_auc", d_auc)
 
-        return pids, kps_real, kps_fake, z, attn
+        # return pids, kps_real, kps_fake, z, attn
 
-    def validation_epoch_end(self, outputs):
-        for out in outputs:
-            pids, kps_real, kps_fake, z, attn = out
-            for i in range(len(kps_real)):
-                plot_val_kps(
-                    kps_real[i],
-                    kps_fake[i],
-                    pids[i],
-                    self.current_epoch,
-                    self._data_type,
-                )
+    # def validation_epoch_end(self, outputs):
+    #     for out in outputs:
+    #         pids, kps_real, kps_fake, z, attn = out
+    #         for i in range(len(kps_real)):
+    #             plot_val_kps(
+    #                 kps_real[i],
+    #                 kps_fake[i],
+    #                 pids[i],
+    #                 self.current_epoch,
+    #                 self._data_type,
+    #             )
 
     @staticmethod
     def _to_numpy(tensor):

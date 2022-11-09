@@ -4,12 +4,13 @@ from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from modules.pose import PoseDataFormat, PoseDataHandler
-from modules.utils.constants import Stages
 from numpy.typing import NDArray
 from pytorch_lightning import LightningDataModule
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, Dataset, Subset
 from tqdm.auto import tqdm
+
+from modules.pose import PoseDataFormat, PoseDataHandler
+from modules.utils.constants import Stages
 
 from .constants import IndividualDataTypes
 
@@ -41,7 +42,10 @@ class IndividualDataModule(LightningDataModule):
             self._train_dataset = self._create_dataset(
                 pose_data, data_type, frame_shape
             )
-            self._val_dataset = IndividualVAlDataset(self._train_dataset)
+            val_ids = np.random.randint(
+                len(self._train_dataset), size=self._config.n_val
+            )
+            self._val_dataset = Subset(self._train_dataset, val_ids)
         elif stage == Stages.test or stage == Stages.inference:
             self._test_datasets = []
             for pose_data in tqdm(pose_data_lst):
@@ -90,7 +94,7 @@ class IndividualDataModule(LightningDataModule):
     def val_dataloader(self, batch_size: int = None):
         if batch_size is None:
             batch_size = self._config.batch_size
-        return DataLoader(self._val_dataset, batch_size=batch_size)
+        return DataLoader(self._val_dataset, batch_size, shuffle=False, num_workers=8)
 
     def _test_predict_dataloader(self, batch_size: int = None):
         assert self._stage is Stages.test or self._stage == Stages.inference
@@ -268,25 +272,6 @@ class IndividualDataset(Dataset):
         )  # -inf to nan in softmax of attention module
         mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
-        return self._data[idx]
-
-
-class IndividualVAlDataset(Dataset):
-    val_dataset_settings = [
-        (1700, "2"),
-        (1700, "9"),
-    ]
-
-    def __init__(self, individual_dataset):
-        super().__init__()
-        self._data = []
-        for frame_num, pid in self.val_dataset_settings:
-            self._data.append(individual_dataset.get_data(frame_num, pid))
 
     def __len__(self):
         return len(self._data)
