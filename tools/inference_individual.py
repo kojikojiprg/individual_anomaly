@@ -22,6 +22,13 @@ def parser():
         type=str,
         help="path of input data",
     )
+    parser.add_argument(
+        "-sl",
+        "--seq_len",
+        required=True,
+        type=int,
+        help="sequential length",
+    )
 
     # options
     parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
@@ -45,13 +52,6 @@ def parser():
         type=str,
         default=None,
         help="path of input video directory",
-    )
-    parser.add_argument(
-        "-sl",
-        "--seq_len",
-        type=int,
-        default=None,
-        help="sequential length",
     )
 
     args = parser.parse_args()
