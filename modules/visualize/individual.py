@@ -5,8 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from modules.individual.constants import IndividualDataTypes
-
 graph = [
     # ========== 4 ============ 9 =========== 14 =====
     [0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],  # Nose
@@ -59,10 +57,6 @@ def plot_val_kps(
     ratio = np.array(plot_size) / size
     kps_real = (kps_real - mins) * ratio
     kps_fake = (kps_fake - mins) * ratio
-
-    if data_type == IndividualDataTypes.local_bbox:
-        kps_real = kps_real[:, 1:]  # idx0 = bbox top-left
-        kps_fake = kps_fake[:, 1:]
 
     for j in range(seq_len):
         img = np.full((plot_size[1], plot_size[0], 3), 255, np.uint8)
@@ -121,10 +115,6 @@ def plot_val_bbox(
     ratio = np.array(plot_size) / size
     bbox_real = (bbox_real - mins) * ratio
     bbox_fake = (bbox_fake - mins) * ratio
-
-    if data_type == IndividualDataTypes.local_bbox:
-        bbox_real = bbox_real[:, 1:]  # idx0 = bbox top-left
-        bbox_fake = bbox_fake[:, 1:]
 
     for j in range(seq_len):
         img = np.full((plot_size[1], plot_size[0], 3), 255, np.uint8)

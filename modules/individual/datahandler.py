@@ -41,8 +41,6 @@ class IndividualDataHandler:
         # select n_kps by data_type
         if data_type == IndividualDataTypes.both:
             n_kps = 34  # both
-        elif data_type == IndividualDataTypes.local_bbox:
-            n_kps = 18  # local+bbox
         elif data_type == IndividualDataTypes.bbox:
             n_kps = None
         else:
