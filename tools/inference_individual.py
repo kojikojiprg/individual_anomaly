@@ -75,20 +75,12 @@ def main():
     model_type = args.model_type
     data_type = args.data_type
     seq_len = args.seq_len
-    if seq_len is None:
-        checkpoint_path = os.path.join(
-            "models",
-            "individual",
-            model_type,
-            f"{model_type}_{data_type}_last.ckpt",
-        )
-    else:
-        checkpoint_path = os.path.join(
-            "models",
-            "individual",
-            model_type,
-            f"{model_type}_{data_type}_seq{seq_len}_last.ckpt",
-        )
+    checkpoint_path = os.path.join(
+        "models",
+        "individual",
+        model_type,
+        f"{model_type}_{data_type}_seq{seq_len}_last.ckpt",
+    )
     iar = IndividualActivityRecognition(
         model_type,
         logger,
