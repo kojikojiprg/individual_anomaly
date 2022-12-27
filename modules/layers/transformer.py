@@ -74,9 +74,11 @@ class Encoder(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, src):
+    def forward(self, src, key_padding_mask=None, attn_mask=None):
         # attention
-        attn_out, weights = self.attn(src, src, src)
+        attn_out, weights = self.attn(
+            src, src, src, key_padding_mask=key_padding_mask, attn_mask=attn_mask
+        )
         src = self.norm1(src + self.dropout1(attn_out))
 
         # feed forward
@@ -107,13 +109,29 @@ class Decoder(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, tgt, memory, memory_mask=None):
+    def forward(
+        self,
+        tgt,
+        memory,
+        key_padding_mask=None,
+        attn_mask=None,
+        memory_key_padding_mask=None,
+        memory_attn_mask=None,
+    ):
         # attention1
-        attn_out, _ = self.attn1(tgt, tgt, tgt)
+        attn_out, _ = self.attn1(
+            tgt, tgt, tgt, key_padding_mask=key_padding_mask, attn_mask=attn_mask
+        )
         tgt = self.norm1(tgt + self.dropout1(attn_out))
 
         # attention2
-        attn_out, weights = self.attn2(tgt, memory, memory, attn_mask=memory_mask)
+        attn_out, weights = self.attn2(
+            tgt,
+            memory,
+            memory,
+            key_padding_mask=memory_key_padding_mask,
+            attn_mask=memory_attn_mask,
+        )
         tgt = self.norm2(tgt + self.dropout2(attn_out))
 
         # feed forward

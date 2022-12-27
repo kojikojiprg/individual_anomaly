@@ -221,7 +221,7 @@ class IndividualDataset(Dataset):
                 bbox = bbox.reshape(-1, 2, 2)
                 bbox = bbox / self._frame_shape  # scalling bbox top-left
                 bbox = bbox.astype(np.float32)
-                mask = np.zeros((2, 2))
+                mask = np.nan
                 self._data.append((frame_num, pid, bbox, mask))
             else:
                 mask = self._create_mask(kps)
@@ -260,9 +260,9 @@ class IndividualDataset(Dataset):
 
     def _create_mask(self, kps):
         mask = np.where(
-            kps[:, :, 2] < self._th_mask, -1e10, 0.0
-        )  # -inf to nan in softmax of attention module
-        mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
+            np.mean(kps[:, :, 2], axis=1) < self._th_mask, True, False
+        )
+        # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
 
     def __len__(self):

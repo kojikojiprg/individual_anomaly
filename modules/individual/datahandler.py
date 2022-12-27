@@ -109,13 +109,13 @@ class IndividualDataHandler:
     ):
         if seq_len is None:
             return os.path.join(
-                data_dir, "pickle", f"individual_{model_type}_{data_type}.pkl"
+                data_dir, "pickle", f"individual_{model_type}_masked_{data_type}.pkl"
             )
         else:
             return os.path.join(
                 data_dir,
                 "pickle",
-                f"individual_{model_type}_{data_type}_seq{seq_len}.pkl",
+                f"individual_{model_type}_masked_{data_type}_seq{seq_len}.pkl",
             )
 
     @classmethod

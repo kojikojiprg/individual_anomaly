@@ -31,14 +31,14 @@ class IndividualGanomaly(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_seq{seq_len}_gloss_min",
+                filename=f"ganomaly_masked_{data_type}_seq{seq_len}_gloss_min",
                 monitor="g_loss",
                 mode="min",
                 save_last=True,
             ),
         ]
 
-        last_name = f"ganomaly_{data_type}_seq{seq_len}_last"
+        last_name = f"ganomaly_masked_{data_type}_seq{seq_len}_last"
         self._callbacks[0].CHECKPOINT_NAME_LAST = last_name
 
     @property
@@ -55,13 +55,13 @@ class IndividualGanomaly(LightningModule):
 
     def forward(self, kps_real, mask):
         # pred real
-        pred_real, f_real = self._D(kps_real, mask)
+        pred_real, f_real, attn_d_real = self._D(kps_real, mask)
 
         # pred fake
-        kps_fake, z, attn_g = self._G(kps_real)
-        pred_fake, f_fake = self._D(kps_fake, mask)
+        kps_fake, z, attn_ge, attn_gd = self._G(kps_real, mask)
+        pred_fake, f_fake, attn_d_fake = self._D(kps_fake, mask)
 
-        return pred_real, pred_fake, kps_fake, z, attn_g, f_real, f_fake
+        return pred_real, pred_fake, kps_fake, z, attn_ge, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         frame_nums, pids, kps_real, mask = batch
@@ -162,8 +162,8 @@ class IndividualGanomaly(LightningModule):
         kps_fake = kps_fake.view(B, T, self.n_kps, 2)
 
         # apply mask
-        kps_real *= kps_mask
-        kps_fake *= kps_mask
+        kps_real[kps_mask] = 0.0
+        kps_fake[kps_mask] = 0.0
 
         # calc the difference between real keypoints and fake keypoints
         n_nomasked = torch.sum(kps_mask.int().view(B, -1), dim=1)
