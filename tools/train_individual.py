@@ -36,15 +36,15 @@ def parser():
         "-mt",
         "--model_type",
         type=str,
-        default="egan",
-        help="'egan' or 'ganomaly'",
+        default="ganomaly",
+        help="'ganomaly' only",
     )
     parser.add_argument(
         "-dt",
         "--data_type",
         type=str,
         default="local",
-        help="Input data type. Selected by 'global', 'local', 'local+bbox' or 'both', by defualt is 'local'.",
+        help="Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.",
     )
     parser.add_argument(
         "-vd",

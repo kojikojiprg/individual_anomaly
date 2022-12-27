@@ -13,7 +13,6 @@ from modules.utils.constants import Stages
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
-from .model.egan import IndividualEGAN
 from .model.ganomaly import IndividualGanomaly
 from .model.ganomaly_bbox import IndividualGanomalyBbox
 
@@ -64,15 +63,10 @@ class IndividualActivityRecognition:
             raise AttributeError
 
     def _create_model(self):
-        if self._model_type == IndividualModelTypes.egan:
-            self._model = IndividualEGAN(self._config, self._data_type)
-        elif self._model_type == IndividualModelTypes.ganomaly:
-            if self._data_type != IndividualDataTypes.bbox:
-                self._model = IndividualGanomaly(self._config, self._data_type)
-            else:
-                self._model = IndividualGanomalyBbox(self._config, self._data_type)
+        if self._data_type != IndividualDataTypes.bbox:
+            self._model = IndividualGanomaly(self._config, self._data_type)
         else:
-            raise NameError
+            self._model = IndividualGanomalyBbox(self._config, self._data_type)
 
     def load_model(self, checkpoint_path: str) -> LightningModule:
         self._logger.info(f"=> loading model from {checkpoint_path}")

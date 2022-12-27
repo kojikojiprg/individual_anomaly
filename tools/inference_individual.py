@@ -36,8 +36,8 @@ def parser():
         "-mt",
         "--model_type",
         type=str,
-        default="egan",
-        help="'egan' or 'ganomaly'",
+        default="ganomaly",
+        help="'ganomaly' only",
     )
     parser.add_argument(
         "-dt",
@@ -79,7 +79,7 @@ def main():
         "models",
         "individual",
         model_type,
-        f"{model_type}_{data_type}_seq{seq_len}_last.ckpt",
+        f"{model_type}_masked_{data_type}_seq{seq_len}_last.ckpt",
     )
     iar = IndividualActivityRecognition(
         model_type,
