@@ -6,7 +6,6 @@ import warnings
 sys.path.append(".")
 from modules.individual import IndividualActivityRecognition
 from modules.individual.constants import IndividualDataTypes
-from modules.utils.logger import logger
 
 warnings.simplefilter("ignore")
 
@@ -83,7 +82,6 @@ def main():
     )
     iar = IndividualActivityRecognition(
         model_type,
-        logger,
         checkpoint_path,
         seq_len=seq_len,
         data_type=data_type,

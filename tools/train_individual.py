@@ -4,7 +4,6 @@ import warnings
 
 sys.path.append(".")
 from modules.individual import IndividualActivityRecognition, IndividualDataTypes
-from modules.utils.logger import logger
 
 warnings.simplefilter("ignore")
 
@@ -74,7 +73,6 @@ def main():
 
     iar = IndividualActivityRecognition(
         args.model_type,
-        logger,
         seq_len=args.seq_len,
         data_type=args.data_type,
         stage="train",
