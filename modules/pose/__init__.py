@@ -27,5 +27,6 @@ class PoseEstimation:
         if data_dir is not None:
             print(f"=> saving pose estimation results to {data_dir}")
             PoseDataHandler.save(data_dir, results)
+            PoseDataHandler.save_frame_shape(data_dir, cap.size)
 
         return results

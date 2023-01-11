@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Tuple
 
 from modules.utils import pickle_handler, video
 
@@ -36,3 +36,8 @@ class PoseDataHandler:
     def save(data_dir, data: List[dict]):
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
         pickle_handler.dump(data, pkl_path)
+
+    @staticmethod
+    def save_frame_shape(data_dir, frame_shape: Tuple[int, int]):
+        pkl_path = os.path.join(data_dir, "pickle", "frame_shape.pkl")
+        pickle_handler.dump(frame_shape, pkl_path)
