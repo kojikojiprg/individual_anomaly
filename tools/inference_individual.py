@@ -85,9 +85,9 @@ def main():
         model_type,
         logger,
         checkpoint_path,
+        seq_len=seq_len,
         data_type=data_type,
         stage="inference",
-        seq_len=seq_len,
     )
     iar.inference(args.data_dir, [args.gpu], args.video_dir)
 

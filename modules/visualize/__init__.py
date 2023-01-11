@@ -1,18 +1,16 @@
 import os
-from logging import Logger
+
+from tqdm import tqdm
 
 from modules.individual import IndividualDataHandler
 from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
-from tqdm import tqdm
 
 from . import pose as pose_vis
 
 
 class Visualizer:
-    def __init__(self, args, logger: Logger):
-        self._logger = logger
-
+    def __init__(self, args):
         self._do_pose_estimation = True
         # self._do_individual = args.individual
         self._no_bg = args.video_no_background
@@ -22,10 +20,10 @@ class Visualizer:
         if self._do_pose_estimation:
             pose_data_lst = PoseDataHandler.load(data_dir)
         # if self._do_individual:
-        #     ind_data_lst = IndividualDataHandler.load(data_dir, self._logger)
+        #     ind_data_lst = IndividualDataHandler.load(data_dir)
 
         # create video capture
-        self._logger.info(f"=> loading video from {video_path}.")
+        print(f"=> loading video from {video_path}.")
         video_capture = Capture(video_path)
         assert (
             video_capture.is_opened
@@ -57,7 +55,7 @@ class Visualizer:
         #     )
         #     out_paths.append(out_path)
 
-        self._logger.info(f"=> writing video into {out_paths}.")
+        print(f"=> writing video into {out_paths}.")
         for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
             frame_num += 1  # frame_num = (1, ...)
             ret, frame = video_capture.read()

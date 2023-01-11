@@ -1,11 +1,11 @@
-from logging import Logger
 from typing import Any, Dict, List
 
 import numpy as np
 import torch
-from modules.utils.video import Capture
 from numpy.typing import NDArray
 from tqdm import tqdm
+
+from modules.utils.video import Capture
 
 from ..format import Format
 from .detection import Detector
@@ -13,24 +13,22 @@ from .tracking import Tracker
 
 
 class PoseModel:
-    def __init__(self, pose_cfg: dict, device: str, logger: Logger):
-        self._logger = logger
-
+    def __init__(self, pose_cfg: dict, device: str):
         self._cfg = pose_cfg
 
-        self._logger.info("=> loading detector model")
+        print("=> loading detector model")
         self._detector = Detector(self._cfg, device)
-        self._logger.info("=> loading tracker model")
+        print("=> loading tracker model")
         self._tracker = Tracker(self._cfg, device)
 
     def __del__(self):
         torch.cuda.empty_cache()
-        del self._detector, self._tracker, self._logger
+        del self._detector, self._tracker
 
     def predict(
         self, cap: Capture, return_heatmap: bool = False
     ) -> List[Dict[str, Any]]:
-        self._logger.info("=> running pose estimation")
+        print("=> running pose estimation")
         results = []
         for frame_num in tqdm(range(cap.frame_count), ncols=100):
             frame_num += 1

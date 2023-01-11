@@ -1,5 +1,4 @@
 import os
-from logging import Logger
 from typing import List, Tuple
 
 import torch
@@ -13,28 +12,26 @@ from modules.utils.constants import Stages
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
-from .model.ganomaly import IndividualGanomaly
-from .model.ganomaly_bbox import IndividualGanomalyBbox
+from .models.ganomaly import IndividualGanomaly
+from .models.ganomaly_bbox import IndividualGanomalyBbox
 
 
 class IndividualActivityRecognition:
     def __init__(
         self,
         model_type: str,
-        logger: Logger,
+        seq_len: int,
         checkpoint_path: str = None,
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
-        seq_len: int = None,
     ):
         assert IndividualModelTypes.includes(model_type)
         assert IndividualDataTypes.includes(data_type)
 
         self._model_type = model_type.casefold()
-        self._logger = logger
+        self._seq_len = seq_len
         self._data_type = data_type
         self._stage = stage
-        self._seq_len = seq_len
 
         self._config = IndividualDataHandler.get_config(
             model_type, data_type, stage, seq_len
@@ -69,7 +66,7 @@ class IndividualActivityRecognition:
             self._model = IndividualGanomalyBbox(self._config, self._data_type)
 
     def load_model(self, checkpoint_path: str) -> LightningModule:
-        self._logger.info(f"=> loading model from {checkpoint_path}")
+        print(f"=> loading model from {checkpoint_path}")
         self._model = self._model.load_from_checkpoint(
             checkpoint_path, config=self._config, data_type=self._data_type
         )
@@ -78,7 +75,7 @@ class IndividualActivityRecognition:
     def _create_datamodule(
         self, data_dir: str, frame_shape: Tuple[int, int] = None
     ) -> IndividualDataModule:
-        self._logger.info("=> creating dataset")
+        print("=> creating dataset")
         return IndividualDataHandler.create_datamodule(
             data_dir, self._config, self._data_type, self._stage, frame_shape
         )
@@ -148,7 +145,7 @@ class IndividualActivityRecognition:
         results_lst = self._collect_results(preds_lst)
         data_dirs = datamodule.data_dirs
 
-        self._logger.info("=> saving results")
+        print("=> saving results")
         for path, results in zip(tqdm(data_dirs), results_lst):
             IndividualDataHandler.save(
                 path, results, self._model_type, self._data_type, self._seq_len

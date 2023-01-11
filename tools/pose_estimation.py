@@ -8,7 +8,6 @@ import torch
 
 sys.path.append(".")
 from modules.pose import PoseEstimation
-from modules.utils.logger import logger
 from modules.visualize import Visualizer
 
 warnings.simplefilter("ignore")
@@ -64,7 +63,7 @@ def main():
     # load video paths
     video_dir = args.video_dir
     video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
-    logger.info(f"=> video paths:\n{video_paths}")
+    print(f"=> video paths:\n{video_paths}")
 
     # prepairing output data dirs
     data_dirs = []
@@ -75,13 +74,13 @@ def main():
         os.makedirs(data_dir, exist_ok=True)
 
     # load model
-    pe = PoseEstimation(args.cfg_path, device, logger)
+    pe = PoseEstimation(args.cfg_path, device)
 
     if args.video:
-        vis = Visualizer(args, logger)
+        vis = Visualizer(args)
 
     for video_path, data_dir in zip(video_paths, data_dirs):
-        logger.info(f"=> processing {video_path}")
+        print(f"=> processing {video_path}")
         pe.inference(video_path, data_dir)
 
         if args.video:

@@ -115,8 +115,6 @@ class IndividualDataModule(LightningDataModule):
 
 
 class IndividualDataset(Dataset):
-    # _dmy_kps = np.full((17, 3), np.nan, dtype=np.float32)
-
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],

@@ -104,19 +104,16 @@ class IndividualDataHandler:
         return IndividualDataModule(data_dir, config, data_type, stage, frame_shape)
 
     @staticmethod
-    def _get_data_path(
-        data_dir: str, model_type: str, data_type: str, seq_len: int = None
-    ):
-        if seq_len is None:
-            return os.path.join(
-                data_dir, "pickle", f"individual_{model_type}_masked_{data_type}.pkl"
-            )
-        else:
-            return os.path.join(
-                data_dir,
-                "pickle",
-                f"individual_{model_type}_masked_{data_type}_seq{seq_len}.pkl",
-            )
+    def _get_data_path(data_dir: str, model_type: str, data_type: str, seq_len: int):
+        str_masked = ""
+        if data_type == IndividualDataTypes.local:
+            str_masked = "_masked"
+
+        return os.path.join(
+            data_dir,
+            "pickle",
+            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}.pkl",
+        )
 
     @classmethod
     def load(
@@ -124,24 +121,27 @@ class IndividualDataHandler:
         data_dir: str,
         model_type: str,
         data_type: str,
+        seq_len: int,
         data_keys: list = None,
-        seq_len: int = None,
     ) -> List[dict]:
         pkl_path = cls._get_data_path(data_dir, model_type, data_type, seq_len)
         data = pickle_handler.load(pkl_path)
         if data_keys is None:
             return data
         else:
-            data_keys = set(
-                data_keys + [IndividualDataFormat.frame_num, IndividualDataFormat.id]
-            )
+            if data_keys is not None:
+                data_keys = data_keys + [IndividualDataFormat.frame_num, IndividualDataFormat.id]
+                data_keys + list(set(data_keys))  # get unique
+            else:
+                data_keys = [IndividualDataFormat.frame_num, IndividualDataFormat.id]
+
             ret_data = [{k: item[k] for k in data_keys} for item in data]
             del data
             return ret_data
 
     @classmethod
     def save(
-        cls, data_dir: str, data, model_type: str, data_type: str, seq_len: int = None
+        cls, data_dir: str, data, model_type: str, data_type: str, seq_len: int
     ):
         pkl_path = cls._get_data_path(data_dir, model_type, data_type, seq_len)
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)

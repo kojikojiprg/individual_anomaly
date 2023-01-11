@@ -75,9 +75,9 @@ def main():
     iar = IndividualActivityRecognition(
         args.model_type,
         logger,
+        seq_len=args.seq_len,
         data_type=args.data_type,
         stage="train",
-        seq_len=args.seq_len,
     )
     iar.train(args.data_dir, args.gpus, args.video_dir)
 
