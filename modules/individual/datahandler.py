@@ -103,9 +103,11 @@ class IndividualDataHandler:
         return IndividualDataModule(data_dir, config, data_type, stage, frame_shape)
 
     @staticmethod
-    def _get_data_path(data_dir: str, model_type: str, data_type: str, seq_len: int):
+    def _get_data_path(
+        data_dir: str, model_type: str, data_type: str, masking: bool, seq_len: int
+    ):
         str_masked = ""
-        if data_type == IndividualDataTypes.local:
+        if masking and data_type != IndividualDataTypes.bbox:
             str_masked = "_masked"
 
         return os.path.join(
@@ -120,10 +122,11 @@ class IndividualDataHandler:
         data_dir: str,
         model_type: str,
         data_type: str,
+        masking: bool,
         seq_len: int,
         data_keys: list = None,
     ) -> List[dict]:
-        pkl_path = cls._get_data_path(data_dir, model_type, data_type, seq_len)
+        pkl_path = cls._get_data_path(data_dir, model_type, data_type, masking, seq_len)
         data = pickle_handler.load(pkl_path)
         if data_keys is None:
             return data
@@ -142,8 +145,16 @@ class IndividualDataHandler:
             return ret_data
 
     @classmethod
-    def save(cls, data_dir: str, data, model_type: str, data_type: str, seq_len: int):
-        pkl_path = cls._get_data_path(data_dir, model_type, data_type, seq_len)
+    def save(
+        cls,
+        data_dir: str,
+        data,
+        model_type: str,
+        data_type: str,
+        masking: bool,
+        seq_len: int,
+    ):
+        pkl_path = cls._get_data_path(data_dir, model_type, data_type, masking, seq_len)
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
         pickle_handler.dump(data, pkl_path)
 

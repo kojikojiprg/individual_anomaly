@@ -32,7 +32,7 @@ class Discriminator(nn.Module):
         self.selu = nn.SELU(inplace=True)
         self.out = nn.Linear(config.d_out_feature, 1)
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         B = x.size()[0]
 
         # embedding
@@ -42,8 +42,9 @@ class Discriminator(nn.Module):
         x = torch.cat([self.cls.repeat(B, 1, 1), x], dim=1)
         x = self.pe(x)
 
-        # add mask
-        mask = torch.cat([self.cls_mask.repeat(B, 1), mask], dim=1)
+        if mask is not None:
+            # add mask
+            mask = torch.cat([self.cls_mask.repeat(B, 1), mask], dim=1)
 
         # transformer encoder
         for i in range(self.n_tr):

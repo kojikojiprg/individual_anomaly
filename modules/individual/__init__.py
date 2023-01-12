@@ -23,6 +23,7 @@ class IndividualActivityRecognition:
         seq_len: int,
         checkpoint_path: str = None,
         data_type: str = IndividualDataTypes.local,
+        masking: bool = False,
         stage: str = Stages.inference,
     ):
         assert IndividualModelTypes.includes(model_type)
@@ -31,6 +32,7 @@ class IndividualActivityRecognition:
         self._model_type = model_type.casefold()
         self._seq_len = seq_len
         self._data_type = data_type
+        self._masking = masking
         self._stage = stage
 
         self._config = IndividualDataHandler.get_config(
@@ -61,14 +63,16 @@ class IndividualActivityRecognition:
 
     def _create_model(self):
         if self._data_type != IndividualDataTypes.bbox:
-            self._model = IndividualGanomaly(self._config, self._data_type)
+            self._model = IndividualGanomaly(
+                self._config, self._data_type, self._masking
+            )
         else:
             self._model = IndividualGanomalyBbox(self._config, self._data_type)
 
     def load_model(self, checkpoint_path: str) -> LightningModule:
         print(f"=> loading model from {checkpoint_path}")
         self._model = self._model.load_from_checkpoint(
-            checkpoint_path, config=self._config, data_type=self._data_type
+            checkpoint_path, config=self._config, data_type=self._data_type, masking=self._masking
         )
         return self._model
 
@@ -142,7 +146,7 @@ class IndividualActivityRecognition:
         print("=> saving results")
         for path, results in zip(tqdm(data_dirs), results_lst):
             IndividualDataHandler.save(
-                path, results, self._model_type, self._data_type, self._seq_len
+                path, results, self._model_type, self._data_type, self._masking, self._seq_len
             )
 
         del datamodule

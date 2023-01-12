@@ -45,6 +45,13 @@ def parser():
         default="local",
         help="Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.",
     )
+    parser.add_argument(
+        "-msk",
+        "--masking",
+        default=False,
+        action="store_true",
+        help="Masking low confidence score keypoints",
+    )
 
     args = parser.parse_args()
 
@@ -61,8 +68,9 @@ def main():
 
     iar = IndividualActivityRecognition(
         args.model_type,
-        seq_len=args.seq_len,
+        args.seq_len,
         data_type=args.data_type,
+        masking=args.masking,
         stage="train",
     )
     iar.train(args.data_dir, args.gpus)

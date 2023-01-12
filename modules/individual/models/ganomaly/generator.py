@@ -15,7 +15,7 @@ class Generator(nn.Module):
         self.en = Encoder(config)
         self.de = Decoder(config)
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         z, attn_en = self.en(x, mask)
         x, attn_de = self.de(x, z, mask)
         return x, z, attn_en, attn_de
@@ -43,7 +43,7 @@ class Encoder(nn.Module):
         self.ff = nn.Linear(config.d_model, config.d_z)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x, mask):
+    def forward(self, x, mask=None):
         B = x.size()[0]
 
         # embedding
@@ -53,8 +53,9 @@ class Encoder(nn.Module):
         # positional encoding
         x = self.pe(x)
 
-        # add mask
-        mask = torch.cat([self.z_mask.repeat(B, 1), mask], dim=1)
+        if mask is not None:
+            # add mask
+            mask = torch.cat([self.z_mask.repeat(B, 1), mask], dim=1)
 
         # transformer encoder
         for i in range(self.n_tr):
@@ -87,7 +88,7 @@ class Decoder(nn.Module):
         self.ff = nn.Linear(config.d_model, config.n_kps * 2)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self, x, z, mask):
+    def forward(self, x, z, mask=None):
         B = x.size()[0]
 
         # embedding

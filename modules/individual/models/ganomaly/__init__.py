@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy as np
 import torch
 from pytorch_lightning import LightningModule
@@ -13,13 +15,14 @@ from .generator import Generator
 
 
 class IndividualGanomaly(LightningModule):
-    def __init__(self, config, data_type):
+    def __init__(self, config: SimpleNamespace, data_type: str, masking: bool):
         super().__init__()
 
         self._config = config
         self.n_kps = config.n_kps
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
+        self._masking = masking
 
         self._G = Generator(config.model.G)
         self._D = Discriminator(config.model.D)
@@ -54,6 +57,9 @@ class IndividualGanomaly(LightningModule):
         return self._callbacks
 
     def forward(self, kps_real, mask):
+        if not self._masking:
+            mask = None
+
         # pred real
         pred_real, f_real, attn_d_real = self._D(kps_real, mask)
 
