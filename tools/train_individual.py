@@ -3,7 +3,7 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules.individual import IndividualActivityRecognition, IndividualDataTypes
+from modules.individual import IndividualActivityRecognition
 
 warnings.simplefilter("ignore")
 
@@ -45,13 +45,6 @@ def parser():
         default="local",
         help="Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.",
     )
-    parser.add_argument(
-        "-vd",
-        "--video_dir",
-        type=str,
-        default=None,
-        help="path of input video directory",
-    )
 
     args = parser.parse_args()
 
@@ -59,11 +52,6 @@ def parser():
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
 
     args.model_type = args.model_type.lower()
-
-    if args.data_type in [IndividualDataTypes.global_, IndividualDataTypes.both]:
-        assert (
-            args.video_dir is not None
-        ), f"Input video frame shape is required for data_type:{args.data_type}"
 
     return args
 
@@ -77,7 +65,7 @@ def main():
         data_type=args.data_type,
         stage="train",
     )
-    iar.train(args.data_dir, args.gpus, args.video_dir)
+    iar.train(args.data_dir, args.gpus)
 
 
 if __name__ == "__main__":

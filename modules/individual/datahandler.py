@@ -1,5 +1,4 @@
 import os
-from glob import glob
 from types import SimpleNamespace
 from typing import List, Tuple
 
@@ -7,7 +6,6 @@ import yaml
 
 from modules.utils import pickle_handler
 from modules.utils.constants import Stages
-from modules.utils.video import Capture
 
 from .constants import IndividualDataFormat, IndividualDataTypes
 from .datamodule import IndividualDataModule
@@ -130,7 +128,10 @@ class IndividualDataHandler:
             return data
         else:
             if data_keys is not None:
-                data_keys = data_keys + [IndividualDataFormat.frame_num, IndividualDataFormat.id]
+                data_keys = data_keys + [
+                    IndividualDataFormat.frame_num,
+                    IndividualDataFormat.id,
+                ]
                 data_keys + list(set(data_keys))  # get unique
             else:
                 data_keys = [IndividualDataFormat.frame_num, IndividualDataFormat.id]
@@ -140,18 +141,15 @@ class IndividualDataHandler:
             return ret_data
 
     @classmethod
-    def save(
-        cls, data_dir: str, data, model_type: str, data_type: str, seq_len: int
-    ):
+    def save(cls, data_dir: str, data, model_type: str, data_type: str, seq_len: int):
         pkl_path = cls._get_data_path(data_dir, model_type, data_type, seq_len)
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
         pickle_handler.dump(data, pkl_path)
 
     @staticmethod
-    def get_frame_shape(video_dir: str):
+    def get_frame_shape(data_dir: str):
         # for 0-1 scaling keypoints
-        video_paths = sorted(glob(os.path.join(video_dir, "*.mp4")))
-        cap = Capture(video_paths[0])
-        frame_shape = cap.size
-        del cap
+        frame_shape = pickle_handler.load(
+            os.path.join(data_dir, "pickle", "frame_sahpe.pkl")
+        )
         return frame_shape

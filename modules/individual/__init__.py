@@ -104,11 +104,8 @@ class IndividualActivityRecognition:
             strategy=strategy,
         )
 
-    def train(self, data_dir: str, gpu_ids: List[int], video_dir: str = None):
-        frame_shape = None
-        if video_dir is not None:
-            frame_shape = IndividualDataHandler.get_frame_shape(video_dir)
-
+    def train(self, data_dir: str, gpu_ids: List[int]):
+        frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
         datamodule = self._create_datamodule(data_dir, frame_shape)
 
         if not hasattr(self, "_trainer"):
@@ -128,11 +125,8 @@ class IndividualActivityRecognition:
             results_lst.append(results)
         return results_lst
 
-    def inference(self, data_dir: str, gpu_ids: List[int], video_dir: str = None):
-        frame_shape = None
-        if video_dir is not None:
-            frame_shape = IndividualDataHandler.get_frame_shape(video_dir)
-
+    def inference(self, data_dir: str, gpu_ids: List[int]):
+        frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
         datamodule = self._create_datamodule(data_dir, frame_shape)
 
         if not hasattr(self, "_trainer"):
