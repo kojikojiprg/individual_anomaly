@@ -1,4 +1,5 @@
 import os
+from glob import glob
 from types import SimpleNamespace
 from typing import List, Tuple
 
@@ -149,7 +150,6 @@ class IndividualDataHandler:
     @staticmethod
     def get_frame_shape(data_dir: str):
         # for 0-1 scaling keypoints
-        frame_shape = pickle_handler.load(
-            os.path.join(data_dir, "pickle", "frame_sahpe.pkl")
-        )
+        path = glob(os.path.join(data_dir, "*", "pickle", "frame_shape.pkl"))[0]
+        frame_shape = pickle_handler.load(path)
         return frame_shape
