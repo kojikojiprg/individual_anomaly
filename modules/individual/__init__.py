@@ -36,7 +36,7 @@ class IndividualActivityRecognition:
         self._stage = stage
 
         self._config = IndividualDataHandler.get_config(
-            model_type, data_type, stage, seq_len
+            model_type, seq_len, data_type, stage
         )
         set_random.seed(self._config.seed)
 
@@ -72,7 +72,10 @@ class IndividualActivityRecognition:
     def load_model(self, checkpoint_path: str) -> LightningModule:
         print(f"=> loading model from {checkpoint_path}")
         self._model = self._model.load_from_checkpoint(
-            checkpoint_path, config=self._config, data_type=self._data_type, masking=self._masking
+            checkpoint_path,
+            config=self._config,
+            data_type=self._data_type,
+            masking=self._masking,
         )
         return self._model
 
@@ -146,7 +149,12 @@ class IndividualActivityRecognition:
         print("=> saving results")
         for path, results in zip(tqdm(data_dirs), results_lst):
             IndividualDataHandler.save(
-                path, results, self._model_type, self._data_type, self._masking, self._seq_len
+                path,
+                results,
+                self._model_type,
+                self._data_type,
+                self._masking,
+                self._seq_len,
             )
 
         del datamodule

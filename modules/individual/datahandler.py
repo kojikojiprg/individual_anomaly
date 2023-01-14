@@ -17,11 +17,11 @@ class IndividualDataHandler:
     def get_config(
         cls,
         model_type: str,
+        seq_len: int,
         data_type: str,
         stage: str = Stages.inference,
-        seq_len: int = None,
     ) -> SimpleNamespace:
-        config_path = cls._get_config_path(model_type, data_type, seq_len)
+        config_path = cls._get_config_path(model_type, seq_len, data_type)
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         config = cls._get_config_reccursive(config)
@@ -68,19 +68,12 @@ class IndividualDataHandler:
         return config
 
     @staticmethod
-    def _get_config_path(model_type: str, data_type: str, seq_len: int = None):
-        if seq_len is None:
-            return os.path.join(
-                "configs",
-                "individual",
-                f"{model_type.lower()}_{data_type.lower()}.yaml",
-            )
-        else:
-            return os.path.join(
-                "configs",
-                "individual",
-                f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
-            )
+    def _get_config_path(model_type: str, seq_len: int, data_type: str):
+        return os.path.join(
+            "configs",
+            "individual",
+            f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
+        )
 
     @classmethod
     def _get_config_reccursive(cls, config: dict):
