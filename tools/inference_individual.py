@@ -38,6 +38,13 @@ def parser():
         help="'ganomaly' only",
     )
     parser.add_argument(
+        "-mv",
+        "--model_version",
+        type=str,
+        default=None,
+        help="model version",
+    )
+    parser.add_argument(
         "-dt",
         "--data_type",
         type=str,
@@ -66,6 +73,9 @@ def main():
     args = parser()
 
     model_type = args.model_type
+    model_version = args.model_version
+    if model_version is not None:
+        model_version = f"-v{model_version}"
     data_type = args.data_type
     masking = args.masking
     seq_len = args.seq_len
@@ -73,7 +83,7 @@ def main():
         "models",
         "individual",
         model_type,
-        f"{model_type}_masked_{data_type}_seq{seq_len}_last.ckpt",
+        f"{model_type}_masked_{data_type}_seq{seq_len}_last{model_version}.ckpt",
     )
     iar = IndividualActivityRecognition(
         model_type,
