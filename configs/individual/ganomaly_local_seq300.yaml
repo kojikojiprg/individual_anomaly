@@ -4,7 +4,7 @@ seed: 42  # random seed
 dataset:
   seq_len: 300
   th_split: 30  # split keypoints sequence of an individual
-  th_mask: 0.4
+  th_mask: 0.7
   n_val: 1024
 
 train:
@@ -19,19 +19,19 @@ inference:
 
 model:
   G:
-    d_z: 32
-    d_model: 68
+    d_z: 16
+    d_model: 32
     d_ff: 128
-    n_heads: 4
+    n_heads: 8
     n_tr_e: 6
     n_tr_d: 3
     dropout: 0.1
     activation: SELU
   D:
-    d_model: 68
+    d_model: 16
     d_ff: 128
-    d_out_feature: 32
-    n_heads: 4
+    d_out_feature: 16
+    n_heads: 8
     n_tr: 6
     dropout: 0.1
     activation: SELU
@@ -44,7 +44,7 @@ loss:
 
 optim:
   lr_g: 0.00005
-  lr_d: 0.001
+  lr_d: 0.00005
   beta1: 0.5
   beta2: 0.999
   lr_rate_g: 0.2

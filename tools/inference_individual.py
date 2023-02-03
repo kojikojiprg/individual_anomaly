@@ -73,9 +73,10 @@ def main():
     args = parser()
 
     model_type = args.model_type
-    model_version = args.model_version
-    if model_version is not None:
-        model_version = f"-v{model_version}"
+    if args.model_version is not None:
+        model_version = f"-v{args.model_version}"
+    else:
+        model_version = ""
     data_type = args.data_type
     masking = args.masking
     seq_len = args.seq_len

@@ -121,20 +121,15 @@ class IndividualGanomaly(LightningModule):
             return d_loss
 
     def validation_step(self, batch, batch_idx):
-        frame_nums, pids, kps_real, mask = batch
+        _, _, kps_real, mask = batch
         batch_size = kps_real.size()[0]
 
-        # make true data
+        # make label
         label_real = np.ones((batch_size,), dtype=np.float32)
         label_fake = np.zeros((batch_size,), dtype=np.float32)
 
         # predict
-        pred_real, pred_fake, kps_fake, z, attn, _, _ = self(kps_real, mask)
-
-        kps_real = kps_real.cpu().numpy()
-        kps_fake = kps_fake.cpu().numpy()
-        z = z.cpu().numpy()
-        attn = attn.cpu().numpy()
+        pred_real, pred_fake, _, _, _, _, _ = self(kps_real, mask)
         pred_real = pred_real.view(-1).cpu().numpy()
         pred_fake = pred_fake.view(-1).cpu().numpy()
 
@@ -142,8 +137,6 @@ class IndividualGanomaly(LightningModule):
         pred = np.concatenate([pred_real, pred_fake])
         d_auc = roc_auc_score(label, pred)
         self.log("d_auc", d_auc)
-
-        # return pids, kps_real, kps_fake, z, attn
 
     # def validation_epoch_end(self, outputs):
     #     for out in outputs:
@@ -161,21 +154,22 @@ class IndividualGanomaly(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    def anomaly_score(self, kps_real, kps_fake, kps_mask, f_real, f_fake):
+    def anomaly_score(self, kps_real, kps_fake, mask, f_real, f_fake):
         B, T = kps_real.size()[:2]
 
         kps_real = kps_real.view(B, T, self.n_kps, 2)
         kps_fake = kps_fake.view(B, T, self.n_kps, 2)
 
         # apply mask
-        kps_real[kps_mask] = 0.0
-        kps_fake[kps_mask] = 0.0
+        if self._masking:
+            mask_bool = mask < 0
+            kps_real[mask_bool] = 0.0
+            kps_fake[mask_bool] = 0.0
 
         # calc the difference between real keypoints and fake keypoints
-        n_nomasked = torch.sum(kps_mask.int().view(B, -1), dim=1)
         loss_residual = torch.abs(kps_real - kps_fake)
         loss_residual = loss_residual.view(B, -1)
-        loss_residual = torch.sum(loss_residual, dim=1) / n_nomasked  # mean
+        loss_residual = torch.mean(loss_residual, dim=1)
 
         # calc the absolute difference between real feature and fake feature
         loss_discrimination = torch.abs(f_real - f_fake)
@@ -190,11 +184,10 @@ class IndividualGanomaly(LightningModule):
         # predict
         _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
 
-        mask_batch_bool = torch.where(mask < 0, False, True)
         l_resi, l_disc = self.anomaly_score(
             kps_real,
             kps_fake,
-            mask_batch_bool,
+            mask,
             f_real,
             f_fake,
         )

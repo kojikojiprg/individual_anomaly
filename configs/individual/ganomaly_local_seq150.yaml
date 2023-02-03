@@ -4,34 +4,34 @@ seed: 42  # random seed
 dataset:
   seq_len: 150
   th_split: 5  # split keypoints sequence of an individual
-  th_mask: 0.2
+  th_mask: 0.5
   n_val: 1024
 
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 2
+  accumulate_grad_batches: 1
   epochs: 100
 
 inference:
-  batch_size: 1024
+  batch_size: 4096
   anomaly_lambda: 0.5
 
 model:
   G:
     d_z: 16
-    d_model: 68  # 17 * 4(n_heads)
+    d_model: 32
     d_ff: 128
-    n_heads: 4
+    n_heads: 8
     n_tr_e: 6
     n_tr_d: 3
     dropout: 0.1
     activation: SELU
   D:
-    d_model: 68  # 17 * 4(n_heads)
+    d_model: 32
     d_ff: 128
     d_out_feature: 16
-    n_heads: 4
+    n_heads: 8
     n_tr: 6
     dropout: 0.1
     activation: SELU
@@ -43,8 +43,8 @@ loss:
     w_lat: 1
 
 optim:
-  lr_g: 0.0002
-  lr_d: 0.001
+  lr_g: 0.00005
+  lr_d: 0.00005
   beta1: 0.5
   beta2: 0.999
   lr_rate_g: 1.0

@@ -258,7 +258,7 @@ class IndividualDataset(Dataset):
 
     def _create_mask(self, kps):
         mask = np.where(
-            np.mean(kps[:, :, 2], axis=1) < self._th_mask, True, False
+            np.mean(kps[:, :, 2], axis=1) < self._th_mask, -1e10, 0.0
         )
         # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
