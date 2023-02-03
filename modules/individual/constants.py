@@ -38,7 +38,6 @@ class IndividualDataTypes:
 
 @dataclass(frozen=True)
 class IndividualModelTypes:
-    egan: str = "egan"
     ganomaly: str = "ganomaly"
 
     @classmethod
