@@ -3,7 +3,7 @@ seed: 42  # random seed
 
 dataset:
   seq_len: 150
-  th_split: 5  # split keypoints sequence of an individual
+  th_split: 75  # split keypoints sequence of an individual
   th_mask: 0.5
   n_val: 1024
 
@@ -43,7 +43,7 @@ loss:
     w_lat: 1
 
 optim:
-  lr_g: 0.00005
+  lr_g: 0.0001
   lr_d: 0.00005
   beta1: 0.5
   beta2: 0.999
