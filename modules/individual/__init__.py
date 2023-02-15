@@ -9,7 +9,12 @@ from tqdm.auto import tqdm
 from modules.utils import set_random
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataFormat, IndividualDataTypes, IndividualModelTypes
+from .constants import (
+    IndividualDataFormat,
+    IndividualDataTypes,
+    IndividualModelTypes,
+    IndividualPredTypes,
+)
 from .datahandler import IndividualDataHandler
 from .datamodule import IndividualDataModule
 from .models.ganomaly import IndividualGanomaly
@@ -25,6 +30,7 @@ class IndividualActivityRecognition:
         data_type: str = IndividualDataTypes.local,
         masking: bool = False,
         stage: str = Stages.inference,
+        prediction_type: str = IndividualPredTypes.anomaly,
     ):
         assert IndividualModelTypes.includes(model_type)
         assert IndividualDataTypes.includes(data_type)
@@ -34,6 +40,7 @@ class IndividualActivityRecognition:
         self._data_type = data_type
         self._masking = masking
         self._stage = stage
+        self._prediction_type = prediction_type
 
         self._config = IndividualDataHandler.get_config(
             model_type, seq_len, data_type, stage
@@ -45,7 +52,7 @@ class IndividualActivityRecognition:
 
         self._create_model()
         if checkpoint_path is not None:
-            self.load_model(checkpoint_path)
+            self._load_model(checkpoint_path)
 
     def __del__(self):
         if hasattr(self, "_model"):
@@ -69,15 +76,15 @@ class IndividualActivityRecognition:
         else:
             self._model = IndividualGanomalyBbox(self._config, self._data_type)
 
-    def load_model(self, checkpoint_path: str) -> LightningModule:
+    def _load_model(self, checkpoint_path: str):
         print(f"=> loading model from {checkpoint_path}")
         self._model = self._model.load_from_checkpoint(
             checkpoint_path,
             config=self._config,
             data_type=self._data_type,
             masking=self._masking,
+            prediction_type=self._prediction_type,
         )
-        return self._model
 
     def _create_datamodule(
         self, data_dir: str, frame_shape: Tuple[int, int] = None
@@ -132,7 +139,11 @@ class IndividualActivityRecognition:
             results_lst.append(results)
         return results_lst
 
-    def inference(self, data_dir: str, gpu_ids: List[int]):
+    def inference(
+        self,
+        data_dir: str,
+        gpu_ids: List[int],
+    ):
         frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
         datamodule = self._create_datamodule(data_dir, frame_shape)
 
@@ -155,6 +166,7 @@ class IndividualActivityRecognition:
                 self._data_type,
                 self._masking,
                 self._seq_len,
+                self._prediction_type,
             )
 
         del datamodule

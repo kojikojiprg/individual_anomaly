@@ -6,7 +6,7 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
-from modules.individual import IndividualDataFormat
+from modules.individual import IndividualDataFormat, IndividualPredTypes
 
 from .discriminator import Discriminator
 from .generator import Generator
@@ -15,7 +15,13 @@ from .generator import Generator
 
 
 class IndividualGanomaly(LightningModule):
-    def __init__(self, config: SimpleNamespace, data_type: str, masking: bool):
+    def __init__(
+        self,
+        config: SimpleNamespace,
+        data_type: str,
+        masking: bool,
+        prediction_type: str = None,
+    ):
         super().__init__()
 
         self._config = config
@@ -23,6 +29,7 @@ class IndividualGanomaly(LightningModule):
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
         self._masking = masking
+        self._prediction_type = prediction_type
 
         self._G = Generator(config.model.G)
         self._D = Discriminator(config.model.D)
@@ -34,8 +41,8 @@ class IndividualGanomaly(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_masked_{data_type}_seq{seq_len}_gloss_min",
-                monitor="g_loss",
+                filename=f"ganomaly_masked_{data_type}_seq{seq_len}_gcon_min",
+                monitor="g_l_con",
                 mode="min",
                 save_last=True,
             ),
@@ -154,7 +161,7 @@ class IndividualGanomaly(LightningModule):
     def _to_numpy(tensor):
         return tensor.cpu().numpy()
 
-    def anomaly_score(self, kps_real, kps_fake, mask, f_real, f_fake):
+    def anomaly_score(self, kps_real, kps_fake, mask_bool, f_real, f_fake):
         B, T = kps_real.size()[:2]
 
         kps_real = kps_real.view(B, T, self.n_kps, 2)
@@ -162,7 +169,6 @@ class IndividualGanomaly(LightningModule):
 
         # apply mask
         if self._masking:
-            mask_bool = mask < 0
             kps_real[mask_bool] = 0.0
             kps_fake[mask_bool] = 0.0
 
@@ -180,56 +186,61 @@ class IndividualGanomaly(LightningModule):
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
         frame_nums, pids, kps_real, mask = batch
+        mask_bool = mask < 0
 
         # predict
-        _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
+        if self._prediction_type == IndividualPredTypes.anomaly:
+            _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
 
-        l_resi, l_disc = self.anomaly_score(
-            kps_real,
-            kps_fake,
-            mask,
-            f_real,
-            f_fake,
-        )
-
-        # to numpy
-        frame_nums = self._to_numpy(frame_nums)
-        kps_real = self._to_numpy(kps_real)
-        kps_fake = self._to_numpy(kps_fake)
-        z = self._to_numpy(z)
-        attn = self._to_numpy(attn)
-        f_real = self._to_numpy(f_real)
-        f_fake = self._to_numpy(f_fake)
-        l_resi = self._to_numpy(l_resi)
-        l_disc = self._to_numpy(l_disc)
-
-        preds = []
-        for frame_num, pid, kr, kf, z_, a, fr, ff, lr, ld in zip(
-            frame_nums,
-            pids,
-            kps_real,
-            kps_fake,
-            z,
-            attn,
-            f_real,
-            f_fake,
-            l_resi,
-            l_disc,
-        ):
-            preds.append(
-                {
-                    IndividualDataFormat.frame_num: frame_num,
-                    IndividualDataFormat.id: pid,
-                    IndividualDataFormat.kps_real: kr,
-                    IndividualDataFormat.kps_fake: kf,
-                    IndividualDataFormat.z: z_,
-                    IndividualDataFormat.attn: a,
-                    IndividualDataFormat.f_real: fr,
-                    IndividualDataFormat.f_fake: ff,
-                    IndividualDataFormat.loss_r: lr,
-                    IndividualDataFormat.loss_d: ld,
-                }
+            l_resi, l_disc = self.anomaly_score(
+                kps_real,
+                kps_fake,
+                mask_bool,
+                f_real,
+                f_fake,
             )
+
+            preds = []
+            for i in range(len(frame_nums)):
+                preds.append(
+                    {
+                        IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                        IndividualDataFormat.id: int(pids[i]),
+                        IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
+                        IndividualDataFormat.kps_fake: self._to_numpy(kps_fake[i]),
+                        IndividualDataFormat.z: self._to_numpy(z[i]),
+                        IndividualDataFormat.attn: self._to_numpy(attn[i]),
+                        IndividualDataFormat.f_real: self._to_numpy(f_real[i]),
+                        IndividualDataFormat.f_fake: self._to_numpy(f_fake[i]),
+                        IndividualDataFormat.loss_r: self._to_numpy(l_resi[i]),
+                        IndividualDataFormat.loss_d: self._to_numpy(l_disc[i]),
+                    }
+                )
+        elif self._prediction_type == IndividualPredTypes.keypoints:
+            # interpolate masked keypoints
+            kps_fake, _, _, _ = self._G(kps_real, mask)
+            kps_real[mask_bool] = kps_fake[mask_bool]
+
+            _, _, _, z, attn, f_real, f_fake = self(kps_real, mask)
+
+            preds = []
+            for i in range(len(frame_nums)):
+                preds.append(
+                    {
+                        IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                        IndividualDataFormat.id: int(pids[i]),
+                        IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
+                        IndividualDataFormat.kps_fake: self._to_numpy(kps_fake[i]),
+                        IndividualDataFormat.z: self._to_numpy(z[i]),
+                        IndividualDataFormat.attn: self._to_numpy(attn[i]),
+                        IndividualDataFormat.f_real: self._to_numpy(f_real[i]),
+                        IndividualDataFormat.f_fake: self._to_numpy(f_fake[i]),
+                        # IndividualDataFormat.loss_r: self._to_numpy(l_resi[i]),
+                        # IndividualDataFormat.loss_d: self._to_numpy(l_disc[i]),
+                    }
+                )
+        else:
+            raise KeyError
 
         return preds
 

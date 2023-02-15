@@ -8,7 +8,7 @@ import yaml
 from modules.utils import pickle_handler
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataFormat, IndividualDataTypes
+from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes
 from .datamodule import IndividualDataModule
 
 
@@ -97,16 +97,28 @@ class IndividualDataHandler:
 
     @staticmethod
     def _get_data_path(
-        data_dir: str, model_type: str, data_type: str, masking: bool, seq_len: int
+        data_dir: str,
+        model_type: str,
+        data_type: str,
+        masking: bool,
+        seq_len: int,
+        prediction_type: str,
     ):
         str_masked = ""
         if masking and data_type != IndividualDataTypes.bbox:
             str_masked = "_masked"
 
+        str_pred = ""
+        if (
+            prediction_type == IndividualPredTypes.keypoints
+            and data_type != IndividualDataTypes.bbox
+        ):
+            str_pred = "_kps"
+
         return os.path.join(
             data_dir,
             "pickle",
-            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}.pkl",
+            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}{str_pred}.pkl",
         )
 
     @classmethod
@@ -117,9 +129,12 @@ class IndividualDataHandler:
         data_type: str,
         masking: bool,
         seq_len: int,
+        prediction_type: str,
         data_keys: list = None,
     ) -> List[dict]:
-        pkl_path = cls._get_data_path(data_dir, model_type, data_type, masking, seq_len)
+        pkl_path = cls._get_data_path(
+            data_dir, model_type, data_type, masking, seq_len, prediction_type
+        )
         data = pickle_handler.load(pkl_path)
         if data_keys is None:
             return data
@@ -146,8 +161,11 @@ class IndividualDataHandler:
         data_type: str,
         masking: bool,
         seq_len: int,
+        prediction_type: str,
     ):
-        pkl_path = cls._get_data_path(data_dir, model_type, data_type, masking, seq_len)
+        pkl_path = cls._get_data_path(
+            data_dir, model_type, data_type, masking, seq_len, prediction_type
+        )
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
         pickle_handler.dump(data, pkl_path)
 

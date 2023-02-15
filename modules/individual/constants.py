@@ -2,8 +2,18 @@ from dataclasses import dataclass
 from typing import List
 
 
+class _AbstractDataClass:
+    @classmethod
+    def get_attributes(cls) -> List[str]:
+        return [cls.__dict__[key] for key in cls.__annotations__.keys()]
+
+    @classmethod
+    def includes(cls, attribute: str) -> bool:
+        return attribute.casefold() in cls.get_attributes()
+
+
 @dataclass(frozen=True)
-class IndividualDataFormat:
+class IndividualDataFormat(_AbstractDataClass):
     frame_num: str = "frame"
     id: str = "id"
     kps_real: str = "keypoints_real"
@@ -15,35 +25,20 @@ class IndividualDataFormat:
     loss_r: str = "loss_resitudal"
     loss_d: str = "loss_discrimination"
 
-    @classmethod
-    def get_keys(cls) -> List[str]:
-        return [cls.__dict__[key] for key in cls.__annotations__.keys()]
-
 
 @dataclass(frozen=True)
-class IndividualDataTypes:
+class IndividualDataTypes(_AbstractDataClass):
     global_: str = "global"
     local: str = "local"
-    both: str = "both"
     bbox: str = "bbox"
-
-    @classmethod
-    def get_types(cls) -> List[str]:
-        return [cls.__dict__[key] for key in cls.__annotations__.keys()]
-
-    @classmethod
-    def includes(cls, data_type: str) -> bool:
-        return data_type.casefold() in cls.get_types()
 
 
 @dataclass(frozen=True)
-class IndividualModelTypes:
+class IndividualModelTypes(_AbstractDataClass):
     ganomaly: str = "ganomaly"
 
-    @classmethod
-    def get_types(cls) -> List[str]:
-        return [cls.__dict__[key] for key in cls.__annotations__.keys()]
 
-    @classmethod
-    def includes(cls, model_type: str) -> bool:
-        return model_type.casefold() in cls.get_types()
+@dataclass(frozen=True)
+class IndividualPredTypes(_AbstractDataClass):
+    anomaly: str = "anomaly"
+    keypoints: str = "keypoints"
