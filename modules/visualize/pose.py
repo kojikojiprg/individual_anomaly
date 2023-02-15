@@ -15,12 +15,7 @@ def write_frame(
     frame = _put_frame_num(frame, frame_num)
     for kps in pose_data_lst:
         if kps["frame"] == frame_num:
-            if "keypoints" in kps:
-                frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
-            elif "keypoints_fake" in kps:
-                frame = _draw_skeleton(frame, -1, np.array(kps["keypoints_fake"][-1]))
-            else:
-                continue
+            frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
 
     return frame
 

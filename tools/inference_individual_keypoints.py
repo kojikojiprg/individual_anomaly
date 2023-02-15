@@ -153,7 +153,7 @@ def restore_keypoints(pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Di
                 ret_data.append({
                     "frame": frame_num_ind,
                     "id": id_ind,
-                    "keypoints_fake": kps,
+                    "keypoints": kps[-1],
                 })
                 break
     return ret_data
@@ -188,7 +188,6 @@ def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
         ret, frame = video_capture.read()
 
         # write pose estimation video
-        # frame = pose_vis.write_frame(frame, pose_data_lst, frame_num, False)
         frame = pose_vis.write_frame(frame, data_lst, frame_num, False)
 
         pose_video_writer.write(frame)
