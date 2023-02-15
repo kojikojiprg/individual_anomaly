@@ -24,7 +24,7 @@ class IndividualDataModule(LightningDataModule):
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
-        if data_type in [IndividualDataTypes.global_, IndividualDataTypes.both]:
+        if data_type in [IndividualDataTypes.local, IndividualDataTypes.global_]:
             assert frame_shape is not None
 
         super().__init__()
@@ -215,7 +215,7 @@ class IndividualDataset(Dataset):
             kps = np.array([item[3] for item in seq_data[i : i + seq_len]])
 
             if self._data_type == IndividualDataTypes.bbox:
-                # global
+                # bbox
                 bbox = bbox.reshape(-1, 2, 2)
                 bbox = bbox / self._frame_shape  # scalling bbox top-left
                 bbox = bbox.astype(np.float32)
@@ -230,12 +230,7 @@ class IndividualDataset(Dataset):
                     # local
                     kps = self._scaling_keypoints_local(bbox, kps)
                 else:
-                    # both
-                    glb_kps = self._scaling_keypoints_global(kps, self._frame_shape)
-                    lcl_kps = self._scaling_keypoints_local(bbox, kps)
-                    kps = np.concatenate([glb_kps, lcl_kps], axis=1)
-                    mask = np.repeat(mask, 2, axis=0).reshape(kps.shape)
-                    del glb_kps, lcl_kps
+                    raise KeyError
 
                 self._data.append((frame_num, pid, kps, mask))
             del frame_num, pid, bbox, kps, mask
@@ -257,9 +252,7 @@ class IndividualDataset(Dataset):
         return lcl_kps
 
     def _create_mask(self, kps):
-        mask = np.where(
-            np.mean(kps[:, :, 2], axis=1) < self._th_mask, -1e10, 0.0
-        )
+        mask = np.where(np.mean(kps[:, :, 2], axis=1) < self._th_mask, -1e10, 0.0)
         # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
 

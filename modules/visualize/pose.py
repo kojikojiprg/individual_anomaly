@@ -15,7 +15,12 @@ def write_frame(
     frame = _put_frame_num(frame, frame_num)
     for kps in pose_data_lst:
         if kps["frame"] == frame_num:
-            frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
+            if "keypoints" in kps:
+                frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
+            elif "keypoints_fake" in kps:
+                frame = _draw_skeleton(frame, -1, np.array(kps["keypoints_fake"][-1]))
+            else:
+                continue
 
     return frame
 
@@ -93,6 +98,9 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
     img = frame.copy()
     part_line = {}
 
+    if kps.shape[1] == 2:
+        kps = np.append(kps, np.ones((kps.shape[0], 1)), axis=1)
+
     # draw keypoints
     for n in range(len(kps)):
         if kps[n, 2] <= vis_thresh:
@@ -115,15 +123,16 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
             )
 
     # draw track id
-    pt = np.mean([kps[5], kps[6], kps[11], kps[12]], axis=0).astype(int)[:2]
-    img = cv2.putText(
-        img,
-        str(t_id),
-        tuple(pt),
-        cv2.FONT_HERSHEY_PLAIN,
-        max(1, int(img.shape[1] / 500)),
-        (255, 255, 0),
-        max(1, int(img.shape[1] / 500)),
-    )
+    if t_id > 0:
+        pt = np.mean([kps[5], kps[6], kps[11], kps[12]], axis=0).astype(int)[:2]
+        img = cv2.putText(
+            img,
+            str(t_id),
+            tuple(pt),
+            cv2.FONT_HERSHEY_PLAIN,
+            max(1, int(img.shape[1] / 500)),
+            (255, 255, 0),
+            max(1, int(img.shape[1] / 500)),
+        )
 
     return img
