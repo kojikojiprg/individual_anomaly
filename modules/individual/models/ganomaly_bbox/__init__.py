@@ -31,8 +31,8 @@ class IndividualGanomalyBbox(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_seq{seq_len}_gloss_min",
-                monitor="g_loss",
+                filename=f"ganomaly_{data_type}_seq{seq_len}_gcon_min",
+                monitor="g_l_con",
                 mode="min",
                 save_last=True,
             ),
@@ -63,7 +63,7 @@ class IndividualGanomalyBbox(LightningModule):
         return pred_real, pred_fake, bbox_fake, z, attn_g, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
         batch_size = bbox_real.size()[0]
 
         # make true data

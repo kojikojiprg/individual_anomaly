@@ -1,4 +1,5 @@
 import os
+import sys
 from glob import glob
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
@@ -13,10 +14,11 @@ from tqdm.auto import tqdm
 from modules.pose import PoseDataFormat, PoseDataHandler
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataTypes
+sys.path.append("modules")
+from individual.constants import IndividualDataTypes
 
 
-class IndividualDataModule(LightningDataModule):
+class IndividualDataModuleKps(LightningDataModule):
     def __init__(
         self,
         data_dir: str,
@@ -25,7 +27,8 @@ class IndividualDataModule(LightningDataModule):
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
-        if data_type in [IndividualDataTypes.local, IndividualDataTypes.global_]:
+        assert data_type in [IndividualDataTypes.local, IndividualDataTypes.global_]
+        if data_type == IndividualDataTypes.global_:
             assert frame_shape is not None
 
         super().__init__()
@@ -65,7 +68,7 @@ class IndividualDataModule(LightningDataModule):
         pose_data_lst = []
         for pose_data_dir in data_dirs:
             data = PoseDataHandler.load(
-                pose_data_dir, data_keys=[PoseDataFormat.bbox, PoseDataFormat.keypoints]
+                pose_data_dir, data_keys=[PoseDataFormat.keypoints]
             )
             if data is not None:
                 pose_data_lst.append(data)
@@ -158,7 +161,6 @@ class IndividualDataset(Dataset):
         # get frame_num and id of first data
         pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
         pre_pid = pose_data[0][PoseDataFormat.id]
-        pre_bbox = pose_data[0][PoseDataFormat.bbox]
         pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
         seq_data: list = []
@@ -166,7 +168,6 @@ class IndividualDataset(Dataset):
             # get values
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
-            bbox = item[PoseDataFormat.bbox]
             kps = item[PoseDataFormat.keypoints]
 
             if self._stage == Stages.train and np.mean(kps[:, 2]) < 0.7:
@@ -198,42 +199,35 @@ class IndividualDataset(Dataset):
                     pass
 
             # replace nan into low confidence points
-            # bbox = np.full((5,), np.nan) if bbox[4] < 0.2 else bbox
             # kps[np.where(kps[:, 2] < 0.2)[0]] = np.nan
 
             # append keypoints to seq_data
-            seq_data.append((frame_num, pid, bbox, kps))
+            seq_data.append((frame_num, pid, kps))
 
             # update frame_num and id
             pre_frame_num = frame_num
             pre_pid = pid
-            pre_bbox = bbox
             pre_kps = kps
-            del frame_num, pid, bbox, kps
+            del frame_num, pid, kps
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
             del seq_data
 
-        del pre_frame_num, pre_pid, pre_bbox, pre_kps
+        del pre_frame_num, pre_pid, pre_kps
         del pose_data
 
     def _append(self, seq_data, seq_len):
-        # collect bbox and kps
-        all_bboxs = np.array([item[2] for item in seq_data])
+        # collect and kps
         all_kps = np.array([item[3] for item in seq_data])
 
         # delete last nan
-        # print(len(all_bboxs), all_bboxs[-1, -1])
         # print(len(all_kps), all_kps[-1, -1])
-        # all_bboxs = all_bboxs[:max(np.where(~np.isnan(all_bboxs))[0]) + 1]
         # print(np.where(np.all(np.isnan(all_kps), axis=(1, 2))))
         # all_kps = all_kps[:max(np.where(np.all(~np.isnan(all_kps), axis=(1, 2)))[0]) + 1]
-        # print(len(all_bboxs), all_bboxs[-1, -1])
         # print(len(all_kps), all_kps[-1, -1])
 
-        # interpolate bbox and keypoints
-        all_bboxs = self._interpolate2d(all_bboxs)
+        # interpolate and keypoints
         all_kps = all_kps.transpose(1, 0, 2)
         for i in range(len(all_kps)):
             all_kps[i] = self._interpolate2d(all_kps[i])
@@ -243,34 +237,25 @@ class IndividualDataset(Dataset):
         for i in range(0, len(seq_data) - seq_len + 1):
             frame_num = seq_data[i + seq_len - 1][0]
             pid = f"{seq_data[i + seq_len - 1][1]}"
-            bbox = all_bboxs[i : i + seq_len, :4]
             kps = all_kps[i : i + seq_len]
 
-            if self._data_type == IndividualDataTypes.bbox:
-                # bbox
-                bbox = bbox.reshape(-1, 2, 2)
-                bbox = bbox / self._frame_shape  # scalling bbox top-left
-                bbox = bbox.astype(np.float32)
-                mask = np.nan
-                self._data.append((frame_num, pid, bbox, mask))
+            mask = self._create_mask(kps)
+            if self._data_type == IndividualDataTypes.global_:
+                # global
+                kps = self._scaling_keypoints_global(kps, self._frame_shape)
+            elif self._data_type == IndividualDataTypes.local:
+                # local
+                kps = self._scaling_keypoints_local(kps)
             else:
-                mask = self._create_mask(kps)
-                if self._data_type == IndividualDataTypes.global_:
-                    # global
-                    kps = self._scaling_keypoints_global(kps, self._frame_shape)
-                elif self._data_type == IndividualDataTypes.local:
-                    # local
-                    kps = self._scaling_keypoints_local(kps)
-                else:
-                    raise KeyError
+                raise KeyError
 
+            self._data.append((frame_num, pid, kps, mask))
+
+            if self._stage == Stages.train:
+                # data augumentation by flipping horizontal
+                kps[:, :, 0] = (kps[:, :, 0] * -1) + 1
                 self._data.append((frame_num, pid, kps, mask))
-
-                if self._stage == Stages.train:
-                    # data augumentation by flipping horizontal
-                    kps[:, :, 0] = (kps[:, :, 0] * -1) + 1
-                    self._data.append((frame_num, pid, kps, mask))
-            del frame_num, pid, bbox, kps, mask
+            del frame_num, pid, kps, mask
 
     @staticmethod
     def _interpolate2d(vals: NDArray):
@@ -280,7 +265,9 @@ class IndividualDataset(Dataset):
             y = vals[:, i][~np.isnan(vals[:, i])]
             fitted_curve = interpolate.interp1d(x, y, kind="cubic")
             fitted_y = fitted_curve(np.arange(len(vals)))
-            fitted_y[np.isnan(vals[:, i])] += np.random.normal(0, 0.01, len(fitted_y[np.isnan(vals[:, i])]))
+            fitted_y[np.isnan(vals[:, i])] += np.random.normal(
+                0, 0.01, len(fitted_y[np.isnan(vals[:, i])])
+            )
 
             ret_vals = np.append(ret_vals, fitted_y.reshape(-1, 1), axis=1)
         return ret_vals

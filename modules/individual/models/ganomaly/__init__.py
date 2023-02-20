@@ -11,10 +11,8 @@ from modules.individual import IndividualDataFormat, IndividualPredTypes
 from .discriminator import Discriminator
 from .generator import Generator
 
-# from modules.visualize.individual import plot_val_kps
 
-
-class IndividualGanomaly(LightningModule):
+class IndividualGanomalyKps(LightningModule):
     def __init__(
         self,
         config: SimpleNamespace,
@@ -207,7 +205,9 @@ class IndividualGanomaly(LightningModule):
             for i in range(len(frame_nums)):
                 preds.append(
                     {
-                        IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                        IndividualDataFormat.frame_num: int(
+                            self._to_numpy(frame_nums[i])
+                        ),
                         IndividualDataFormat.id: int(pids[i]),
                         IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
                         IndividualDataFormat.kps_fake: self._to_numpy(kps_fake[i]),
@@ -230,7 +230,9 @@ class IndividualGanomaly(LightningModule):
             for i in range(len(frame_nums)):
                 preds.append(
                     {
-                        IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                        IndividualDataFormat.frame_num: int(
+                            self._to_numpy(frame_nums[i])
+                        ),
                         IndividualDataFormat.id: int(pids[i]),
                         IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
                         IndividualDataFormat.kps_fake: self._to_numpy(kps_fake[i]),

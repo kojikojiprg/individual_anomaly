@@ -1,5 +1,5 @@
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
 from pytorch_lightning import LightningModule, Trainer
@@ -16,9 +16,10 @@ from .constants import (
     IndividualPredTypes,
 )
 from .datahandler import IndividualDataHandler
-from .datamodule import IndividualDataModule
-from .models.ganomaly import IndividualGanomaly
+from .models.ganomaly import IndividualGanomalyKps
+from .models.ganomaly.datamodule import IndividualDataModuleKps
 from .models.ganomaly_bbox import IndividualGanomalyBbox
+from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 
 
 class IndividualActivityRecognition:
@@ -70,7 +71,7 @@ class IndividualActivityRecognition:
 
     def _create_model(self):
         if self._data_type != IndividualDataTypes.bbox:
-            self._model = IndividualGanomaly(
+            self._model = IndividualGanomalyKps(
                 self._config, self._data_type, self._masking
             )
         else:
@@ -88,7 +89,7 @@ class IndividualActivityRecognition:
 
     def _create_datamodule(
         self, data_dir: str, frame_shape: Tuple[int, int] = None
-    ) -> IndividualDataModule:
+    ) -> Union[IndividualDataModuleBbox, IndividualDataModuleKps]:
         print("=> creating dataset")
         return IndividualDataHandler.create_datamodule(
             data_dir, self._config, self._data_type, self._stage, frame_shape

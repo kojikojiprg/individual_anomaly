@@ -1,7 +1,7 @@
 import os
 from glob import glob
 from types import SimpleNamespace
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import yaml
 
@@ -9,7 +9,8 @@ from modules.utils import pickle_handler
 from modules.utils.constants import Stages
 
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes
-from .datamodule import IndividualDataModule
+from .models.ganomaly.datamodule import IndividualDataModuleKps
+from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 
 
 class IndividualDataHandler:
@@ -90,8 +91,13 @@ class IndividualDataHandler:
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
-    ) -> IndividualDataModule:
-        return IndividualDataModule(data_dir, config, data_type, stage, frame_shape)
+    ) -> Union[IndividualDataModuleBbox, IndividualDataModuleKps]:
+        if data_type == IndividualDataTypes.bbox:
+            return IndividualDataModuleBbox(data_dir, config, stage, frame_shape)
+        else:
+            return IndividualDataModuleKps(
+                data_dir, config, data_type, stage, frame_shape
+            )
 
     @staticmethod
     def _get_data_path(
