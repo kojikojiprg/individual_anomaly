@@ -16,8 +16,8 @@ from .constants import (
     IndividualPredTypes,
 )
 from .datahandler import IndividualDataHandler
-from .models.ganomaly import IndividualGanomalyKps
-from .models.ganomaly.datamodule import IndividualDataModuleKps
+from .models.ganomaly_kps import IndividualGanomalyKps
+from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 from .models.ganomaly_bbox import IndividualGanomalyBbox
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 

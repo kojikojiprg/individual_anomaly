@@ -9,7 +9,7 @@ from modules.utils import pickle_handler
 from modules.utils.constants import Stages
 
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes
-from .models.ganomaly.datamodule import IndividualDataModuleKps
+from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 
 
