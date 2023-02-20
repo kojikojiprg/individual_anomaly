@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from modules.utils import pickle_handler, video
 
