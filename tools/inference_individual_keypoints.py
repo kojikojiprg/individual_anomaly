@@ -5,11 +5,15 @@ import warnings
 from glob import glob
 from typing import Any, Dict, List
 
-from tqdm import tqdm
 import numpy as np
+from tqdm import tqdm
 
 sys.path.append(".")
-from modules.individual import IndividualActivityRecognition, IndividualPredTypes, IndividualDataHandler
+from modules.individual import (
+    IndividualActivityRecognition,
+    IndividualDataHandler,
+    IndividualPredTypes,
+)
 from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
 from modules.visualize import pose as pose_vis
@@ -129,12 +133,16 @@ def main():
     for video_path in video_paths:
         name = os.path.basename(video_path).replace(".mp4", "")
         data_dir = os.path.join(args.data_dir, name)
-        results = IndividualDataHandler.load(data_dir, model_type, data_type, masking, seq_len, "keypoints")
+        results = IndividualDataHandler.load(
+            data_dir, model_type, data_type, masking, seq_len, "keypoints"
+        )
         os.makedirs(data_dir, exist_ok=True)
         visualise(video_path, data_dir, results)
 
 
-def restore_keypoints(pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Dict[str, Any]]):
+def restore_keypoints(
+    pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Dict[str, Any]]
+):
     ret_data = []
     for ind_data in tqdm(ind_data_lst, desc="restore", ncols=100):
         frame_num_ind = ind_data["frame"]
@@ -142,7 +150,9 @@ def restore_keypoints(pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Di
         for pose_data in pose_data_lst:
             frame_num_pose = pose_data["frame"]
             id_pose = pose_data["id"]
-            if int(frame_num_pose) == int(frame_num_ind) and int(id_pose) == int(id_ind):
+            if int(frame_num_pose) == int(frame_num_ind) and int(id_pose) == int(
+                id_ind
+            ):
                 bbox = pose_data["bbox"]
                 kps = np.array(ind_data["keypoints_fake"])
                 org = bbox[:2]
@@ -150,11 +160,13 @@ def restore_keypoints(pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Di
                 kps *= np.repeat([wh], 17, axis=0).reshape(-1, 17, 2)
                 kps = kps[:, :, :2] + np.repeat([org], 17, axis=0).reshape(-1, 17, 2)
                 kps = kps.astype(np.float32)
-                ret_data.append({
-                    "frame": frame_num_ind,
-                    "id": id_ind,
-                    "keypoints": kps[-1],
-                })
+                ret_data.append(
+                    {
+                        "frame": frame_num_ind,
+                        "id": id_ind,
+                        "keypoints": kps[-1],
+                    }
+                )
                 break
     return ret_data
 
@@ -162,6 +174,8 @@ def restore_keypoints(pose_data_lst: List[Dict[str, Any]], ind_data_lst: List[Di
 def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
     # load data
     pose_data_lst = PoseDataHandler.load(data_dir)
+    if pose_data_lst is None:
+        return
 
     # create video capture
     print(f"=> loading video from {video_path}.")
@@ -171,6 +185,8 @@ def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
     ), f"{video_path} does not exist or is wrong file type."
 
     tmp_frame = video_capture.read()[1]
+    if tmp_frame is None:
+        raise ValueError
     video_capture.set_pos_frame_count(0)
 
     out_paths = []
@@ -185,7 +201,9 @@ def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
     print(f"=> writing video into {out_paths}.")
     for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
         frame_num += 1  # frame_num = (1, ...)
-        ret, frame = video_capture.read()
+        frame = video_capture.read()[1]
+        if frame is None:
+            raise ValueError
 
         # write pose estimation video
         frame = pose_vis.write_frame(frame, data_lst, frame_num, False)
