@@ -36,8 +36,10 @@ class IndividualDataTypes(_AbstractDataClass):
 @dataclass(frozen=True)
 class IndividualModelTypes(_AbstractDataClass):
     ganomaly: str = "ganomaly"
+    csgan: str = "csgan"  # conditional semi-supervised
 
 
+# TODO
 @dataclass(frozen=True)
 class IndividualPredTypes(_AbstractDataClass):
     anomaly: str = "anomaly"
