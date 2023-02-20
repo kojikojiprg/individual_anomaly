@@ -113,7 +113,7 @@ class IndividualGanomalyBbox(LightningModule):
             return d_loss
 
     def validation_step(self, batch, batch_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
         batch_size = bbox_real.size()[0]
 
         # make true data
@@ -172,7 +172,7 @@ class IndividualGanomalyBbox(LightningModule):
         return loss_residual, loss_discrimination
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
 
         # predict
         _, _, bbox_fake, z, attn, f_real, f_fake = self(bbox_real)
