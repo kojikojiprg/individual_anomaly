@@ -79,12 +79,15 @@ def main():
         model_version = ""
     data_type = args.data_type
     masking = args.masking
+    masked_str = ""
+    if masking:
+        masked_str = "_masked"
     seq_len = args.seq_len
     checkpoint_path = os.path.join(
         "models",
         "individual",
         model_type,
-        f"{model_type}_masked_{data_type}_seq{seq_len}_last{model_version}.ckpt",
+        f"{model_type}{masked_str}_{data_type}_seq{seq_len}_last{model_version}.ckpt",
     )
     iar = IndividualActivityRecognition(
         model_type,
