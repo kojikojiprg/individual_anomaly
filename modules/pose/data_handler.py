@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, List, Union, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from modules.utils import pickle_handler, video
 
@@ -15,7 +15,7 @@ class PoseDataHandler:
         return cap
 
     @staticmethod
-    def load(data_dir, data_keys: list = None) -> Union[List[Dict[str, Any]], None]:
+    def load(data_dir, data_keys: list = None) -> Optional[List[Dict[str, Any]]]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
         data = pickle_handler.load(pkl_path)
