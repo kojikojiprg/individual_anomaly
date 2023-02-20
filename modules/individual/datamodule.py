@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 from numpy.typing import NDArray
 from pytorch_lightning import LightningDataModule
+from scipy import interpolate
 from torch.utils.data import DataLoader, Dataset, Subset
 from tqdm.auto import tqdm
 
@@ -82,6 +83,7 @@ class IndividualDataModule(LightningDataModule):
             self._config.th_split,
             self._config.th_mask,
             data_type,
+            self._stage,
             frame_shape,
         )
 
@@ -122,12 +124,14 @@ class IndividualDataset(Dataset):
         th_split: int,
         th_mask: float,
         data_type: str,
+        stage: str,
         frame_shape: Tuple[int, int] = None,
     ):
         super().__init__()
 
         self._th_mask = th_mask
         self._data_type = data_type
+        self._stage = stage
         self._frame_shape = frame_shape
 
         self._data: List[Tuple[int, int, NDArray, NDArray]] = []
@@ -163,7 +167,10 @@ class IndividualDataset(Dataset):
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
             bbox = item[PoseDataFormat.bbox]
-            keypoints = item[PoseDataFormat.keypoints]
+            kps = item[PoseDataFormat.keypoints]
+
+            if self._stage == Stages.train and np.mean(kps[:, 2]) < 0.7:
+                continue
 
             if pid != pre_pid:
                 if len(seq_data) > seq_len:
@@ -178,7 +185,7 @@ class IndividualDataset(Dataset):
                 ):
                     # fill brank with nan
                     seq_data += [
-                        (num, pid, pre_bbox, pre_kps)
+                        (num, pid, np.full((5,), np.nan), np.full((17, 3), np.nan))
                         for num in range(pre_frame_num + 1, frame_num)
                     ]
                 elif th_split < frame_num - pre_frame_num:
@@ -190,29 +197,54 @@ class IndividualDataset(Dataset):
                 else:
                     pass
 
+            # replace nan into low confidence points
+            # bbox = np.full((5,), np.nan) if bbox[4] < 0.2 else bbox
+            # kps[np.where(kps[:, 2] < 0.2)[0]] = np.nan
+
             # append keypoints to seq_data
-            seq_data.append((frame_num, pid, bbox, keypoints))
+            seq_data.append((frame_num, pid, bbox, kps))
 
             # update frame_num and id
             pre_frame_num = frame_num
             pre_pid = pid
             pre_bbox = bbox
-            pre_kps = keypoints
-            del frame_num, pid, bbox, keypoints
+            pre_kps = kps
+            del frame_num, pid, bbox, kps
         else:
-            self._append(seq_data, seq_len)
+            if len(seq_data) > seq_len:
+                self._append(seq_data, seq_len)
             del seq_data
 
         del pre_frame_num, pre_pid, pre_bbox, pre_kps
         del pose_data
 
     def _append(self, seq_data, seq_len):
+        # collect bbox and kps
+        all_bboxs = np.array([item[2] for item in seq_data])
+        all_kps = np.array([item[3] for item in seq_data])
+
+        # delete last nan
+        # print(len(all_bboxs), all_bboxs[-1, -1])
+        # print(len(all_kps), all_kps[-1, -1])
+        # all_bboxs = all_bboxs[:max(np.where(~np.isnan(all_bboxs))[0]) + 1]
+        # print(np.where(np.all(np.isnan(all_kps), axis=(1, 2))))
+        # all_kps = all_kps[:max(np.where(np.all(~np.isnan(all_kps), axis=(1, 2)))[0]) + 1]
+        # print(len(all_bboxs), all_bboxs[-1, -1])
+        # print(len(all_kps), all_kps[-1, -1])
+
+        # interpolate bbox and keypoints
+        all_bboxs = self._interpolate2d(all_bboxs)
+        all_kps = all_kps.transpose(1, 0, 2)
+        for i in range(len(all_kps)):
+            all_kps[i] = self._interpolate2d(all_kps[i])
+        all_kps = all_kps.transpose(1, 0, 2)
+
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
             frame_num = seq_data[i + seq_len - 1][0]
             pid = f"{seq_data[i + seq_len - 1][1]}"
-            bbox = np.array([item[2] for item in seq_data[i : i + seq_len]])[:, :4]
-            kps = np.array([item[3] for item in seq_data[i : i + seq_len]])
+            bbox = all_bboxs[i : i + seq_len, :4]
+            kps = all_kps[i : i + seq_len]
 
             if self._data_type == IndividualDataTypes.bbox:
                 # bbox
@@ -228,12 +260,30 @@ class IndividualDataset(Dataset):
                     kps = self._scaling_keypoints_global(kps, self._frame_shape)
                 elif self._data_type == IndividualDataTypes.local:
                     # local
-                    kps = self._scaling_keypoints_local(bbox, kps)
+                    kps = self._scaling_keypoints_local(kps)
                 else:
                     raise KeyError
 
                 self._data.append((frame_num, pid, kps, mask))
+
+                if self._stage == Stages.train:
+                    # data augumentation by flipping horizontal
+                    kps[:, :, 0] = (kps[:, :, 0] * -1) + 1
+                    self._data.append((frame_num, pid, kps, mask))
             del frame_num, pid, bbox, kps, mask
+
+    @staticmethod
+    def _interpolate2d(vals: NDArray):
+        ret_vals = np.empty((vals.shape[0], 0))
+        for i in range(vals.shape[1]):
+            x = np.where(~np.isnan(vals[:, i]))[0]
+            y = vals[:, i][~np.isnan(vals[:, i])]
+            fitted_curve = interpolate.interp1d(x, y, kind="cubic")
+            fitted_y = fitted_curve(np.arange(len(vals)))
+            fitted_y[np.isnan(vals[:, i])] += np.random.normal(0, 0.01, len(fitted_y[np.isnan(vals[:, i])]))
+
+            ret_vals = np.append(ret_vals, fitted_y.reshape(-1, 1), axis=1)
+        return ret_vals
 
     @staticmethod
     def _scaling_keypoints_global(kps, frame_shape):
@@ -242,9 +292,9 @@ class IndividualDataset(Dataset):
         return glb_kps
 
     @staticmethod
-    def _scaling_keypoints_local(bbox, kps):
-        org = bbox[:, :2]
-        wh = bbox[:, 2:] - bbox[:, :2]
+    def _scaling_keypoints_local(kps):
+        org = np.min(kps[:, :, :2], axis=1)
+        wh = np.max(kps[:, :, :2], axis=1) - org
         lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps /= np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps = lcl_kps.astype(np.float32)
