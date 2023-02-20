@@ -38,9 +38,7 @@ class IndividualDataHandler:
             assert config.model.D.d_z == config.model.E.d_z
 
         # select n_kps by data_type
-        if data_type == IndividualDataTypes.both:
-            n_kps = 34  # both
-        elif data_type == IndividualDataTypes.bbox:
+        if data_type == IndividualDataTypes.bbox:
             n_kps = None
         else:
             n_kps = 17
