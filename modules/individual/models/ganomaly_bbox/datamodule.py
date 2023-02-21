@@ -68,7 +68,6 @@ class IndividualDataModuleBbox(LightningDataModule):
             pose_data,
             self._config.seq_len,
             self._config.th_split,
-            self._config.th_mask,
             self._stage,
             frame_shape,
         )
@@ -108,13 +107,11 @@ class IndividualDataset(Dataset):
         pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
-        th_mask: float,
         stage: str,
         frame_shape: Tuple[int, int] = None,
     ):
         super().__init__()
 
-        self._th_mask = th_mask
         self._stage = stage
         self._frame_shape = frame_shape
 
@@ -164,7 +161,7 @@ class IndividualDataset(Dataset):
                 ):
                     # fill brank with nan
                     seq_data += [
-                        (num, pid, np.full((5,), np.nan), np.full((17, 3), np.nan))
+                        (num, pid, np.full((5,), np.nan))
                         for num in range(pre_frame_num + 1, frame_num)
                     ]
                 elif th_split < frame_num - pre_frame_num:
@@ -230,7 +227,7 @@ class IndividualDataset(Dataset):
             fitted_curve = interpolate.interp1d(x, y, kind="cubic")
             fitted_y = fitted_curve(np.arange(len(vals)))
             fitted_y[np.isnan(vals[:, i])] += np.random.normal(
-                0, 0.01, len(fitted_y[np.isnan(vals[:, i])])
+                0, 0.1, len(fitted_y[np.isnan(vals[:, i])])
             )
 
             ret_vals = np.append(ret_vals, fitted_y.reshape(-1, 1), axis=1)
