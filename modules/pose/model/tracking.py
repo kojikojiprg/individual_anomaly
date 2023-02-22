@@ -48,7 +48,7 @@ class Tracker:
         process_img = np.ascontiguousarray(process_img)
         process_img = self.transforms(process_img)
 
-        obs = [self._cvt_kp2ob(kps) for kps in kps_all]
+        obs = np.array([self._cvt_kp2ob(kps) for kps in kps_all])
 
         tracks = self.tracker.update(process_img, img, obs)
         for t in tracks:
