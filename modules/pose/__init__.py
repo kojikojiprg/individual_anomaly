@@ -1,4 +1,3 @@
-
 import yaml
 
 from .data_handler import PoseDataHandler
