@@ -31,7 +31,7 @@ def _put_frame_num(img: NDArray, frame_num: int):
     )
 
 
-def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 0.2):
+def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 0.0):
     l_pair = [
         (0, 1),
         (0, 2),
@@ -114,7 +114,7 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
                 start_xy,
                 end_xy,
                 line_color[i],
-                2 * int(kps[start_p, 2] + kps[end_p, 2]) + 1,
+                min(2, 2 * int(kps[start_p, 2] + kps[end_p, 2])) + 1,
             )
 
     # draw track id
