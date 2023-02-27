@@ -13,13 +13,18 @@ from .tracking import Tracker
 
 
 class PoseModel:
-    def __init__(self, pose_cfg: dict, device: str):
+    def __init__(
+        self,
+        pose_cfg: dict,
+        det_gpu: int,
+        trk_gpu: int,
+    ):
         self._cfg = pose_cfg
 
         print("=> loading detector model")
-        self._detector = Detector(self._cfg, device)
+        self._detector = Detector(self._cfg, f"cuda:{det_gpu}")
         print("=> loading tracker model")
-        self._tracker = Tracker(self._cfg, device)
+        self._tracker = Tracker(self._cfg, f"cuda:{trk_gpu}")
 
     def __del__(self):
         torch.cuda.empty_cache()
@@ -66,7 +71,7 @@ class PoseModel:
                 result = {
                     Format.frame_num: int(frame_num),
                     Format.id: int(t.track_id),
-                    Format.bbox: det_results[i][Format.bbox],
+                    # Format.bbox: det_results[i][Format.bbox],
                     Format.keypoints: det_results[i][Format.keypoints],
                 }
                 if return_heatmap:
