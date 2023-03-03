@@ -71,7 +71,7 @@ class PoseModel:
                 result = {
                     Format.frame_num: int(frame_num),
                     Format.id: int(t.track_id),
-                    # Format.bbox: det_results[i][Format.bbox],
+                    Format.bbox: det_results[i][Format.bbox],
                     Format.keypoints: det_results[i][Format.keypoints],
                 }
                 if return_heatmap:
