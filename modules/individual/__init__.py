@@ -109,8 +109,12 @@ class IndividualActivityRecognition:
         else:
             strategy = None
 
+        if self._stage == Stages.train:
+            logger = TensorBoardLogger(log_path, name=self._data_type)
+        else:
+            logger = False
         return Trainer(
-            TensorBoardLogger(log_path, name=self._data_type),
+            logger,
             callbacks=self._model.callbacks,
             max_epochs=self._config.train.epochs,
             accumulate_grad_batches=accumulate_grad_batches,
