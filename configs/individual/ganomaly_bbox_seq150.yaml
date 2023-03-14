@@ -3,18 +3,17 @@ seed: 42  # random seed
 
 dataset:
   seq_len: 150
-  th_split: 5  # split keypoints sequence of an individual
-  th_mask: 0.2
+  th_split: 30  # split keypoints sequence of an individual
   n_val: 1024
 
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 2
-  epochs: 200
+  accumulate_grad_batches: 1
+  epochs: 100
 
 inference:
-  batch_size: 1024
+  batch_size: 4096
   anomaly_lambda: 0.5
 
 model:
