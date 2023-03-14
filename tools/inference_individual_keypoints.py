@@ -113,7 +113,7 @@ def main():
         "models",
         "individual",
         model_type,
-        f"{model_type}{masked_str}_{data_type}_seq{seq_len}_last{model_version}.ckpt",
+        f"{model_type}{masked_str}_{data_type}_seq{seq_len}_gcon_min{model_version}.ckpt",
     )
     if args.predict:
         iar = IndividualActivityRecognition(
@@ -156,18 +156,18 @@ def restore_keypoints(
             if int(frame_num_pose) == int(frame_num_ind) and int(id_pose) == int(
                 id_ind
             ):
-                bbox = pose_data["bbox"]
-                kps = np.array(ind_data["keypoints_fake"])
-                org = bbox[:2]
-                wh = bbox[2:4] - bbox[:2]
-                kps *= np.repeat([wh], 17, axis=0).reshape(-1, 17, 2)
-                kps = kps[:, :, :2] + np.repeat([org], 17, axis=0).reshape(-1, 17, 2)
+                raw_kps = np.array(pose_data["keypoints"])
+                kps = np.array(ind_data["keypoints_fake"])[-1]
+                org = np.min(raw_kps[:, :2], axis=0)
+                wh = np.max(raw_kps[:, :2], axis=0) - org
+                kps *= wh
+                kps = kps[:, :2] + np.repeat([org], 17, axis=0).reshape(17, 2)
                 kps = kps.astype(np.float32)
                 ret_data.append(
                     {
                         "frame": frame_num_ind,
                         "id": id_ind,
-                        "keypoints": kps[-1],
+                        "keypoints": kps,
                     }
                 )
                 break

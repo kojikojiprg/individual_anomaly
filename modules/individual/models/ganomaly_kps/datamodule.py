@@ -170,7 +170,8 @@ class IndividualDataset(Dataset):
             pid = item[PoseDataFormat.id]
             kps = item[PoseDataFormat.keypoints]
 
-            if self._stage == Stages.train and np.mean(kps[:, 2]) < 0.7:
+            # if self._stage == Stages.train and np.any(kps[:, 2] < 0.2):
+            if np.any(kps[:, 2] < 0.2):
                 continue
 
             if pid != pre_pid:
@@ -185,10 +186,11 @@ class IndividualDataset(Dataset):
                     and frame_num - pre_frame_num <= th_split
                 ):
                     # fill brank with nan
-                    seq_data += [
-                        (num, pid, np.full((5,), np.nan), np.full((17, 3), np.nan))
-                        for num in range(pre_frame_num + 1, frame_num)
-                    ]
+                    if len(seq_data) > 0:
+                        seq_data += [
+                            (num, pid, np.full((17, 3), np.nan))
+                            for num in range(pre_frame_num + 1, frame_num)
+                        ]
                 elif th_split < frame_num - pre_frame_num:
                     if len(seq_data) > seq_len:
                         self._append(seq_data, seq_len)
@@ -219,7 +221,7 @@ class IndividualDataset(Dataset):
 
     def _append(self, seq_data, seq_len):
         # collect and kps
-        all_kps = np.array([item[3] for item in seq_data])
+        all_kps = np.array([item[2] for item in seq_data])
 
         # delete last nan
         # print(len(all_kps), all_kps[-1, -1])
@@ -228,10 +230,10 @@ class IndividualDataset(Dataset):
         # print(len(all_kps), all_kps[-1, -1])
 
         # interpolate and keypoints
-        all_kps = all_kps.transpose(1, 0, 2)
-        for i in range(len(all_kps)):
-            all_kps[i] = self._interpolate2d(all_kps[i])
-        all_kps = all_kps.transpose(1, 0, 2)
+        all_kps_t = all_kps.transpose(1, 0, 2)
+        for i in range(len(all_kps_t)):
+            all_kps_t[i] = self._interpolate2d(all_kps_t[i])
+        all_kps = all_kps_t.transpose(1, 0, 2)
 
         # append data with creating sequential data
         for i in range(0, len(seq_data) - seq_len + 1):
@@ -263,10 +265,10 @@ class IndividualDataset(Dataset):
         for i in range(vals.shape[1]):
             x = np.where(~np.isnan(vals[:, i]))[0]
             y = vals[:, i][~np.isnan(vals[:, i])]
-            fitted_curve = interpolate.interp1d(x, y, kind="cubic")
+            fitted_curve = interpolate.interp1d(x, y)
             fitted_y = fitted_curve(np.arange(len(vals)))
             fitted_y[np.isnan(vals[:, i])] += np.random.normal(
-                0, 0.01, len(fitted_y[np.isnan(vals[:, i])])
+                0, 5, len(fitted_y[np.isnan(vals[:, i])])
             )
 
             ret_vals = np.append(ret_vals, fitted_y.reshape(-1, 1), axis=1)
@@ -280,6 +282,7 @@ class IndividualDataset(Dataset):
 
     @staticmethod
     def _scaling_keypoints_local(kps):
+        kps = kps[:, :17]  # extract upper body
         org = np.min(kps[:, :, :2], axis=1)
         wh = np.max(kps[:, :, :2], axis=1) - org
         lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)

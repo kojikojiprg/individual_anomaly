@@ -31,7 +31,7 @@ def _put_frame_num(img: NDArray, frame_num: int):
     )
 
 
-def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 0.0):
+def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 0.2):
     l_pair = [
         (0, 1),
         (0, 2),
@@ -98,11 +98,12 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
 
     # draw keypoints
     for n in range(len(kps)):
-        if kps[n, 2] <= vis_thresh:
-            continue
         cor_x, cor_y = int(kps[n, 0]), int(kps[n, 1])
         part_line[n] = (cor_x, cor_y)
-        cv2.circle(img, (cor_x, cor_y), 3, p_color[n], -1)
+        if kps[n, 2] < vis_thresh:
+            cv2.circle(img, (cor_x, cor_y), 3, p_color[n], 1)
+        else:
+            cv2.circle(img, (cor_x, cor_y), 3, p_color[n], -1)
 
     # draw limbs
     for i, (start_p, end_p) in enumerate(l_pair):
@@ -114,7 +115,8 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
                 start_xy,
                 end_xy,
                 line_color[i],
-                min(2, 2 * int(kps[start_p, 2] + kps[end_p, 2])) + 1,
+                # min(2, 2 * int(kps[start_p, 2] + kps[end_p, 2])) + 1,
+                3,
             )
 
     # draw track id
