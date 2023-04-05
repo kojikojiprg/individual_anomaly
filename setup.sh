@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 pip install -U pip
 # pip install wheel  # deleted for avoiding mmcv-full error
-pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu115
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu117
 
 git submodule update --init
 
