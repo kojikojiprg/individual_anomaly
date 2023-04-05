@@ -114,12 +114,12 @@ class IndividualActivityRecognition:
         else:
             logger = False
         return Trainer(
-            logger,
+            logger=logger,
             callbacks=self._model.callbacks,
             max_epochs=self._config.train.epochs,
             accumulate_grad_batches=accumulate_grad_batches,
             devices=gpu_ids,
-            accelerator="gpu",
+            accelerator="cuda",
             strategy=strategy,
         )
 
