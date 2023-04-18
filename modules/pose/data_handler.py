@@ -16,9 +16,9 @@ class PoseDataHandler:
 
     @staticmethod
     def load(data_dir, data_keys: list = None) -> Optional[List[Dict[str, Any]]]:
-        pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
+        data_path = os.path.join(data_dir, "json", "pose.json")
 
-        data = json_handler.load(pkl_path)
+        data = json_handler.load(data_path)
         if data_keys is None:
             return data
         else:
@@ -34,10 +34,10 @@ class PoseDataHandler:
 
     @staticmethod
     def save(data_dir, data: List[dict]):
-        pkl_path = os.path.join(data_dir, "json", "pose.pkl")
-        json_handler.dump(data, pkl_path)
+        data_path = os.path.join(data_dir, "json", "pose.json")
+        json_handler.dump(data, data_path)
 
     @staticmethod
     def save_frame_shape(data_dir, frame_shape: Tuple[int, int]):
-        pkl_path = os.path.join(data_dir, "json", "frame_shape.pkl")
-        json_handler.dump(frame_shape, pkl_path)
+        data_path = os.path.join(data_dir, "json", "frame_shape.json")
+        json_handler.dump(frame_shape, data_path)

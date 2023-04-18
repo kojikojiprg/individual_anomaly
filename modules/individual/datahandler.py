@@ -122,7 +122,7 @@ class IndividualDataHandler:
         return os.path.join(
             data_dir,
             "json",
-            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}{str_pred}.pkl",
+            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}{str_pred}.json",
         )
 
     @classmethod
@@ -136,10 +136,10 @@ class IndividualDataHandler:
         prediction_type: str,
         data_keys: list = None,
     ) -> List[dict]:
-        pkl_path = cls._get_data_path(
+        data_path = cls._get_data_path(
             data_dir, model_type, data_type, masking, seq_len, prediction_type
         )
-        data = json_handler.load(pkl_path)
+        data = json_handler.load(data_path)
         if data_keys is None:
             return data
         else:
@@ -167,15 +167,15 @@ class IndividualDataHandler:
         seq_len: int,
         prediction_type: str,
     ):
-        pkl_path = cls._get_data_path(
+        data_path = cls._get_data_path(
             data_dir, model_type, data_type, masking, seq_len, prediction_type
         )
-        os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
-        json_handler.dump(data, pkl_path)
+        os.makedirs(os.path.dirname(data_path), exist_ok=True)
+        json_handler.dump(data, data_path)
 
     @staticmethod
     def get_frame_shape(data_dir: str):
         # for 0-1 scaling keypoints
-        path = glob(os.path.join(data_dir, "*", "json", "frame_shape.pkl"))[0]
+        path = glob(os.path.join(data_dir, "*", "json", "frame_shape.json"))[0]
         frame_shape = json_handler.load(path)
         return frame_shape
