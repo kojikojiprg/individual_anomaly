@@ -1,3 +1,5 @@
+import gc
+
 from mmcv import Config
 from mmdet.apis import inference_detector, init_detector
 from mmpose.apis import (
@@ -31,6 +33,7 @@ class Detector:
 
     def __del__(self):
         del self._det_model, self._pose_model
+        gc.collect()
 
     def predict(self, img: NDArray, return_heatmap: bool = False):
         if self._model_type == "top-down":

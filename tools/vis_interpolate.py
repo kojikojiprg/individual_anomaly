@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 import sys
 import warnings
@@ -104,6 +105,7 @@ def restore_keypoints(pose_data: List[Dict[str, Any]], seq_len: int, th_split: i
                 ret_data += _interpolate_kps(seq_data)
             # reset seq_data
             del seq_data
+            gc.collect()
             seq_data = []
         else:
             if 1 < frame_num - pre_frame_num and frame_num - pre_frame_num <= th_split:
@@ -117,6 +119,7 @@ def restore_keypoints(pose_data: List[Dict[str, Any]], seq_len: int, th_split: i
                     ret_data += _interpolate_kps(seq_data)
                 # reset seq_data
                 del seq_data
+                gc.collect()
                 seq_data = []
             else:
                 pass
@@ -132,13 +135,16 @@ def restore_keypoints(pose_data: List[Dict[str, Any]], seq_len: int, th_split: i
         pre_pid = pid
         pre_kps = kps
         del frame_num, pid, kps
+        gc.collect()
     else:
         if len(seq_data) > seq_len:
             ret_data += _interpolate_kps(seq_data)
         del seq_data
+        gc.collect()
 
     del pre_frame_num, pre_pid, pre_kps
     del pose_data
+    gc.collect()
 
     return ret_data
 

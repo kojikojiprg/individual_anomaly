@@ -1,3 +1,4 @@
+import gc
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,6 +31,7 @@ class PoseDataHandler:
 
             ret_data = [{k: item[k] for k in data_keys} for item in data]
             del data
+            gc.collect()
             return ret_data
 
     @staticmethod

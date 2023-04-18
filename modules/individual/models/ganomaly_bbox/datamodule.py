@@ -1,4 +1,5 @@
 import os
+import gc
 from glob import glob
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
@@ -153,6 +154,7 @@ class IndividualDataset(Dataset):
                     self._append(seq_data, seq_len)
                 # reset seq_data
                 del seq_data
+                gc.collect()
                 seq_data = []
             else:
                 if (
@@ -169,6 +171,7 @@ class IndividualDataset(Dataset):
                         self._append(seq_data, seq_len)
                     # reset seq_data
                     del seq_data
+                    gc.collect()
                     seq_data = []
                 else:
                     pass
@@ -184,13 +187,16 @@ class IndividualDataset(Dataset):
             pre_pid = pid
             pre_bbox = bbox
             del frame_num, pid, bbox
+            gc.collect()
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
             del seq_data
+            gc.collect()
 
         del pre_frame_num, pre_pid, pre_bbox
         del pose_data
+        gc.collect()
 
     def _append(self, seq_data, seq_len):
         # collect bbox
@@ -217,6 +223,7 @@ class IndividualDataset(Dataset):
             self._data.append((frame_num, pid, bbox))
 
             del frame_num, pid, bbox
+            gc.collect()
 
     @staticmethod
     def _interpolate2d(vals: NDArray):

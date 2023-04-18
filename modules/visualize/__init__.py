@@ -1,3 +1,4 @@
+import gc
 import os
 
 from tqdm import tqdm
@@ -69,3 +70,4 @@ class Visualizer:
         del video_capture
         if self._do_pose_estimation:
             del pose_video_writer
+        gc.collect()

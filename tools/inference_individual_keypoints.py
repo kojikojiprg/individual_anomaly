@@ -1,4 +1,5 @@
 import argparse
+import gc
 import os
 import sys
 import warnings
@@ -216,6 +217,7 @@ def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
     # release memory
     del video_capture
     del pose_video_writer
+    gc.collect()
 
 
 if __name__ == "__main__":

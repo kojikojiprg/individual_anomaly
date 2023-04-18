@@ -1,3 +1,4 @@
+import gc
 import importlib
 import os
 import sys
@@ -38,6 +39,7 @@ class Tracker:
 
     def __del__(self):
         del self.tracker, self.transforms
+        gc.collect()
 
     def update(self, img: NDArray, kps_all: NDArray):
         process_img = img.copy()

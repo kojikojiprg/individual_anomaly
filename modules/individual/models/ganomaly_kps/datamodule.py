@@ -1,3 +1,4 @@
+import gc
 import os
 import sys
 from glob import glob
@@ -179,6 +180,7 @@ class IndividualDataset(Dataset):
                     self._append(seq_data, seq_len)
                 # reset seq_data
                 del seq_data
+                gc.collect()
                 seq_data = []
             else:
                 if (
@@ -196,6 +198,7 @@ class IndividualDataset(Dataset):
                         self._append(seq_data, seq_len)
                     # reset seq_data
                     del seq_data
+                    gc.collect()
                     seq_data = []
                 else:
                     pass
@@ -211,13 +214,16 @@ class IndividualDataset(Dataset):
             pre_pid = pid
             pre_kps = kps
             del frame_num, pid, kps
+            gc.collect()
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
             del seq_data
+            gc.collect()
 
         del pre_frame_num, pre_pid, pre_kps
         del pose_data
+        gc.collect()
 
     def _append(self, seq_data, seq_len):
         # collect and kps
@@ -258,6 +264,7 @@ class IndividualDataset(Dataset):
                 kps[:, :, 0] = (kps[:, :, 0] * -1) + 1
                 self._data.append((frame_num, pid, kps, mask))
             del frame_num, pid, kps, mask
+            gc.collect()
 
     @staticmethod
     def _interpolate2d(vals: NDArray):
@@ -289,6 +296,7 @@ class IndividualDataset(Dataset):
         lcl_kps /= np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps = lcl_kps.astype(np.float32)
         del org, wh
+        gc.collect()
         return lcl_kps
 
     def _create_mask(self, kps):

@@ -1,3 +1,4 @@
+import gc
 import os
 from typing import List, Tuple, Union
 
@@ -16,10 +17,10 @@ from .constants import (
     IndividualPredTypes,
 )
 from .datahandler import IndividualDataHandler
-from .models.ganomaly_kps import IndividualGanomalyKps
-from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 from .models.ganomaly_bbox import IndividualGanomalyBbox
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
+from .models.ganomaly_kps import IndividualGanomalyKps
+from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 
 
 class IndividualActivityRecognition:
@@ -61,6 +62,7 @@ class IndividualActivityRecognition:
         if hasattr(self, "_trainer"):
             del self._trainer
         torch.cuda.empty_cache()
+        gc.collect()
 
     @property
     def model(self) -> LightningModule:
@@ -133,6 +135,7 @@ class IndividualActivityRecognition:
 
         del datamodule
         torch.cuda.empty_cache()
+        gc.collect()
 
     @staticmethod
     def _collect_results(preds_lst):
@@ -176,5 +179,6 @@ class IndividualActivityRecognition:
 
         del datamodule
         torch.cuda.empty_cache()
+        gc.collect()
 
         return results_lst

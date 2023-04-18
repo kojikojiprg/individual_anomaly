@@ -1,3 +1,4 @@
+import gc
 from typing import Any, Dict, List
 
 import numpy as np
@@ -27,8 +28,9 @@ class PoseModel:
         self._tracker = Tracker(self._cfg, f"cuda:{trk_gpu}")
 
     def __del__(self):
-        torch.cuda.empty_cache()
         del self._detector, self._tracker
+        gc.collect()
+        torch.cuda.empty_cache()
 
     def predict(
         self, cap: Capture, return_heatmap: bool = False
@@ -80,6 +82,7 @@ class PoseModel:
                 results.append(result)
 
             del det_results, kps, tracks, heatmaps
+        gc.collect()
 
         return results
 

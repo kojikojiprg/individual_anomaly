@@ -1,5 +1,5 @@
+import gc
 import os
-from glob import glob
 from types import SimpleNamespace
 from typing import List, Tuple, Union
 
@@ -154,6 +154,7 @@ class IndividualDataHandler:
 
             ret_data = [{k: item[k] for k in data_keys} for item in data]
             del data
+            gc.collect()
             return ret_data
 
     @classmethod
@@ -176,6 +177,6 @@ class IndividualDataHandler:
     @staticmethod
     def get_frame_shape(data_dir: str):
         # for 0-1 scaling keypoints
-        path = glob(os.path.join(data_dir, "*", "json", "frame_shape.json"))[0]
+        path = os.path.join(data_dir, "*", "json", "frame_shape.json")
         frame_shape = json_handler.load(path)
         return frame_shape

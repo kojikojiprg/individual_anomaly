@@ -1,3 +1,5 @@
+import gc
+
 import yaml
 
 from .data_handler import PoseDataHandler
@@ -19,6 +21,7 @@ class PoseEstimation:
 
     def __del__(self):
         del self._model
+        gc.collect()
 
     def inference(self, video_path: str, data_dir: str = None):
         cap = PoseDataHandler.create_video_capture(video_path)
