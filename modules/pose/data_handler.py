@@ -1,7 +1,7 @@
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
-from modules.utils import pickle_handler, video
+from modules.utils import json_handler, video
 
 from .format import Format
 
@@ -18,7 +18,7 @@ class PoseDataHandler:
     def load(data_dir, data_keys: list = None) -> Optional[List[Dict[str, Any]]]:
         pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
 
-        data = pickle_handler.load(pkl_path)
+        data = json_handler.load(pkl_path)
         if data_keys is None:
             return data
         else:
@@ -34,10 +34,10 @@ class PoseDataHandler:
 
     @staticmethod
     def save(data_dir, data: List[dict]):
-        pkl_path = os.path.join(data_dir, "pickle", "pose.pkl")
-        pickle_handler.dump(data, pkl_path)
+        pkl_path = os.path.join(data_dir, "json", "pose.pkl")
+        json_handler.dump(data, pkl_path)
 
     @staticmethod
     def save_frame_shape(data_dir, frame_shape: Tuple[int, int]):
-        pkl_path = os.path.join(data_dir, "pickle", "frame_shape.pkl")
-        pickle_handler.dump(frame_shape, pkl_path)
+        pkl_path = os.path.join(data_dir, "json", "frame_shape.pkl")
+        json_handler.dump(frame_shape, pkl_path)

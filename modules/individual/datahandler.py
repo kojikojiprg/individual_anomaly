@@ -5,12 +5,12 @@ from typing import List, Tuple, Union
 
 import yaml
 
-from modules.utils import pickle_handler
+from modules.utils import json_handler
 from modules.utils.constants import Stages
 
 from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes
-from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
+from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 
 
 class IndividualDataHandler:
@@ -121,7 +121,7 @@ class IndividualDataHandler:
 
         return os.path.join(
             data_dir,
-            "pickle",
+            "json",
             f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}{str_pred}.pkl",
         )
 
@@ -139,7 +139,7 @@ class IndividualDataHandler:
         pkl_path = cls._get_data_path(
             data_dir, model_type, data_type, masking, seq_len, prediction_type
         )
-        data = pickle_handler.load(pkl_path)
+        data = json_handler.load(pkl_path)
         if data_keys is None:
             return data
         else:
@@ -171,11 +171,11 @@ class IndividualDataHandler:
             data_dir, model_type, data_type, masking, seq_len, prediction_type
         )
         os.makedirs(os.path.dirname(pkl_path), exist_ok=True)
-        pickle_handler.dump(data, pkl_path)
+        json_handler.dump(data, pkl_path)
 
     @staticmethod
     def get_frame_shape(data_dir: str):
         # for 0-1 scaling keypoints
-        path = glob(os.path.join(data_dir, "*", "pickle", "frame_shape.pkl"))[0]
-        frame_shape = pickle_handler.load(path)
+        path = glob(os.path.join(data_dir, "*", "json", "frame_shape.pkl"))[0]
+        frame_shape = json_handler.load(path)
         return frame_shape
