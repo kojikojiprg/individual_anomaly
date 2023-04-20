@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 import numpy as np
 import torch
+from mmpose.structures import PoseDataSample
 from numpy.typing import NDArray
 from tqdm import tqdm
 
@@ -32,9 +33,30 @@ class PoseModel:
         gc.collect()
         torch.cuda.empty_cache()
 
-    def predict(
-        self, cap: Capture, return_heatmap: bool = False
-    ) -> List[Dict[str, Any]]:
+    @staticmethod
+    def _get_bboxs_from_det_results(det_results: List[PoseDataSample]):
+        return np.array(
+            [
+                result.pred_instances.bboxes[0]
+                for result in det_results
+            ]
+        )
+
+    @staticmethod
+    def _get_kps_from_det_results(det_results: List[PoseDataSample]):
+        return np.array(
+            [
+                np.hstack(
+                    [
+                        result.pred_instances.keypoints[0],
+                        result.pred_instances.keypoint_scores.T,
+                    ]
+                )
+                for result in det_results
+            ]
+        )
+
+    def predict(self, cap: Capture) -> List[Dict[str, Any]]:
         print("=> running pose estimation")
         results = []
         for frame_num in tqdm(range(cap.frame_count), ncols=100):
@@ -42,10 +64,11 @@ class PoseModel:
             frame = cap.read()[1]
 
             # keypoints detection
-            det_results, heatmaps = self._detector.predict(frame, return_heatmap)
+            det_results = self._detector.predict(frame)
 
             # extract unique result
-            kps = np.array([det["keypoints"] for det in det_results])
+            bboxs = self._get_bboxs_from_det_results(det_results)
+            kps = self._get_kps_from_det_results(det_results)
             if len(kps) > 0:
                 remain_indices = self._del_leaky(kps, self._cfg["th_delete"])
                 remain_indices = self._get_unique(
@@ -54,6 +77,7 @@ class PoseModel:
                     self._cfg["th_diff"],
                     self._cfg["th_count"],
                 )
+                bboxs = bboxs[remain_indices]
                 kps = kps[remain_indices]
 
             # tracking
@@ -61,27 +85,28 @@ class PoseModel:
 
             # append result
             for t in tracks:
-                # select index
+                # get id is closed kps
                 i = np.where(np.isclose(t.pose, kps))[0]
                 if len(i) == 0:
                     continue
-                unique, freq = np.unique(i, return_counts=True)
-                i = unique[np.argmax(freq)]
-                i = remain_indices[i]
+
+                # select most frequent index
+                # unique, freq = np.unique(i, return_counts=True)
+                # i = unique[np.argmax(freq)]
+                # select minimum index
+                i = np.min(i)
 
                 # create result
                 result = {
                     Format.frame_num: int(frame_num),
                     Format.id: int(t.track_id),
-                    Format.bbox: det_results[i][Format.bbox],
-                    Format.keypoints: det_results[i][Format.keypoints],
+                    Format.bbox: bboxs[i],
+                    Format.keypoints: kps[i],
                 }
-                if return_heatmap:
-                    result[Format.heatmap] = heatmaps[i]
 
                 results.append(result)
 
-            del det_results, kps, tracks, heatmaps
+            del det_results, kps, tracks
         gc.collect()
 
         return results
