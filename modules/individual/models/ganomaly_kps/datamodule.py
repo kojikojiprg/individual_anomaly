@@ -169,7 +169,7 @@ class IndividualDataset(Dataset):
             # get values
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
-            kps = item[PoseDataFormat.keypoints]
+            kps = np.array(item[PoseDataFormat.keypoints])
 
             # if self._stage == Stages.train and np.any(kps[:, 2] < 0.2):
             if np.any(kps[:, 2] < 0.2):
