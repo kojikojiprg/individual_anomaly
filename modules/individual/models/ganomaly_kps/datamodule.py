@@ -67,7 +67,7 @@ class IndividualDataModuleKps(LightningDataModule):
     @staticmethod
     def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
         pose_data_lst = []
-        for pose_data_dir in data_dirs:
+        for pose_data_dir in tqdm(data_dirs, leave=False, ncols=100):
             data = PoseDataHandler.load(
                 pose_data_dir, data_keys=[PoseDataFormat.keypoints]
             )
@@ -165,7 +165,7 @@ class IndividualDataset(Dataset):
         pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
         seq_data: list = []
-        for item in tqdm(pose_data, leave=False):
+        for item in tqdm(pose_data, leave=False, ncols=100):
             # get values
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
@@ -178,10 +178,7 @@ class IndividualDataset(Dataset):
             if pid != pre_pid:
                 if len(seq_data) > seq_len:
                     self._append(seq_data, seq_len)
-                # reset seq_data
-                del seq_data
-                gc.collect()
-                seq_data = []
+                seq_data = []  # reset seq_data
             else:
                 if (
                     1 < frame_num - pre_frame_num
@@ -196,10 +193,7 @@ class IndividualDataset(Dataset):
                 elif th_split < frame_num - pre_frame_num:
                     if len(seq_data) > seq_len:
                         self._append(seq_data, seq_len)
-                    # reset seq_data
-                    del seq_data
-                    gc.collect()
-                    seq_data = []
+                    seq_data = []  # reset seq_data
                 else:
                     pass
 
@@ -213,14 +207,12 @@ class IndividualDataset(Dataset):
             pre_frame_num = frame_num
             pre_pid = pid
             pre_kps = kps
-            del frame_num, pid, kps
-            gc.collect()
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
-            del seq_data
-            gc.collect()
 
+        del seq_data
+        del frame_num, pid, kps
         del pre_frame_num, pre_pid, pre_kps
         del pose_data
         gc.collect()
@@ -263,8 +255,6 @@ class IndividualDataset(Dataset):
                 # data augumentation by flipping horizontal
                 kps[:, :, 0] = (kps[:, :, 0] * -1) + 1
                 self._data.append((frame_num, pid, kps, mask))
-            del frame_num, pid, kps, mask
-            gc.collect()
 
     @staticmethod
     def _interpolate2d(vals: NDArray):
@@ -295,8 +285,6 @@ class IndividualDataset(Dataset):
         lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps /= np.repeat(wh, 17, axis=0).reshape(-1, 17, 2)
         lcl_kps = lcl_kps.astype(np.float32)
-        del org, wh
-        gc.collect()
         return lcl_kps
 
     def _create_mask(self, kps):
