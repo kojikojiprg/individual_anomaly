@@ -153,8 +153,6 @@ class IndividualDataset(Dataset):
                 if len(seq_data) > seq_len:
                     self._append(seq_data, seq_len)
                 # reset seq_data
-                del seq_data
-                gc.collect()
                 seq_data = []
             else:
                 if (
@@ -163,21 +161,19 @@ class IndividualDataset(Dataset):
                 ):
                     # fill brank with nan
                     seq_data += [
-                        (num, pid, np.full((5,), np.nan))
+                        (num, pid, np.full((4,), np.nan))
                         for num in range(pre_frame_num + 1, frame_num)
                     ]
                 elif th_split < frame_num - pre_frame_num:
                     if len(seq_data) > seq_len:
                         self._append(seq_data, seq_len)
                     # reset seq_data
-                    del seq_data
-                    gc.collect()
                     seq_data = []
                 else:
                     pass
 
             # replace nan into low confidence points
-            # bbox = np.full((5,), np.nan) if bbox[4] < 0.2 else bbox
+            # bbox = np.full((4,), np.nan) if bbox[4] < 0.2 else bbox
 
             # append keypoints to seq_data
             seq_data.append((frame_num, pid, bbox))
@@ -186,21 +182,17 @@ class IndividualDataset(Dataset):
             pre_frame_num = frame_num
             pre_pid = pid
             pre_bbox = bbox
-            del frame_num, pid, bbox
-            gc.collect()
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
-            del seq_data
-            gc.collect()
 
         del pre_frame_num, pre_pid, pre_bbox
-        del pose_data
+        del pose_data, seq_data
         gc.collect()
 
     def _append(self, seq_data, seq_len):
         # collect bbox
-        all_bboxs = np.array([item[2] for item in seq_data])
+        all_bboxs = np.array([item[2][:4] for item in seq_data])
 
         # delete last nan
         # print(len(all_bboxs), all_bboxs[-1, -1])
@@ -221,9 +213,6 @@ class IndividualDataset(Dataset):
             bbox = bbox / self._frame_shape  # scalling bbox top-left
             bbox = bbox.astype(np.float32)
             self._data.append((frame_num, pid, bbox))
-
-            del frame_num, pid, bbox
-            gc.collect()
 
     @staticmethod
     def _interpolate2d(vals: NDArray):
