@@ -9,8 +9,8 @@ dataset:
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 1
-  epochs: 100
+  accumulate_grad_batches: 2
+  epochs: 200
 
 inference:
   batch_size: 4096
