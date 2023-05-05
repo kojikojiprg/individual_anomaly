@@ -1,6 +1,7 @@
 import gc
 from typing import Any, Dict, List
 
+import cv2
 import numpy as np
 import torch
 from mmpose.structures import PoseDataSample
@@ -20,6 +21,7 @@ class PoseModel:
         pose_cfg: dict,
         det_gpu: int,
         trk_gpu: int,
+        with_clahe: bool = False,
     ):
         self._cfg = pose_cfg
 
@@ -28,19 +30,20 @@ class PoseModel:
         print("=> loading tracker model")
         self._tracker = Tracker(self._cfg, f"cuda:{trk_gpu}")
 
+        self._with_clahe = with_clahe
+        if with_clahe:
+            self._clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
+
     def __del__(self):
         del self._detector, self._tracker
+        if self._with_clahe:
+            del self._clahe
         gc.collect()
         torch.cuda.empty_cache()
 
     @staticmethod
     def _get_bboxs_from_det_results(det_results: List[PoseDataSample]):
-        return np.array(
-            [
-                result.pred_instances.bboxes[0]
-                for result in det_results
-            ]
-        )
+        return np.array([result.pred_instances.bboxes[0] for result in det_results])
 
     @staticmethod
     def _get_kps_from_det_results(det_results: List[PoseDataSample]):
@@ -62,6 +65,13 @@ class PoseModel:
         for frame_num in tqdm(range(cap.frame_count), ncols=100):
             frame_num += 1
             frame = cap.read()[1]
+
+            # CLAHE
+            if self._with_clahe:
+                cl_r = self._clahe.apply(frame[:, :, 2])
+                cl_g = self._clahe.apply(frame[:, :, 1])
+                cl_b = self._clahe.apply(frame[:, :, 0])
+                frame = cv2.merge((cl_b, cl_g, cl_r))
 
             # keypoints detection
             det_results = self._detector.predict(frame)
