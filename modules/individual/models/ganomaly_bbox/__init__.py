@@ -212,12 +212,12 @@ class IndividualGanomalyBbox(LightningModule):
                 {
                     IndividualDataFormat.frame_num: frame_num,
                     IndividualDataFormat.id: pid,
-                    IndividualDataFormat.kps_real: kr,
+                    # IndividualDataFormat.kps_real: kr,
                     IndividualDataFormat.kps_fake: kf,
                     IndividualDataFormat.z: z_,
-                    IndividualDataFormat.attn: a,
-                    IndividualDataFormat.f_real: fr,
-                    IndividualDataFormat.f_fake: ff,
+                    # IndividualDataFormat.attn: a,
+                    # IndividualDataFormat.f_real: fr,
+                    # IndividualDataFormat.f_fake: ff,
                     IndividualDataFormat.loss_r: lr,
                     IndividualDataFormat.loss_d: ld,
                 }

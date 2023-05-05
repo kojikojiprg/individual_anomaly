@@ -209,12 +209,12 @@ class IndividualGanomalyKps(LightningModule):
                             self._to_numpy(frame_nums[i])
                         ),
                         IndividualDataFormat.id: int(pids[i]),
-                        IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
+                        # IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
                         IndividualDataFormat.kps_fake: self._to_numpy(kps_fake[i]),
                         IndividualDataFormat.z: self._to_numpy(z[i]),
-                        IndividualDataFormat.attn: self._to_numpy(attn[i]),
-                        IndividualDataFormat.f_real: self._to_numpy(f_real[i]),
-                        IndividualDataFormat.f_fake: self._to_numpy(f_fake[i]),
+                        # IndividualDataFormat.attn: self._to_numpy(attn[i]),
+                        # IndividualDataFormat.f_real: self._to_numpy(f_real[i]),
+                        # IndividualDataFormat.f_fake: self._to_numpy(f_fake[i]),
                         IndividualDataFormat.loss_r: self._to_numpy(l_resi[i]),
                         IndividualDataFormat.loss_d: self._to_numpy(l_disc[i]),
                     }
