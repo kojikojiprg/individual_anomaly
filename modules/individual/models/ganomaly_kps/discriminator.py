@@ -9,7 +9,7 @@ from modules.layers.transformer import Encoder as TransformerEncoder
 class Discriminator(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.emb = Embedding(config.n_kps, config.d_model)
+        self.emb = Embedding(17, config.d_model)
         self.pe = PositionalEncoding(config.d_model, config.seq_len + 1)
         self.cls = nn.Parameter(torch.randn((1, 1, config.d_model)))
         self.cls_mask = nn.Parameter(torch.full((1, 1), False), requires_grad=False)

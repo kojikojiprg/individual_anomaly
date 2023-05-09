@@ -39,25 +39,15 @@ class IndividualDataHandler:
         if "D" in model_names and "E" in model_names:
             assert config.model.D.d_z == config.model.E.d_z
 
-        # select n_kps by data_type
-        if data_type == IndividualDataTypes.bbox:
-            n_kps = None
-        else:
-            n_kps = 17
-
-        # set same seq_len, n_kps
+        # copy seq_len
         if seq_len is not None:
             assert seq_len == config.dataset.seq_len
-        config.n_kps = n_kps
         if "G" in model_names:
             config.model.G.seq_len = config.dataset.seq_len
-            config.model.G.n_kps = n_kps
         if "D" in model_names:
             config.model.D.seq_len = config.dataset.seq_len
-            config.model.D.n_kps = n_kps
         if "E" in model_names:
             config.model.E.seq_len = config.dataset.seq_len
-            config.model.E.n_kps = n_kps
 
         # set batch_size
         if stage == Stages.train:

@@ -23,7 +23,6 @@ class IndividualGanomalyKps(LightningModule):
         super().__init__()
 
         self._config = config
-        self.n_kps = config.n_kps
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
         self._masking = masking
@@ -165,8 +164,8 @@ class IndividualGanomalyKps(LightningModule):
     def anomaly_score(self, kps_real, kps_fake, mask_bool, f_real, f_fake):
         B, T = kps_real.size()[:2]
 
-        kps_real = kps_real.view(B, T, self.n_kps, 2)
-        kps_fake = kps_fake.view(B, T, self.n_kps, 2)
+        kps_real = kps_real.view(B, T, 17, 2)
+        kps_fake = kps_fake.view(B, T, 17, 2)
 
         # apply mask
         if self._masking:
