@@ -108,7 +108,6 @@ class IndividualDataset(AbstractIndividualDataset):
         # get frame_num and id of first data
         pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
         pre_pid = pose_data[0][PoseDataFormat.id]
-        pre_kps = pose_data[0][PoseDataFormat.keypoints]
 
         seq_data: list = []
         for item in tqdm(pose_data, leave=False, ncols=100):
@@ -152,14 +151,13 @@ class IndividualDataset(AbstractIndividualDataset):
             # update frame_num and id
             pre_frame_num = frame_num
             pre_pid = pid
-            pre_kps = kps
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
 
         del seq_data
         del frame_num, pid, kps
-        del pre_frame_num, pre_pid, pre_kps
+        del pre_frame_num, pre_pid
         del pose_data
         gc.collect()
 

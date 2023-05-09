@@ -26,7 +26,9 @@ class IndividualDataModuleBbox(AbstractIndividualDataModule):
     ):
         super().__init__(data_dir, config, stage)
 
-        pose_data_lst = self._load_pose_data(self._data_dirs, data_keys=[PoseDataFormat.bbox])
+        pose_data_lst = self._load_pose_data(
+            self._data_dirs, data_keys=[PoseDataFormat.bbox]
+        )
 
         if stage == Stages.train:
             pose_data = []
@@ -83,7 +85,6 @@ class IndividualDataset(AbstractIndividualDataset):
         # get frame_num and id of first data
         pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
         pre_pid = pose_data[0][PoseDataFormat.id]
-        pre_bbox = pose_data[0][PoseDataFormat.bbox]
 
         seq_data: list = []
         for item in tqdm(pose_data, leave=False, ncols=100):
@@ -124,12 +125,11 @@ class IndividualDataset(AbstractIndividualDataset):
             # update frame_num and id
             pre_frame_num = frame_num
             pre_pid = pid
-            pre_bbox = bbox
         else:
             if len(seq_data) > seq_len:
                 self._append(seq_data, seq_len)
 
-        del pre_frame_num, pre_pid, pre_bbox
+        del pre_frame_num, pre_pid
         del pose_data, seq_data
         gc.collect()
 
