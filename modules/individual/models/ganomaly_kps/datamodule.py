@@ -1,25 +1,23 @@
 import gc
-import os
-import sys
-from glob import glob
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from pytorch_lightning import LightningDataModule
 from scipy import interpolate
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.pose import PoseDataFormat, PoseDataHandler
+from modules.individual.constants import IndividualDataTypes
+from modules.individual.models.datammodule import (
+    AbstractIndividualDataModule,
+    AbstractIndividualDataset,
+)
+from modules.pose import PoseDataFormat
 from modules.utils.constants import Stages
 
-sys.path.append("modules")
-from individual.constants import IndividualDataTypes
 
-
-class IndividualDataModuleKps(LightningDataModule):
+class IndividualDataModuleKps(AbstractIndividualDataModule):
     def __init__(
         self,
         data_dir: str,
@@ -28,17 +26,15 @@ class IndividualDataModuleKps(LightningDataModule):
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
+        super().__init__(data_dir, config, stage)
+
+        pose_data_lst = self._load_pose_data(
+            self._data_dirs, data_keys=[PoseDataFormat.keypoints]
+        )
+
         assert data_type in [IndividualDataTypes.local, IndividualDataTypes.global_]
         if data_type == IndividualDataTypes.global_:
             assert frame_shape is not None
-
-        super().__init__()
-        self._config = config.dataset
-        self._stage = stage
-
-        self._data_dirs = sorted(glob(os.path.join(data_dir, "*")))
-
-        pose_data_lst = self._load_pose_data(self._data_dirs)
 
         if stage == Stages.train:
             pose_data = []
@@ -60,21 +56,6 @@ class IndividualDataModuleKps(LightningDataModule):
         else:
             raise NameError
 
-    @property
-    def data_dirs(self) -> List[str]:
-        return self._data_dirs
-
-    @staticmethod
-    def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
-        pose_data_lst = []
-        for pose_data_dir in tqdm(data_dirs, leave=False, ncols=100):
-            data = PoseDataHandler.load(
-                pose_data_dir, data_keys=[PoseDataFormat.keypoints]
-            )
-            if data is not None:
-                pose_data_lst.append(data)
-        return pose_data_lst
-
     def _create_dataset(
         self,
         pose_data: List[Dict[str, Any]],
@@ -91,36 +72,8 @@ class IndividualDataModuleKps(LightningDataModule):
             frame_shape,
         )
 
-    def train_dataloader(self, batch_size: int = None):
-        assert self._stage == Stages.train
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._train_dataset, batch_size, shuffle=True, num_workers=8)
 
-    def val_dataloader(self, batch_size: int = None):
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._val_dataset, batch_size, shuffle=False, num_workers=8)
-
-    def _test_predict_dataloader(self, batch_size: int = None):
-        assert self._stage is Stages.test or self._stage == Stages.inference
-        if batch_size is None:
-            batch_size = self._config.batch_size
-
-        dataloaders = [
-            DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
-            for dataset in self._test_datasets
-        ]
-        return dataloaders
-
-    def test_dataloader(self, batch_size: int = None):
-        return self._test_predict_dataloader(batch_size)
-
-    def predict_dataloader(self, batch_size: int = None):
-        return self._test_predict_dataloader(batch_size)
-
-
-class IndividualDataset(Dataset):
+class IndividualDataset(AbstractIndividualDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],
@@ -131,16 +84,9 @@ class IndividualDataset(Dataset):
         stage: str,
         frame_shape: Tuple[int, int] = None,
     ):
-        super().__init__()
-
         self._th_mask = th_mask
         self._data_type = data_type
-        self._stage = stage
-        self._frame_shape = frame_shape
-
-        self._data: List[Tuple[int, int, NDArray, NDArray]] = []
-
-        self._create_dataset(pose_data, seq_len, th_split)
+        super().__init__(pose_data, seq_len, th_split, stage, frame_shape)
 
     def get_data(self, frame_num, pid):
         for data in self._data:
@@ -291,9 +237,3 @@ class IndividualDataset(Dataset):
         mask = np.where(np.mean(kps[:, :, 2], axis=1) < self._th_mask, -1e10, 0.0)
         # mask = np.repeat(mask, 2, axis=1).reshape(mask.shape[0], mask.shape[1], 2)
         return mask
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray, NDArray]:
-        return self._data[idx]

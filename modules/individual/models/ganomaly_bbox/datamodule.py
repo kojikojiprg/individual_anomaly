@@ -1,21 +1,22 @@
-import os
 import gc
-from glob import glob
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
-from pytorch_lightning import LightningDataModule
 from scipy import interpolate
-from torch.utils.data import DataLoader, Dataset, Subset
+from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.pose import PoseDataFormat, PoseDataHandler
+from modules.individual.models.datammodule import (
+    AbstractIndividualDataModule,
+    AbstractIndividualDataset,
+)
+from modules.pose import PoseDataFormat
 from modules.utils.constants import Stages
 
 
-class IndividualDataModuleBbox(LightningDataModule):
+class IndividualDataModuleBbox(AbstractIndividualDataModule):
     def __init__(
         self,
         data_dir: str,
@@ -23,13 +24,9 @@ class IndividualDataModuleBbox(LightningDataModule):
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
-        super().__init__()
-        self._config = config.dataset
-        self._stage = stage
+        super().__init__(data_dir, config, stage)
 
-        self._data_dirs = sorted(glob(os.path.join(data_dir, "*")))
-
-        pose_data_lst = self._load_pose_data(self._data_dirs)
+        pose_data_lst = self._load_pose_data(self._data_dirs, data_keys=[PoseDataFormat.bbox])
 
         if stage == Stages.train:
             pose_data = []
@@ -47,19 +44,6 @@ class IndividualDataModuleBbox(LightningDataModule):
         else:
             raise NameError
 
-    @property
-    def data_dirs(self) -> List[str]:
-        return self._data_dirs
-
-    @staticmethod
-    def _load_pose_data(data_dirs: List[str]) -> List[List[Dict[str, Any]]]:
-        pose_data_lst = []
-        for pose_data_dir in data_dirs:
-            data = PoseDataHandler.load(pose_data_dir, data_keys=[PoseDataFormat.bbox])
-            if data is not None:
-                pose_data_lst.append(data)
-        return pose_data_lst
-
     def _create_dataset(
         self,
         pose_data: List[Dict[str, Any]],
@@ -73,36 +57,8 @@ class IndividualDataModuleBbox(LightningDataModule):
             frame_shape,
         )
 
-    def train_dataloader(self, batch_size: int = None):
-        assert self._stage == Stages.train
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._train_dataset, batch_size, shuffle=True, num_workers=8)
 
-    def val_dataloader(self, batch_size: int = None):
-        if batch_size is None:
-            batch_size = self._config.batch_size
-        return DataLoader(self._val_dataset, batch_size, shuffle=False, num_workers=8)
-
-    def _test_predict_dataloader(self, batch_size: int = None):
-        assert self._stage is Stages.test or self._stage == Stages.inference
-        if batch_size is None:
-            batch_size = self._config.batch_size
-
-        dataloaders = [
-            DataLoader(dataset, batch_size, shuffle=False, num_workers=8)
-            for dataset in self._test_datasets
-        ]
-        return dataloaders
-
-    def test_dataloader(self, batch_size: int = None):
-        return self._test_predict_dataloader(batch_size)
-
-    def predict_dataloader(self, batch_size: int = None):
-        return self._test_predict_dataloader(batch_size)
-
-
-class IndividualDataset(Dataset):
+class IndividualDataset(AbstractIndividualDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],
@@ -111,20 +67,7 @@ class IndividualDataset(Dataset):
         stage: str,
         frame_shape: Tuple[int, int] = None,
     ):
-        super().__init__()
-
-        self._stage = stage
-        self._frame_shape = frame_shape
-
-        self._data: List[Tuple[int, int, NDArray, NDArray]] = []
-
-        self._create_dataset(pose_data, seq_len, th_split)
-
-    def get_data(self, frame_num, pid):
-        for data in self._data:
-            if frame_num == data[0] and pid == data[1]:
-                return data
-        return None
+        super().__init__(pose_data, seq_len, th_split, stage, frame_shape)
 
     def _create_dataset(
         self,
@@ -143,7 +86,7 @@ class IndividualDataset(Dataset):
         pre_bbox = pose_data[0][PoseDataFormat.bbox]
 
         seq_data: list = []
-        for item in tqdm(pose_data, leave=False):
+        for item in tqdm(pose_data, leave=False, ncols=100):
             # get values
             frame_num = item[PoseDataFormat.frame_num]
             pid = item[PoseDataFormat.id]
@@ -228,9 +171,3 @@ class IndividualDataset(Dataset):
 
             ret_vals = np.append(ret_vals, fitted_y.reshape(-1, 1), axis=1)
         return ret_vals
-
-    def __len__(self):
-        return len(self._data)
-
-    def __getitem__(self, idx: int) -> Tuple[int, int, NDArray]:
-        return self._data[idx]
