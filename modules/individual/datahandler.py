@@ -9,9 +9,10 @@ import yaml
 from modules.utils import json_handler
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes
+from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes, IndividualModelTypes
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
+from .models.role_estimation.datamodule import RoleEstimationDataModule
 
 
 class IndividualDataHandler:
@@ -59,11 +60,18 @@ class IndividualDataHandler:
 
     @staticmethod
     def _get_config_path(model_type: str, seq_len: int, data_type: str):
-        return os.path.join(
-            "configs",
-            "individual",
-            f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
-        )
+        if model_type == IndividualModelTypes.ganomaly:
+            return os.path.join(
+                "configs",
+                "individual",
+                f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
+            )
+        else:
+            return os.path.join(
+                "configs",
+                "individual",
+                f"{model_type.lower()}_seq{seq_len}.yaml",
+            )
 
     @classmethod
     def _get_config_reccursive(cls, config: dict):
@@ -79,16 +87,21 @@ class IndividualDataHandler:
     def create_datamodule(
         data_dir: str,
         config: SimpleNamespace,
+        model_type: str,
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
+        annotation_path: str = None,
     ) -> Union[IndividualDataModuleBbox, IndividualDataModuleKps]:
-        if data_type == IndividualDataTypes.bbox:
-            return IndividualDataModuleBbox(data_dir, config, stage, frame_shape)
-        else:
-            return IndividualDataModuleKps(
-                data_dir, config, data_type, stage, frame_shape
-            )
+        if model_type == IndividualModelTypes.ganomaly:
+            if data_type == IndividualDataTypes.bbox:
+                return IndividualDataModuleBbox(data_dir, config, stage, frame_shape)
+            else:
+                return IndividualDataModuleKps(
+                    data_dir, config, data_type, stage, frame_shape
+                )
+        elif model_type == IndividualModelTypes.role_estimation:
+            return RoleEstimationDataModule(data_dir, annotation_path, config, stage, frame_shape)
 
     @staticmethod
     def _get_data_path(

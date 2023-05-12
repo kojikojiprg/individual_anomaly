@@ -36,7 +36,7 @@ class IndividualDataTypes(_AbstractDataClass):
 @dataclass(frozen=True)
 class IndividualModelTypes(_AbstractDataClass):
     ganomaly: str = "ganomaly"
-    csgan: str = "csgan"  # conditional semi-supervised
+    role_estimation: str = "role_estimation"
 
 
 # TODO
