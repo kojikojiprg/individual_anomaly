@@ -8,7 +8,7 @@ from scipy import interpolate
 from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.individual.models.datammodule import (
+from individual.models.datamodule import (
     AbstractIndividualDataModule,
     AbstractIndividualDataset,
 )

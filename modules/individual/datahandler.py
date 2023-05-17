@@ -102,6 +102,8 @@ class IndividualDataHandler:
                 )
         elif model_type == IndividualModelTypes.role_estimation:
             return RoleEstimationDataModule(data_dir, annotation_path, config, stage, frame_shape)
+        else:
+            raise ValueError
 
     @staticmethod
     def _get_data_path(
