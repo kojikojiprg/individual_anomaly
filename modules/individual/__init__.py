@@ -108,6 +108,7 @@ class IndividualActivityRecognition:
         return IndividualDataHandler.create_datamodule(
             data_dir,
             self._config,
+            self._model_type,
             self._data_type,
             self._stage,
             frame_shape,

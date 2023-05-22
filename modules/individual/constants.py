@@ -16,6 +16,7 @@ class _AbstractDataClass:
 class IndividualDataFormat(_AbstractDataClass):
     frame_num: str = "frame"
     id: str = "id"
+    roll_label: str = "roll_label"
     kps_real: str = "keypoints_real"
     kps_fake: str = "keypoints_fake"
     z: str = "z"
