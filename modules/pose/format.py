@@ -7,4 +7,3 @@ class Format:
     id: str = "id"
     bbox: str = "bbox"
     keypoints: str = "keypoints"
-    heatmap: str = "heatmap"
