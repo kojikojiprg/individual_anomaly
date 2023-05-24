@@ -38,7 +38,7 @@ def _plot_val_kps(img, kps, color):
 
 
 def plot_val_kps(
-    kps_real, kps_fake, pid, epoch, data_type, seq_len=10, plot_size=(300, 400)
+    kps_real, kps_fake, pid, epoch, model_type, data_type, seq_len=10, plot_size=(300, 400)
 ):
     fig = plt.figure(figsize=(20, 3))
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0)
@@ -72,7 +72,7 @@ def plot_val_kps(
         "data",
         "images",
         "individual",
-        "ganomaly",
+        model_type,
         "generator",
         data_type,
         f"pid{pid}_epoch{epoch}.jpg",
