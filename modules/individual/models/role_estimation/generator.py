@@ -1,6 +1,5 @@
 import copy
 
-import torch
 import torch.nn as nn
 
 from modules.layers.positional_encoding import PositionalEncoding
@@ -13,7 +12,6 @@ class Generator(nn.Module):
         self._config = config
         self.emb = nn.Linear(config.d_z, config.d_model * config.seq_len)
         self.pe = PositionalEncoding(config.d_model, config.seq_len)
-        self.z = nn.Parameter(torch.randn((1, 1, config.d_model)))
 
         tre = TransformerEncoder(
             config.d_model,
