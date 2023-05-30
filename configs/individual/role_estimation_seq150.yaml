@@ -10,8 +10,8 @@ dataset:
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 2
-  epochs: 200
+  accumulate_grad_batches: 1
+  epochs: 500
 
 inference:
   batch_size: 4096
@@ -25,7 +25,7 @@ model:
     n_heads: 8
     n_tr: 6
     dropout: 0.1
-    activation: SELU
+    activation: LeakyReLU
   D:
     num_classes: 2
     d_model: 32
@@ -34,16 +34,10 @@ model:
     n_heads: 8
     n_tr: 6
     dropout: 0.1
-    activation: SELU
-
-loss:
-  G:
-    w_adv: 1
-    w_con: 100
-    w_lat: 1
+    activation: LeakyReLU
 
 optim:
-  lr_g: 0.00001
+  lr_g: 0.00002
   lr_d: 0.00001
   beta1: 0.5
   beta2: 0.999

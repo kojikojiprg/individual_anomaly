@@ -3,7 +3,6 @@ import os
 
 from tqdm import tqdm
 
-from modules.individual import IndividualDataHandler
 from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
 
