@@ -44,7 +44,7 @@ class RoleEstimationDataModule(AbstractIndividualDataModule):
             self._val_dataset = Subset(self._train_dataset, val_ids)
         elif stage == Stages.test or stage == Stages.inference:
             self._test_datasets = []
-            for pose_data in tqdm(pose_data_lst):
+            for pose_data in tqdm(pose_data_lst, ncols=100):
                 self._test_datasets.append(self._create_dataset(pose_data, frame_shape))
         else:
             raise NameError
