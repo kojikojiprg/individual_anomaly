@@ -169,9 +169,10 @@ class IndividualActivityRecognition:
         self,
         data_dir: str,
         gpu_ids: List[int],
+        annotation_path: str = None,
     ):
         frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
-        datamodule = self._create_datamodule(data_dir, frame_shape)
+        datamodule = self._create_datamodule(data_dir, frame_shape, annotation_path)
 
         if not hasattr(self, "_trainer"):
             self._trainer = self._build_trainer(data_dir, gpu_ids)
