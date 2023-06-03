@@ -181,16 +181,14 @@ def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
         raise ValueError
     video_capture.set_pos_frame_count(0)
 
-    out_paths = []
     video_num = os.path.basename(video_path).split(".")[0]
     # create video writer for pose estimation results
     out_path = os.path.join(data_dir, f"{video_num}_pose_fakekps.mp4")
 
     pose_video_writer = Writer(out_path, video_capture.fps, tmp_frame.shape[1::-1])
-    out_paths.append(out_path)
     data_lst = restore_keypoints(pose_data_lst, results)
 
-    print(f"=> writing video into {out_paths}.")
+    print(f"=> writing video into {out_path}.")
     for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
         frame_num += 1  # frame_num = (1, ...)
         frame = video_capture.read()[1]
