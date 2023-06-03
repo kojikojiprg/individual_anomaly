@@ -62,12 +62,10 @@ def parser():
 def main():
     args = parser()
 
-    data_type = args.data_type
-    seq_len = args.seq_len
     iar = IndividualActivityRecognition(
         "role_estimation",
-        seq_len,
-        data_type=data_type,
+        args.seq_len,
+        data_type=args.data_type,
         stage="inference",
         model_version=args.model_version,
     )

@@ -99,31 +99,14 @@ def parser():
 def main():
     args = parser()
 
-    model_type = args.model_type
-    if args.model_version is not None:
-        model_version = f"-v{args.model_version}"
-    else:
-        model_version = ""
-    data_type = args.data_type
-    masking = args.masking
-    masked_str = ""
-    if masking:
-        masked_str = "_masked"
-    seq_len = args.seq_len
-    checkpoint_path = os.path.join(
-        "models",
-        "individual",
-        model_type,
-        f"{model_type}{masked_str}_{data_type}_seq{seq_len}_gcon_min{model_version}.ckpt",
-    )
     if args.predict:
         iar = IndividualActivityRecognition(
-            model_type,
-            seq_len,
-            checkpoint_path,
-            data_type=data_type,
-            masking=masking,
+            args.model_type,
+            args.seq_len,
+            data_type=args.data_type,
             stage="inference",
+            model_version=args.model_version,
+            masking=args.masking,
             prediction_type=IndividualPredTypes.keypoints,
         )
         iar.inference(args.data_dir, [args.gpu])
@@ -138,7 +121,12 @@ def main():
         name = os.path.basename(video_path).replace(".mp4", "")
         data_dir = os.path.join(args.data_dir, name)
         results = IndividualDataHandler.load(
-            data_dir, model_type, data_type, masking, seq_len, "keypoints"
+            data_dir,
+            args.model_type,
+            args.data_type,
+            args.masking,
+            args.seq_len,
+            "keypoints",
         )
         os.makedirs(data_dir, exist_ok=True)
         visualise(video_path, data_dir, results)
