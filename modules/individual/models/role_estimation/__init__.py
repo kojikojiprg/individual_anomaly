@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from types import SimpleNamespace
 
 import numpy as np
@@ -7,10 +9,12 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
 from modules.individual import IndividualDataFormat
-from modules.visualize.individual import plot_val_kps
 
 from .discriminator import Discriminator
 from .generator import Generator
+
+if TYPE_CHECKING:
+    from modules.visualize.individual import plot_val_kps
 
 
 class RoleEstimation(LightningModule):
