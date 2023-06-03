@@ -10,12 +10,7 @@ from tqdm.auto import tqdm
 from modules.utils import set_random
 from modules.utils.constants import Stages
 
-from .constants import (
-    IndividualDataFormat,
-    IndividualDataTypes,
-    IndividualModelTypes,
-    IndividualPredTypes,
-)
+from .constants import IndividualDataTypes, IndividualModelTypes
 from .datahandler import IndividualDataHandler
 from .models.ganomaly_bbox import IndividualGanomalyBbox
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
@@ -30,11 +25,9 @@ class IndividualActivityRecognition:
         self,
         model_type: str,
         seq_len: int,
-        checkpoint_path: str = None,
         data_type: str = IndividualDataTypes.local,
-        masking: bool = False,
         stage: str = Stages.inference,
-        prediction_type: str = IndividualPredTypes.anomaly,
+        model_version: int = None,
     ):
         assert IndividualModelTypes.includes(model_type)
         assert IndividualDataTypes.includes(data_type)
@@ -42,9 +35,7 @@ class IndividualActivityRecognition:
         self._model_type = model_type.casefold()
         self._seq_len = seq_len
         self._data_type = data_type
-        self._masking = masking
         self._stage = stage
-        self._prediction_type = prediction_type
 
         self._config = IndividualDataHandler.get_config(
             model_type, seq_len, data_type, stage
@@ -55,7 +46,15 @@ class IndividualActivityRecognition:
         self._trainer: Trainer
 
         self._create_model()
-        if checkpoint_path is not None:
+        if stage == Stages.inference:
+            if model_version is not None:
+                model_version = f"-v{model_version}"
+            else:
+                model_version = ""
+            checkpoint_path = os.path.join(
+                self._config.checkpoint_dir,
+                f"re_{data_type}_seq{seq_len}_last{model_version}.ckpt",
+            )
             self._load_model(checkpoint_path)
 
     def __del__(self):
