@@ -9,7 +9,12 @@ import yaml
 from modules.utils import json_handler
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataFormat, IndividualDataTypes, IndividualPredTypes, IndividualModelTypes
+from .constants import (
+    IndividualDataFormat,
+    IndividualDataTypes,
+    IndividualModelTypes,
+    IndividualPredTypes,
+)
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
 from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
 from .models.role_estimation.datamodule import RoleEstimationDataModule
@@ -101,7 +106,9 @@ class IndividualDataHandler:
                     data_dir, config, data_type, stage, frame_shape
                 )
         elif model_type == IndividualModelTypes.role_estimation:
-            return RoleEstimationDataModule(data_dir, annotation_path, config, stage, frame_shape)
+            return RoleEstimationDataModule(
+                data_dir, annotation_path, config, stage, frame_shape
+            )
         else:
             raise ValueError
 
