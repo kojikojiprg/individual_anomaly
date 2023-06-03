@@ -10,7 +10,12 @@ from tqdm.auto import tqdm
 from modules.utils import set_random
 from modules.utils.constants import Stages
 
-from .constants import IndividualDataTypes, IndividualModelTypes
+from .constants import (
+    IndividualDataFormat,
+    IndividualDataTypes,
+    IndividualModelTypes,
+    IndividualPredTypes,
+)
 from .datahandler import IndividualDataHandler
 from .models.ganomaly_bbox import IndividualGanomalyBbox
 from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
@@ -28,12 +33,16 @@ class IndividualActivityRecognition:
         data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
         model_version: int = None,
+        masking: bool = False,
+        prediction_type: str = IndividualPredTypes.anomaly,
     ):
         assert IndividualModelTypes.includes(model_type)
         assert IndividualDataTypes.includes(data_type)
 
         self._model_type = model_type.casefold()
         self._seq_len = seq_len
+        self._masking = masking
+        self._prediction_type = prediction_type
         self._data_type = data_type
         self._stage = stage
 
