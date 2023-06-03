@@ -6,6 +6,7 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
+from modules.individual import IndividualDataFormat
 from modules.visualize.individual import plot_val_kps
 
 from .discriminator import Discriminator
@@ -61,7 +62,7 @@ class RoleEstimation(LightningModule):
         self._random_generator = torch.random.manual_seed(self.device.index + 1)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, bbox, kps, aux_real_gt = batch
+        frame_nums, pids, bbox_real, kps_real, aux_real_gt = batch
         batch_size = len(frame_nums)
 
         # make ground truth
@@ -84,7 +85,7 @@ class RoleEstimation(LightningModule):
         adv_fake, aux_fake, f_d_fake, attn_d_fake = self._D(fake)
 
         # pred discriminator
-        x = torch.cat([bbox, kps], dim=2)
+        x = torch.cat([bbox_real, kps_real], dim=2)
         adv_real, aux_real, f_d_real, attn_d_real = self._D(x)
 
         if optimizer_idx == 0:
@@ -179,8 +180,31 @@ class RoleEstimation(LightningModule):
                 "",
             )
 
+    @staticmethod
+    def _to_numpy(tensor):
+        return tensor.cpu().numpy()
+
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        pass
+        frame_nums, pids, bbox_real, kps_real, aux_real_gt = batch
+
+        # pred discriminator
+        x = torch.cat([bbox_real, kps_real], dim=2)
+        adv_real, aux_real, f_d_real, attn_d_real = self._D(x)
+        preds = []
+        for i in range(len(frame_nums)):
+            preds.append(
+                {
+                    IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                    IndividualDataFormat.id: int(pids[i]),
+                    IndividualDataFormat.attn: self._to_numpy(attn_d_real[i]),
+                    IndividualDataFormat.f_real: self._to_numpy(f_d_real[i]),
+                    IndividualDataFormat.roll_label: self._to_numpy(aux_real_gt[i]),
+                    IndividualDataFormat.role_adv: self._to_numpy(adv_real[i]),
+                    IndividualDataFormat.role_aux: self._to_numpy(aux_real[i]),
+                }
+            )
+
+        return preds
 
     def configure_optimizers(self):
         g_optim = torch.optim.Adam(
