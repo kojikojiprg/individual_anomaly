@@ -1,4 +1,4 @@
-checkpoint_dir: "models/individual/ganomaly/"
+checkpoint_dir: "models/individual/role_estimation/"
 seed: 42  # random seed
 
 
@@ -41,5 +41,5 @@ optim:
   lr_d: 0.00001
   beta1: 0.5
   beta2: 0.999
-  lr_rate_g: 1.0
-  lr_rate_d: 1.0
+  lr_rate_g: 0.9
+  lr_rate_d: 0.9
