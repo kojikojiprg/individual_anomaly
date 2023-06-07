@@ -156,14 +156,11 @@ class IndividualDataHandler:
         if data_keys is None:
             return data
         else:
-            if data_keys is not None:
-                data_keys = data_keys + [
-                    IndividualDataFormat.frame_num,
-                    IndividualDataFormat.id,
-                ]
-                data_keys + list(set(data_keys))  # get unique
-            else:
-                data_keys = [IndividualDataFormat.frame_num, IndividualDataFormat.id]
+            data_keys = data_keys + [
+                IndividualDataFormat.frame_num,
+                IndividualDataFormat.id,
+            ]
+            data_keys + list(set(data_keys))  # get unique
 
             ret_data = [{k: item[k] for k in data_keys} for item in data]
             del data
