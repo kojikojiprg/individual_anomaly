@@ -67,16 +67,16 @@ class RoleEstimationDataModule(AbstractIndividualDataModule):
                 frame_num = item[PoseDataFormat.frame_num]
                 pid = item[PoseDataFormat.id]
                 if pid not in annotations_tmp[:, 1]:
-                    item[IndividualDataFormat.roll_label] = 0  # no labeled
+                    item[IndividualDataFormat.role_label] = 0  # no labeled
                     continue
 
                 # print(pid)
                 for an in annotations_tmp:
                     start_frame_num, end_frame_num = an[2:4]
                     if start_frame_num <= frame_num and frame_num <= end_frame_num:
-                        item[IndividualDataFormat.roll_label] = an[-1]  # labeled
+                        item[IndividualDataFormat.role_label] = an[-1]  # labeled
                     else:
-                        item[IndividualDataFormat.roll_label] = 0  # no labeled
+                        item[IndividualDataFormat.role_label] = 0  # no labeled
             # print(pose_data_lst[0][0])
             # raise KeyError
 
@@ -127,7 +127,7 @@ class IndividualDataset(AbstractIndividualDataset):
         # get frame_num and id of first data
         pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
         pre_pid = pose_data[0][PoseDataFormat.id]
-        pre_label = pose_data[0][IndividualDataFormat.roll_label]
+        pre_label = pose_data[0][IndividualDataFormat.role_label]
 
         seq_data: list = []
         for item in tqdm(pose_data, leave=False, ncols=100):
@@ -136,7 +136,7 @@ class IndividualDataset(AbstractIndividualDataset):
             pid = item[PoseDataFormat.id]
             bbox = np.array(item[PoseDataFormat.bbox])[:4]
             kps = np.array(item[PoseDataFormat.keypoints])
-            label = item[IndividualDataFormat.roll_label]
+            label = item[IndividualDataFormat.role_label]
 
             if np.any(kps[:, 2] < 0.2):
                 continue

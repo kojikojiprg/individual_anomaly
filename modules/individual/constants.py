@@ -31,7 +31,7 @@ class IndividualDataFormat(_AbstractDataClass):
     loss_r: str = "loss_resitudal"
     loss_d: str = "loss_discrimination"
 
-    roll_label: str = "roll_label"
+    role_label: str = "role_label"
     role_adv: str = "role_adv"
     role_aux: str = "role_aux"
 
