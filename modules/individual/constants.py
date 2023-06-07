@@ -17,6 +17,8 @@ class IndividualDataFormat(_AbstractDataClass):
     frame_num: str = "frame"
     id: str = "id"
 
+    bbox_real: str = "bbox_real"
+    bbox_fake: str = "bbox_fake"
     kps_real: str = "keypoints_real"
     kps_fake: str = "keypoints_fake"
 
