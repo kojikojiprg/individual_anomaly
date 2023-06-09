@@ -65,18 +65,11 @@ class IndividualDataHandler:
 
     @staticmethod
     def _get_config_path(model_type: str, seq_len: int, data_type: str):
-        if model_type == IndividualModelTypes.ganomaly:
-            return os.path.join(
-                "configs",
-                "individual",
-                f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
-            )
-        else:
-            return os.path.join(
-                "configs",
-                "individual",
-                f"{model_type.lower()}_seq{seq_len}.yaml",
-            )
+        return os.path.join(
+            "configs",
+            "individual",
+            f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
+        )
 
     @classmethod
     def _get_config_reccursive(cls, config: dict):
