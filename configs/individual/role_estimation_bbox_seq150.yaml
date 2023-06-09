@@ -19,7 +19,7 @@ inference:
 
 model:
   G:
-    d_z: 64
+    d_z: 16
     d_model: 32
     d_ff: 128
     n_heads: 8
@@ -37,8 +37,8 @@ model:
     activation: LeakyReLU
 
 optim:
-  lr_g: 0.00002
-  lr_d: 0.00001
+  lr_g: 0.00001
+  lr_d: 0.00002
   beta1: 0.5
   beta2: 0.999
   lr_rate_g: 0.9
