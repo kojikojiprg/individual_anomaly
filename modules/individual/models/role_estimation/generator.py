@@ -7,9 +7,10 @@ from modules.layers.transformer import Encoder as TransformerEncoder
 
 
 class Generator(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, n_pts):
         super().__init__()
         self._config = config
+        self._n_pts = n_pts
         self.emb = nn.Linear(config.d_z, config.d_model * config.seq_len)
         self.pe = PositionalEncoding(config.d_model, config.seq_len)
 
@@ -23,7 +24,7 @@ class Generator(nn.Module):
         self.n_tr = config.n_tr
         self.trs = nn.ModuleList([copy.deepcopy(tre) for _ in range(self.n_tr)])
 
-        self.ff = nn.Linear(config.d_model, 19 * 2)
+        self.ff = nn.Linear(config.d_model, self._n_pts * 2)
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, z):
@@ -35,5 +36,5 @@ class Generator(nn.Module):
             x, attn = self.trs[i](x)
 
         x = self.sigmoid(self.ff(x))
-        x = x.view(B, -1, 19, 2)
+        x = x.view(B, -1, self._n_pts, 2)
         return x, attn

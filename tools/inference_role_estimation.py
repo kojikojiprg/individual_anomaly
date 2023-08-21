@@ -3,7 +3,8 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules.individual import IndividualActivityRecognition
+from modules.individual import IndividualActivityRecognition, IndividualDataTypes
+from modules.visualize.individual import IndividualVisualizer
 
 warnings.simplefilter("ignore")
 
@@ -41,7 +42,7 @@ def parser():
         "--data_type",
         type=str,
         default="local",
-        help="Input data type. Selected by 'global', 'local', 'local+bbox' or 'both', by defualt is 'local'.",
+        help="Input data type. Selected by 'local', or 'both', by defualt is 'local'.",
     )
     parser.add_argument(
         "-an",
@@ -56,6 +57,8 @@ def parser():
     # delete last slash
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
 
+    assert args.data_type in IndividualDataTypes.get_attributes()
+
     return args
 
 
@@ -69,7 +72,10 @@ def main():
         stage="inference",
         model_version=args.model_version,
     )
-    iar.inference(args.data_dir, [args.gpu], annotation_path=args.annotation_path)
+    results = iar.inference(args.data_dir, [args.gpu], annotation_path=args.annotation_path)
+
+    # vis = IndividualVisualizer()
+    # vis.visualise()
 
 
 if __name__ == "__main__":

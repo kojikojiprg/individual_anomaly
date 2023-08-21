@@ -1,5 +1,3 @@
-from __future__ import annotations
-from typing import TYPE_CHECKING
 from types import SimpleNamespace
 
 import numpy as np
@@ -8,13 +6,12 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
-from modules.individual import IndividualDataFormat
+from modules.individual import IndividualDataFormat, IndividualDataTypes
 
 from .discriminator import Discriminator
 from .generator import Generator
 
-if TYPE_CHECKING:
-    from modules.visualize.individual import plot_val_kps
+from modules.visualize.individual import plot_val_kps
 
 
 class RoleEstimation(LightningModule):
@@ -28,10 +25,16 @@ class RoleEstimation(LightningModule):
 
         self._config = config
         self._num_classes = self._config.model.D.num_classes
+        self._data_type = data_type
         self._prediction_type = prediction_type
 
-        self._G = Generator(config.model.G)
-        self._D = Discriminator(config.model.D)
+        if data_type == IndividualDataTypes.bbox:
+            n_pts = 2
+        else:
+            n_pts = 17
+        self._G = Generator(config.model.G, n_pts)
+        self._D = Discriminator(config.model.D, n_pts)
+
         self._l_adv = torch.nn.BCELoss()
         self._l_lat = torch.nn.MSELoss()
         self._l_aux = torch.nn.CrossEntropyLoss()
@@ -89,7 +92,11 @@ class RoleEstimation(LightningModule):
         adv_fake, aux_fake, f_d_fake, attn_d_fake = self._D(fake)
 
         # pred discriminator
-        x = torch.cat([bbox_real, kps_real], dim=2)
+        # x = torch.cat([bbox_real, kps_real], dim=2)
+        if self._data_type == IndividualDataTypes.bbox:
+            x = bbox_real
+        else:
+            x = kps_real
         adv_real, aux_real, f_d_real, attn_d_real = self._D(x)
 
         if optimizer_idx == 0:
@@ -149,10 +156,13 @@ class RoleEstimation(LightningModule):
         z = self.generate_noise(batch_size)
         fake, attn_g = self._G(z)
         adv_fake, aux_fake, f_d_fake, attn_d_fake = self._D(fake)
-        _, kps_fake = fake[:, :, :2], fake[:, :, 2:]
 
         # pred discriminator
-        x = torch.cat([bbox_real, kps_real], dim=2)
+        # x = torch.cat([bbox_real, kps_real], dim=2)
+        if self._data_type == IndividualDataTypes.bbox:
+            x = bbox_real
+        else:
+            x = kps_real
         adv_real, aux_real, f_d_real, attn_d_real = self._D(x)
 
         # adv auc
@@ -170,9 +180,12 @@ class RoleEstimation(LightningModule):
         aux_auc = roc_auc_score(aux_gt, aux)
 
         self.log_dict({"adv_auc": adv_auc, "aux_auc": aux_auc})
-        return pids, kps_real.cpu().numpy(), kps_fake.cpu().numpy()
+        return pids, kps_real.cpu().numpy(), fake.cpu().numpy()
 
     def validation_epoch_end(self, outputs):
+        if self._data_type == IndividualDataTypes.bbox:
+            return
+
         if self.current_epoch == 0 or self.current_epoch % 9 == 0:
             out = outputs[0]
             plot_val_kps(
@@ -192,7 +205,11 @@ class RoleEstimation(LightningModule):
         frame_nums, pids, bbox_real, kps_real, aux_real_gt = batch
 
         # pred discriminator
-        x = torch.cat([bbox_real, kps_real], dim=2)
+        # x = torch.cat([bbox_real, kps_real], dim=2)
+        if self._data_type == IndividualDataTypes.bbox:
+            x = bbox_real
+        else:
+            x = kps_real
         adv_real, aux_real, f_d_real, attn_d_real = self._D(x)
         preds = []
         for i in range(len(frame_nums)):
@@ -200,9 +217,11 @@ class RoleEstimation(LightningModule):
                 {
                     IndividualDataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
                     IndividualDataFormat.id: int(pids[i]),
+                    IndividualDataFormat.bbox_real: self._to_numpy(bbox_real[i]),
+                    IndividualDataFormat.kps_real: self._to_numpy(kps_real[i]),
                     IndividualDataFormat.attn: self._to_numpy(attn_d_real[i]),
                     IndividualDataFormat.f_real: self._to_numpy(f_d_real[i]),
-                    IndividualDataFormat.roll_label: self._to_numpy(aux_real_gt[i]),
+                    IndividualDataFormat.role_label: self._to_numpy(aux_real_gt[i]),
                     IndividualDataFormat.role_adv: self._to_numpy(adv_real[i]),
                     IndividualDataFormat.role_aux: self._to_numpy(aux_real[i]),
                 }

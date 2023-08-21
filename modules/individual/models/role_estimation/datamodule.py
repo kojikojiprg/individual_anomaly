@@ -8,7 +8,7 @@ from scipy import interpolate
 from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.individual import IndividualDataFormat
+from modules.individual import IndividualDataFormat, IndividualDataTypes
 from modules.individual.models.datamodule import (
     AbstractIndividualDataModule,
     AbstractIndividualDataset,
@@ -23,9 +23,11 @@ class RoleEstimationDataModule(AbstractIndividualDataModule):
         pose_data_dir: str,
         annotation_path: str,
         config: SimpleNamespace,
+        data_type: str = IndividualDataTypes.local,
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
+        self._data_type = data_type
         super().__init__(pose_data_dir, config, stage)
 
         pose_data_lst = self._load_pose_data(
@@ -91,6 +93,7 @@ class RoleEstimationDataModule(AbstractIndividualDataModule):
             pose_data,
             self._config.seq_len,
             self._config.th_split,
+            self._data_type,
             self._stage,
             frame_shape,
         )
@@ -102,9 +105,11 @@ class IndividualDataset(AbstractIndividualDataset):
         pose_data: List[Dict[str, Any]],
         seq_len: int,
         th_split: int,
+        data_type: str,
         stage: str,
         frame_shape: Tuple[int, int] = None,
     ):
+        self._data_type = data_type
         super().__init__(pose_data, seq_len, th_split, stage, frame_shape)
 
     def get_data(self, frame_num, pid):
@@ -207,7 +212,11 @@ class IndividualDataset(AbstractIndividualDataset):
             labels = seq_data[i + seq_len - 1][4]
 
             bbox = self._scaling_bbox(bbox)
-            kps = self._scaling_keypoints(kps)
+
+            if self._data_type == IndividualDataTypes.global_:
+                kps = self._scaling_keypoints_global(kps)
+            elif self._data_type == IndividualDataTypes.local:
+                kps = self._scaling_keypoints_local(kps)
 
             self._data.append((frame_num, pid, bbox, kps, labels))
 
@@ -238,9 +247,13 @@ class IndividualDataset(AbstractIndividualDataset):
         bbox = bbox.astype(np.float32)
         return bbox
 
+    def _scaling_keypoints_global(self, kps):
+        glb_kps = kps[:, :, :2] / self._frame_shape  # 0-1 scalling
+        glb_kps = glb_kps.astype(np.float32)
+        return glb_kps
+
     @staticmethod
-    def _scaling_keypoints(kps):
-        kps = kps[:, :17]  # extract upper body
+    def _scaling_keypoints_local(kps):
         org = np.min(kps[:, :, :2], axis=1)
         wh = np.max(kps[:, :, :2], axis=1) - org
         lcl_kps = kps[:, :, :2] - np.repeat(org, 17, axis=0).reshape(-1, 17, 2)

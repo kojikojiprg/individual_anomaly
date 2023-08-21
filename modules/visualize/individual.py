@@ -1,9 +1,16 @@
+import gc
 import os
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+from tqdm import tqdm
+
+from modules.individual import IndividualDataFormat
+from modules.utils.video import Capture, Writer
+
+from .pose import draw_bbox, put_frame_num
 
 graph = [
     # ========== 4 ============ 9 =========== 14 =====
@@ -27,6 +34,62 @@ graph = [
 ]
 
 
+class IndividualVisualizer:
+    def __init__(self, args=None):
+        pass
+
+    def visualise(self, video_path: str, data_dir: str, ind_data_lst: str):
+        # create video capture
+        print(f"=> loading video from {video_path}.")
+        video_capture = Capture(video_path)
+        assert (
+            video_capture.is_opened
+        ), f"{video_path} does not exist or is wrong file type."
+
+        tmp_frame = video_capture.read()[1]
+        video_capture.set_pos_frame_count(0)
+
+        video_num = os.path.basename(video_path).split(".")[0]
+
+        # create video writer
+        out_path = os.path.join(data_dir, f"{video_num}_pose.mp4")
+        video_writer = Writer(out_path, video_capture.fps, tmp_frame.shape[1::-1])
+
+        # create video writer for individual results
+        # if self._do_individual:
+        #     out_path = os.path.join(data_dir, f"individual_{}.mp4")
+
+        #     pose_video_writer = Writer(
+        #         out_path, video_capture.fps, tmp_frame.shape[1::-1]
+        #     )
+        #     out_paths.append(out_path)
+
+        print(f"=> writing video into {out_path}.")
+        for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
+            frame_num += 1  # frame_num = (1, ...)
+            ret, frame = video_capture.read()
+
+            # write pose estimation video
+            frame = write_frame(frame, ind_data_lst, frame_num)
+            video_writer.write(frame)
+
+        # release memory
+        del video_capture
+        del video_writer
+        gc.collect()
+
+
+def write_frame(frame, ind_data_lst, frame_num):
+    # add keypoints to image
+    frame = put_frame_num(frame, frame_num)
+    for data in ind_data_lst:
+        if data[IndividualDataFormat.frame_num] == frame_num:
+            if data[IndividualDataFormat.role_aux] == 1:
+                frame = draw_bbox(frame, np.array(data[IndividualDataFormat.bbox_real]))
+
+    return frame
+
+
 def _plot_val_kps(img, kps, color):
     for i in range(len(kps) - 1):
         for j in range(i + 1, len(kps)):
@@ -38,7 +101,14 @@ def _plot_val_kps(img, kps, color):
 
 
 def plot_val_kps(
-    kps_real, kps_fake, pid, epoch, model_type, data_type, seq_len=10, plot_size=(300, 400)
+    kps_real,
+    kps_fake,
+    pid,
+    epoch,
+    model_type,
+    data_type,
+    seq_len=10,
+    plot_size=(300, 400),
 ):
     fig = plt.figure(figsize=(20, 3))
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0)

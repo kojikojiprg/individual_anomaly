@@ -41,6 +41,7 @@ class IndividualDataTypes(_AbstractDataClass):
     global_: str = "global"
     local: str = "local"
     bbox: str = "bbox"
+    bbox_local: str = "bbox+local"
 
 
 @dataclass(frozen=True)
