@@ -1,6 +1,6 @@
 import gc
 import os
-from typing import Tuple, Union
+from typing import Optional, Tuple, Union
 
 import cv2
 import numpy as np
@@ -42,7 +42,7 @@ class Capture:
     def set_pos_frame_time(self, begin_sec: int):
         self._cap.set(cv2.CAP_PROP_POS_FRAMES, begin_sec * self.fps)
 
-    def read(self, idx: int = None) -> Tuple[bool, Union[NDArray, None]]:
+    def read(self, idx: Optional[int] = None) -> Tuple[bool, Union[NDArray, None]]:
         if idx is not None:
             self.set_pos_frame_count(idx)
 
