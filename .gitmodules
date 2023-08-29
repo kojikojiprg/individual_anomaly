@@ -14,3 +14,4 @@
 [submodule "submodules/i3d"]
 	path = submodules/i3d
 	url = https://github.com/piergiaj/pytorch-i3d.git
+	ignore = dirty
