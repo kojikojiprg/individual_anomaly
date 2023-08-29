@@ -51,7 +51,7 @@ class IndividualDataModuleBbox(AbstractIndividualDataModule):
         pose_data: List[Dict[str, Any]],
         frame_shape: Tuple[int, int] = None,
     ):
-        return IndividualDataset(
+        return _IndividualDataset(
             pose_data,
             self._config.seq_len,
             self._config.th_split,
@@ -60,7 +60,7 @@ class IndividualDataModuleBbox(AbstractIndividualDataModule):
         )
 
 
-class IndividualDataset(AbstractIndividualDataset):
+class _IndividualDataset(AbstractIndividualDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],

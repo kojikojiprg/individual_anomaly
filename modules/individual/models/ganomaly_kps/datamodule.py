@@ -62,7 +62,7 @@ class IndividualDataModuleKps(AbstractIndividualDataModule):
         data_type: str = IndividualDataTypes.local,
         frame_shape: Tuple[int, int] = None,
     ):
-        return IndividualDataset(
+        return _IndividualDataset(
             pose_data,
             self._config.seq_len,
             self._config.th_split,
@@ -73,7 +73,7 @@ class IndividualDataModuleKps(AbstractIndividualDataModule):
         )
 
 
-class IndividualDataset(AbstractIndividualDataset):
+class _IndividualDataset(AbstractIndividualDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],
