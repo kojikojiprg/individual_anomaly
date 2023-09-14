@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import sys
 import warnings
@@ -72,7 +73,9 @@ def main():
         stage="inference",
         model_version=args.model_version,
     )
-    results = iar.inference(args.data_dir, [args.gpu], annotation_path=args.annotation_path)
+    results = iar.inference(
+        args.data_dir, [args.gpu], annotation_path=args.annotation_path
+    )
 
     # vis = IndividualVisualizer()
     # vis.visualise()

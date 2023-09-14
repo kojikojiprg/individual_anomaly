@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import os
 import sys
@@ -34,8 +35,12 @@ def parser():
 
     # options
     parser.add_argument("-c", "--cfg_path", type=str, default="configs/pose/pose.yaml")
-    parser.add_argument("-dg", "--det_gpu", type=int, default=0, help="gpu number of detector")
-    parser.add_argument("-tg", "--trk_gpu", type=int, default=0, help="gpu number of tracker")
+    parser.add_argument(
+        "-dg", "--det_gpu", type=int, default=0, help="gpu number of detector"
+    )
+    parser.add_argument(
+        "-tg", "--trk_gpu", type=int, default=0, help="gpu number of tracker"
+    )
     parser.add_argument(
         "-v", "--video", default=False, action="store_true", help="with writing video"
     )
