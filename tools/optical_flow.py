@@ -54,8 +54,7 @@ def main():
         cap = Capture(video_path)
         w, h = cap.size
 
-        flows = np.empty((0, h, w, 2))
-        flows = np.append(flows, np.zeros((1, h, w, 2), np.float32), axis=0)
+        flows = [np.zeros((h, w, 2))]
         pre_gray = None
         for i in tqdm(range(cap.frame_count)):
             frame = cap.read()[1]
@@ -65,11 +64,13 @@ def main():
                 continue
 
             flow = cv2.calcOpticalFlowFarneback(pre_gray, gray, None, 0.5, 3, 15, 3, 5, 1.2, 0)
-            flows = np.append(flows, flow.reshape(1, h, w, 2), axis=0)
+            flows.append(flow)
 
             pre_gray = gray
 
-        np.save(out_path, flows)
+        print(f"saving... {out_path}")
+        np.save(out_path, np.array(flows))
+        print(f"complete {out_path}")
         del cap
 
 
