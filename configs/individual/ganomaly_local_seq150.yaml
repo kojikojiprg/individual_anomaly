@@ -3,15 +3,15 @@ seed: 42  # random seed
 
 dataset:
   seq_len: 150
-  th_split: 75  # split keypoints sequence of an individual
+  th_split: 30  # split keypoints sequence of an individual
   th_mask: 0.5
-  n_val: 1024
+  n_val: 1024  # validation number
 
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 1
-  epochs: 100
+  accumulate_grad_batches: 2
+  epochs: 200
 
 inference:
   batch_size: 4096
@@ -39,12 +39,12 @@ model:
 loss:
   G:
     w_adv: 1
-    w_con: 50
+    w_con: 100
     w_lat: 1
 
 optim:
   lr_g: 0.0001
-  lr_d: 0.00005
+  lr_d: 0.0001
   beta1: 0.5
   beta2: 0.999
   lr_rate_g: 1.0

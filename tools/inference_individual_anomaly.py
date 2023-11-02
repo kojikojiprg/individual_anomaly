@@ -1,5 +1,5 @@
+#!/usr/bin/env python
 import argparse
-import os
 import sys
 import warnings
 
@@ -72,27 +72,13 @@ def parser():
 def main():
     args = parser()
 
-    model_type = args.model_type
-    if args.model_version is not None:
-        model_version = f"-v{args.model_version}"
-    else:
-        model_version = ""
-    data_type = args.data_type
-    masking = args.masking
-    seq_len = args.seq_len
-    checkpoint_path = os.path.join(
-        "models",
-        "individual",
-        model_type,
-        f"{model_type}_masked_{data_type}_seq{seq_len}_last{model_version}.ckpt",
-    )
     iar = IndividualActivityRecognition(
-        model_type,
-        seq_len,
-        checkpoint_path,
-        data_type=data_type,
-        masking=masking,
+        args.model_type,
+        args.seq_len,
+        data_type=args.data_type,
         stage="inference",
+        model_version=args.model_version,
+        masking=args.masking,
     )
     iar.inference(args.data_dir, [args.gpu])
 

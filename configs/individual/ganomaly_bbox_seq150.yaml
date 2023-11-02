@@ -3,8 +3,7 @@ seed: 42  # random seed
 
 dataset:
   seq_len: 150
-  th_split: 5  # split keypoints sequence of an individual
-  th_mask: 0.2
+  th_split: 30  # split keypoints sequence of an individual
   n_val: 1024
 
 train:
@@ -14,7 +13,7 @@ train:
   epochs: 200
 
 inference:
-  batch_size: 1024
+  batch_size: 4096
   anomaly_lambda: 0.5
 
 model:

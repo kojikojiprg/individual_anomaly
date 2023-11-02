@@ -12,7 +12,7 @@ def write_frame(
         frame = np.full_like(frame, 220, dtype=np.uint8)
 
     # add keypoints to image
-    frame = _put_frame_num(frame, frame_num)
+    frame = put_frame_num(frame, frame_num)
     for kps in pose_data_lst:
         if kps["frame"] == frame_num:
             frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
@@ -20,7 +20,7 @@ def write_frame(
     return frame
 
 
-def _put_frame_num(img: NDArray, frame_num: int):
+def put_frame_num(img: NDArray, frame_num: int):
     return cv2.putText(
         img,
         "Frame:{}".format(frame_num),
@@ -29,6 +29,22 @@ def _put_frame_num(img: NDArray, frame_num: int):
         2,
         (0, 0, 0),
     )
+
+
+def draw_bbox(frame: NDArray, bbox: NDArray):
+    bbox = bbox.astype(int)
+    points = [
+        (bbox[0][0], bbox[0][1]),
+        (bbox[1][0], bbox[0][1]),
+        (bbox[1][0], bbox[1][1]),
+        (bbox[0][0], bbox[1][1]),
+    ]
+    for i in range(4):
+        j = (i + 1) % 4
+        p1 = points[i]
+        p2 = points[j]
+        frame = cv2.line(frame, p1, p2, (0, 255, 0), 3)
+    return frame
 
 
 def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 0.2):
@@ -98,11 +114,12 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
 
     # draw keypoints
     for n in range(len(kps)):
-        if kps[n, 2] <= vis_thresh:
-            continue
         cor_x, cor_y = int(kps[n, 0]), int(kps[n, 1])
         part_line[n] = (cor_x, cor_y)
-        cv2.circle(img, (cor_x, cor_y), 3, p_color[n], -1)
+        if kps[n, 2] < vis_thresh:
+            cv2.circle(img, (cor_x, cor_y), 3, p_color[n], 1)
+        else:
+            cv2.circle(img, (cor_x, cor_y), 3, p_color[n], -1)
 
     # draw limbs
     for i, (start_p, end_p) in enumerate(l_pair):
@@ -114,7 +131,8 @@ def _draw_skeleton(frame: NDArray, t_id: int, kps: NDArray, vis_thresh: float = 
                 start_xy,
                 end_xy,
                 line_color[i],
-                2 * int(kps[start_p, 2] + kps[end_p, 2]) + 1,
+                # min(2, 2 * int(kps[start_p, 2] + kps[end_p, 2])) + 1,
+                3,
             )
 
     # draw track id

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import argparse
 import sys
 import warnings
@@ -36,21 +37,28 @@ def parser():
         "--model_type",
         type=str,
         default="ganomaly",
-        help="'ganomaly' only",
+        help="'ganomaly', 'role_estimation",
     )
     parser.add_argument(
         "-dt",
         "--data_type",
         type=str,
         default="local",
-        help="Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.",
+        help="'ganomaly': Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.",
     )
     parser.add_argument(
         "-msk",
         "--masking",
         default=False,
         action="store_true",
-        help="Masking low confidence score keypoints",
+        help="'ganomaly': Masking low confidence score keypoints",
+    )
+    parser.add_argument(
+        "-an",
+        "--annotation_path",
+        type=str,
+        default=None,
+        help="'role_estimation': annotation file path",
     )
 
     args = parser.parse_args()
@@ -73,7 +81,7 @@ def main():
         masking=args.masking,
         stage="train",
     )
-    iar.train(args.data_dir, args.gpus)
+    iar.train(args.data_dir, args.gpus, annotation_path=args.annotation_path)
 
 
 if __name__ == "__main__":

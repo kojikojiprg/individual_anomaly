@@ -7,7 +7,7 @@ class Activation(nn.Module):
         if activation == "ReLU":
             self.activation = nn.ReLU(inplace=True)
         elif activation == "LeakyReLU":
-            self.activation = nn.LeakyReLU(0.1, inplace=True)
+            self.activation = nn.LeakyReLU(0.2, inplace=True)
         elif activation == "GELU":
             self.activation = nn.GELU()
         elif activation == "SELU":

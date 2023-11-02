@@ -31,8 +31,8 @@ class IndividualGanomalyBbox(LightningModule):
         self._callbacks = [
             ModelCheckpoint(
                 config.checkpoint_dir,
-                filename=f"ganomaly_{data_type}_seq{seq_len}_gloss_min",
-                monitor="g_loss",
+                filename=f"ganomaly_{data_type}_seq{seq_len}_gcon_min",
+                monitor="g_l_con",
                 mode="min",
                 save_last=True,
             ),
@@ -63,7 +63,7 @@ class IndividualGanomalyBbox(LightningModule):
         return pred_real, pred_fake, bbox_fake, z, attn_g, f_real, f_fake
 
     def training_step(self, batch, batch_idx, optimizer_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
         batch_size = bbox_real.size()[0]
 
         # make true data
@@ -113,7 +113,7 @@ class IndividualGanomalyBbox(LightningModule):
             return d_loss
 
     def validation_step(self, batch, batch_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
         batch_size = bbox_real.size()[0]
 
         # make true data
@@ -172,7 +172,7 @@ class IndividualGanomalyBbox(LightningModule):
         return loss_residual, loss_discrimination
 
     def predict_step(self, batch, batch_idx, dataloader_idx):
-        frame_nums, pids, bbox_real, _ = batch
+        frame_nums, pids, bbox_real = batch
 
         # predict
         _, _, bbox_fake, z, attn, f_real, f_fake = self(bbox_real)
@@ -212,12 +212,12 @@ class IndividualGanomalyBbox(LightningModule):
                 {
                     IndividualDataFormat.frame_num: frame_num,
                     IndividualDataFormat.id: pid,
-                    IndividualDataFormat.kps_real: kr,
+                    # IndividualDataFormat.kps_real: kr,
                     IndividualDataFormat.kps_fake: kf,
                     IndividualDataFormat.z: z_,
-                    IndividualDataFormat.attn: a,
-                    IndividualDataFormat.f_real: fr,
-                    IndividualDataFormat.f_fake: ff,
+                    # IndividualDataFormat.attn: a,
+                    # IndividualDataFormat.f_real: fr,
+                    # IndividualDataFormat.f_fake: ff,
                     IndividualDataFormat.loss_r: lr,
                     IndividualDataFormat.loss_d: ld,
                 }

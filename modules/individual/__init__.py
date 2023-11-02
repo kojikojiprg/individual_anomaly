@@ -1,5 +1,6 @@
+import gc
 import os
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import torch
 from pytorch_lightning import LightningModule, Trainer
@@ -16,9 +17,12 @@ from .constants import (
     IndividualPredTypes,
 )
 from .datahandler import IndividualDataHandler
-from .datamodule import IndividualDataModule
-from .models.ganomaly import IndividualGanomaly
 from .models.ganomaly_bbox import IndividualGanomalyBbox
+from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
+from .models.ganomaly_kps import IndividualGanomalyKps
+from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
+from .models.role_estimation import RoleEstimation
+from .models.role_estimation.datamodule import RoleEstimationDataModule
 
 
 class IndividualActivityRecognition:
@@ -26,10 +30,10 @@ class IndividualActivityRecognition:
         self,
         model_type: str,
         seq_len: int,
-        checkpoint_path: str = None,
         data_type: str = IndividualDataTypes.local,
-        masking: bool = False,
         stage: str = Stages.inference,
+        model_version: int = None,
+        masking: bool = False,
         prediction_type: str = IndividualPredTypes.anomaly,
     ):
         assert IndividualModelTypes.includes(model_type)
@@ -37,10 +41,10 @@ class IndividualActivityRecognition:
 
         self._model_type = model_type.casefold()
         self._seq_len = seq_len
-        self._data_type = data_type
         self._masking = masking
-        self._stage = stage
         self._prediction_type = prediction_type
+        self._data_type = data_type
+        self._stage = stage
 
         self._config = IndividualDataHandler.get_config(
             model_type, seq_len, data_type, stage
@@ -51,7 +55,15 @@ class IndividualActivityRecognition:
         self._trainer: Trainer
 
         self._create_model()
-        if checkpoint_path is not None:
+        if stage == Stages.inference:
+            if model_version is not None:
+                model_version = f"-v{model_version}"
+            else:
+                model_version = ""
+            checkpoint_path = os.path.join(
+                self._config.checkpoint_dir,
+                f"re_{data_type}_seq{seq_len}_last{model_version}.ckpt",
+            )
             self._load_model(checkpoint_path)
 
     def __del__(self):
@@ -60,6 +72,7 @@ class IndividualActivityRecognition:
         if hasattr(self, "_trainer"):
             del self._trainer
         torch.cuda.empty_cache()
+        gc.collect()
 
     @property
     def model(self) -> LightningModule:
@@ -69,12 +82,17 @@ class IndividualActivityRecognition:
             raise AttributeError
 
     def _create_model(self):
-        if self._data_type != IndividualDataTypes.bbox:
-            self._model = IndividualGanomaly(
-                self._config, self._data_type, self._masking
-            )
+        if self._model_type == IndividualModelTypes.ganomaly:
+            if self._data_type != IndividualDataTypes.bbox:
+                self._model = IndividualGanomalyKps(
+                    self._config, self._data_type, self._masking
+                )
+            else:
+                self._model = IndividualGanomalyBbox(self._config, self._data_type)
+        elif self._model_type == IndividualModelTypes.role_estimation:
+            self._model = RoleEstimation(self._config, self._data_type)
         else:
-            self._model = IndividualGanomalyBbox(self._config, self._data_type)
+            raise ValueError
 
     def _load_model(self, checkpoint_path: str):
         print(f"=> loading model from {checkpoint_path}")
@@ -87,11 +105,22 @@ class IndividualActivityRecognition:
         )
 
     def _create_datamodule(
-        self, data_dir: str, frame_shape: Tuple[int, int] = None
-    ) -> IndividualDataModule:
+        self,
+        data_dir: str,
+        frame_shape: Tuple[int, int] = None,
+        annotation_path: str = None,
+    ) -> Union[
+        IndividualDataModuleBbox, IndividualDataModuleKps, RoleEstimationDataModule
+    ]:
         print("=> creating dataset")
         return IndividualDataHandler.create_datamodule(
-            data_dir, self._config, self._data_type, self._stage, frame_shape
+            data_dir,
+            self._config,
+            self._model_type,
+            self._data_type,
+            self._stage,
+            frame_shape,
+            annotation_path,
         )
 
     def _build_trainer(self, data_dir, gpu_ids):
@@ -108,19 +137,23 @@ class IndividualActivityRecognition:
         else:
             strategy = None
 
+        if self._stage == Stages.train:
+            logger = TensorBoardLogger(log_path, name=self._data_type)
+        else:
+            logger = False
         return Trainer(
-            TensorBoardLogger(log_path, name=self._data_type),
+            logger=logger,
             callbacks=self._model.callbacks,
             max_epochs=self._config.train.epochs,
             accumulate_grad_batches=accumulate_grad_batches,
             devices=gpu_ids,
-            accelerator="gpu",
+            accelerator="cuda",
             strategy=strategy,
         )
 
-    def train(self, data_dir: str, gpu_ids: List[int]):
+    def train(self, data_dir: str, gpu_ids: List[int], annotation_path: str = None):
         frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
-        datamodule = self._create_datamodule(data_dir, frame_shape)
+        datamodule = self._create_datamodule(data_dir, frame_shape, annotation_path)
 
         if not hasattr(self, "_trainer"):
             self._trainer = self._build_trainer(data_dir, gpu_ids)
@@ -128,6 +161,7 @@ class IndividualActivityRecognition:
 
         del datamodule
         torch.cuda.empty_cache()
+        gc.collect()
 
     @staticmethod
     def _collect_results(preds_lst):
@@ -143,9 +177,10 @@ class IndividualActivityRecognition:
         self,
         data_dir: str,
         gpu_ids: List[int],
+        annotation_path: str = None,
     ):
         frame_shape = IndividualDataHandler.get_frame_shape(data_dir)
-        datamodule = self._create_datamodule(data_dir, frame_shape)
+        datamodule = self._create_datamodule(data_dir, frame_shape, annotation_path)
 
         if not hasattr(self, "_trainer"):
             self._trainer = self._build_trainer(data_dir, gpu_ids)
@@ -171,5 +206,6 @@ class IndividualActivityRecognition:
 
         del datamodule
         torch.cuda.empty_cache()
+        gc.collect()
 
         return results_lst

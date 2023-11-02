@@ -1,8 +1,8 @@
+import gc
 import os
 
 from tqdm import tqdm
 
-from modules.individual import IndividualDataHandler
 from modules.pose import PoseDataHandler
 from modules.utils.video import Capture, Writer
 
@@ -32,7 +32,6 @@ class Visualizer:
         tmp_frame = video_capture.read()[1]
         video_capture.set_pos_frame_count(0)
 
-        out_paths = []
         video_num = os.path.basename(video_path).split(".")[0]
         # create video writer for pose estimation results
         if self._do_pose_estimation:
@@ -44,7 +43,6 @@ class Visualizer:
             pose_video_writer = Writer(
                 out_path, video_capture.fps, tmp_frame.shape[1::-1]
             )
-            out_paths.append(out_path)
 
         # create video writer for individual results
         # if self._do_individual:
@@ -55,7 +53,7 @@ class Visualizer:
         #     )
         #     out_paths.append(out_path)
 
-        print(f"=> writing video into {out_paths}.")
+        print(f"=> writing video into {out_path}.")
         for frame_num in tqdm(range(video_capture.frame_count), ncols=100):
             frame_num += 1  # frame_num = (1, ...)
             ret, frame = video_capture.read()
@@ -69,3 +67,4 @@ class Visualizer:
         del video_capture
         if self._do_pose_estimation:
             del pose_video_writer
+        gc.collect()
