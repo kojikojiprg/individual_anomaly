@@ -47,7 +47,6 @@ class IndividualDataTypes(_AbstractDataClass):
 @dataclass(frozen=True)
 class IndividualModelTypes(_AbstractDataClass):
     ganomaly: str = "ganomaly"
-    role_estimation: str = "role_estimation"
 
 
 # TODO
