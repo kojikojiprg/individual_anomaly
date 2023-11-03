@@ -8,10 +8,3 @@
 [submodule "submodules/mmdet"]
 	path = submodules/mmdet
 	url = https://github.com/open-mmlab/mmdetection.git
-[submodule "submodules/mmyolo"]
-	path = submodules/mmyolo
-	url = https://github.com/open-mmlab/mmyolo.git
-[submodule "submodules/i3d"]
-	path = submodules/i3d
-	url = https://github.com/piergiaj/pytorch-i3d.git
-	ignore = dirty
