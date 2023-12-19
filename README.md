@@ -1,4 +1,5 @@
-# Automated Human Activity Recognition
+# Individual Anomaly Estimation
+
 
 ## Environment
 OS: Ubunts-20.04
@@ -11,9 +12,12 @@ bash setup.sh
 ```
 
 ## Train
-
+```
+```
 
 ## Inference
+```
+```
 
 
 ## Citation
