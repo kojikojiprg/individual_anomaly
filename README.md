@@ -19,10 +19,40 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 
 
 # Train
+```
+python tools/train_individual.py [-h] -dd DATA_DIR -sl SEQ_LEN [-g [GPUS ...]] [-dt DATA_TYPE] [-msk]
+```
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -dd DATA_DIR, --data_dir DATA_DIR
+                        path of input data
+  -sl SEQ_LEN, --seq_len SEQ_LEN
+                        sequential length
+  -g [GPUS ...], --gpus [GPUS ...]
+                        gpu ids
+  -dt DATA_TYPE, --data_type DATA_TYPE
+                        'ganomaly': Input data type. Selected by 'global', 'local', or 'both', by defualt is 'local'.
+  -msk, --masking       'ganomaly': Masking low confidence score keypoints
 
 
 # Inference
+```
+python tools/inference_individual.py [-h] -dd DATA_DIR -sl SEQ_LEN [-g GPU] [-mv MODEL_VERSION] [-dt DATA_TYPE] [-msk]
+```
 
+optional arguments:
+  -h, --help            show this help message and exit
+  -dd DATA_DIR, --data_dir DATA_DIR
+                        path of input data
+  -sl SEQ_LEN, --seq_len SEQ_LEN
+                        sequential length
+  -g GPU, --gpu GPU     gpu id
+  -mv MODEL_VERSION, --model_version MODEL_VERSION
+                        model version
+  -dt DATA_TYPE, --data_type DATA_TYPE
+                        Input data type. Selected by 'global', 'local', 'local+bbox' or 'both', by defualt is 'local'.
+  -msk, --masking       Masking low confidence score keypoints
 
 
 # Reference
