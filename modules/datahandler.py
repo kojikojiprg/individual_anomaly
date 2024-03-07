@@ -9,7 +9,7 @@ import yaml
 from modules.utils import json_handler
 from modules.utils.constants import Stages
 
-from .constants import DataFormat, DataTypes, PredTypes
+from .constants import DataFormat, DataTypes
 from .models.ganomaly_bbox.datamodule import DatamoduleBbox
 from .models.ganomaly_kps.datamodule import DatamoduleKps
 
@@ -92,20 +92,15 @@ class DataHandler:
         data_type: str,
         masking: bool,
         seq_len: int,
-        prediction_type: str,
     ):
         str_masked = ""
         if masking and data_type != DataTypes.bbox:
             str_masked = "_masked"
 
-        str_pred = ""
-        if prediction_type == PredTypes.keypoints and data_type != DataTypes.bbox:
-            str_pred = "_kps"
-
         return os.path.join(
             data_dir,
             "json",
-            f"individual_ganomaly{str_masked}_{data_type}_seq{seq_len}{str_pred}.json",
+            f"individual_ganomaly{str_masked}_{data_type}_seq{seq_len}.json",
         )
 
     @classmethod
@@ -115,11 +110,10 @@ class DataHandler:
         data_type: str,
         masking: bool,
         seq_len: int,
-        prediction_type: str,
         data_keys: list = None,
     ) -> List[dict]:
         data_path = cls._get_data_path(
-            data_dir, data_type, masking, seq_len, prediction_type
+            data_dir, data_type, masking, seq_len
         )
         data = json_handler.load(data_path)
         if data_keys is None:
@@ -144,10 +138,9 @@ class DataHandler:
         data_type: str,
         masking: bool,
         seq_len: int,
-        prediction_type: str,
     ):
         data_path = cls._get_data_path(
-            data_dir, data_type, masking, seq_len, prediction_type
+            data_dir, data_type, masking, seq_len
         )
         os.makedirs(os.path.dirname(data_path), exist_ok=True)
         json_handler.dump(data, data_path)

@@ -10,7 +10,7 @@ from tqdm.auto import tqdm
 from modules.utils import set_random
 from modules.utils.constants import Stages
 
-from .constants import DataFormat, DataTypes, PredTypes
+from .constants import DataFormat, DataTypes
 from .datahandler import DataHandler
 from .models.ganomaly_bbox import GanomalyBbox
 from .models.ganomaly_bbox.datamodule import DatamoduleBbox
@@ -26,13 +26,11 @@ class IndividualAnomalyEstimation:
         stage: str = Stages.inference,
         model_version: int = None,
         masking: bool = False,
-        prediction_type: str = PredTypes.anomaly,
     ):
         assert DataTypes.includes(data_type)
 
         self._seq_len = seq_len
         self._masking = masking
-        self._prediction_type = prediction_type
         self._data_type = data_type
         self._stage = stage
 
@@ -50,7 +48,7 @@ class IndividualAnomalyEstimation:
                 model_version = ""
             checkpoint_path = os.path.join(
                 self._config.checkpoint_dir,
-                f"re_{data_type}_seq{seq_len}_last{model_version}.ckpt",
+                f"ganomaly_{data_type}_seq{seq_len}_last{model_version}.ckpt",
             )
             self._load_model(checkpoint_path)
 
@@ -82,7 +80,6 @@ class IndividualAnomalyEstimation:
             config=self._config,
             data_type=self._data_type,
             masking=self._masking,
-            prediction_type=self._prediction_type,
         )
 
     def _create_datamodule(
@@ -148,10 +145,9 @@ class IndividualAnomalyEstimation:
         self,
         data_dir: str,
         gpu_ids: List[int],
-        annotation_path: str = None,
     ):
         frame_shape = DataHandler.get_frame_shape(data_dir)
-        datamodule = self._create_datamodule(data_dir, frame_shape, annotation_path)
+        datamodule = self._create_datamodule(data_dir, frame_shape)
 
         if not hasattr(self, "_trainer"):
             self._trainer = self._build_trainer(data_dir, gpu_ids)
@@ -171,7 +167,6 @@ class IndividualAnomalyEstimation:
                 self._data_type,
                 self._masking,
                 self._seq_len,
-                self._prediction_type,
             )
 
         del datamodule

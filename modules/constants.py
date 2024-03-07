@@ -42,10 +42,3 @@ class DataTypes(_AbstractDataClass):
     local: str = "local"
     bbox: str = "bbox"
     bbox_local: str = "bbox+local"
-
-
-# TODO
-@dataclass(frozen=True)
-class PredTypes(_AbstractDataClass):
-    anomaly: str = "anomaly"
-    keypoints: str = "keypoints"

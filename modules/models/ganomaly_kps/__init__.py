@@ -6,7 +6,7 @@ from lightning.pytorch import LightningModule
 from lightning.pytorch.callbacks import ModelCheckpoint
 from sklearn.metrics import roc_auc_score
 
-from modules import DataFormat, PredTypes
+from modules import DataFormat
 
 from .discriminator import Discriminator
 from .generator import Generator
@@ -18,7 +18,6 @@ class GanomalyKps(LightningModule):
         config: SimpleNamespace,
         data_type: str,
         masking: bool,
-        prediction_type: str = None,
     ):
         super().__init__()
         # self.automatic_optimization = False
@@ -27,7 +26,6 @@ class GanomalyKps(LightningModule):
         self._anomaly_lambda = config.inference.anomaly_lambda
         self._data_type = data_type
         self._masking = masking
-        self._prediction_type = prediction_type
 
         self._G = Generator(config.model.G)
         self._D = Discriminator(config.model.D)
@@ -190,59 +188,32 @@ class GanomalyKps(LightningModule):
         mask_bool = mask < 0
 
         # predict
-        if self._prediction_type == PredTypes.anomaly:
-            _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
+        _, _, kps_fake, z, attn, f_real, f_fake = self(kps_real, mask)
 
-            l_resi, l_disc = self.anomaly_score(
-                kps_real,
-                kps_fake,
-                mask_bool,
-                f_real,
-                f_fake,
+        l_resi, l_disc = self.anomaly_score(
+            kps_real,
+            kps_fake,
+            mask_bool,
+            f_real,
+            f_fake,
+        )
+
+        preds = []
+        for i in range(len(frame_nums)):
+            preds.append(
+                {
+                    DataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
+                    DataFormat.id: int(pids[i]),
+                    # DataFormat.kps_real: self._to_numpy(kps_real[i]),
+                    DataFormat.kps_fake: self._to_numpy(kps_fake[i]),
+                    DataFormat.z: self._to_numpy(z[i]),
+                    # DataFormat.attn: self._to_numpy(attn[i]),
+                    # DataFormat.f_real: self._to_numpy(f_real[i]),
+                    # DataFormat.f_fake: self._to_numpy(f_fake[i]),
+                    DataFormat.loss_r: self._to_numpy(l_resi[i]),
+                    DataFormat.loss_d: self._to_numpy(l_disc[i]),
+                }
             )
-
-            preds = []
-            for i in range(len(frame_nums)):
-                preds.append(
-                    {
-                        DataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
-                        DataFormat.id: int(pids[i]),
-                        # DataFormat.kps_real: self._to_numpy(kps_real[i]),
-                        DataFormat.kps_fake: self._to_numpy(kps_fake[i]),
-                        DataFormat.z: self._to_numpy(z[i]),
-                        # DataFormat.attn: self._to_numpy(attn[i]),
-                        # DataFormat.f_real: self._to_numpy(f_real[i]),
-                        # DataFormat.f_fake: self._to_numpy(f_fake[i]),
-                        DataFormat.loss_r: self._to_numpy(l_resi[i]),
-                        DataFormat.loss_d: self._to_numpy(l_disc[i]),
-                    }
-                )
-        elif self._prediction_type == PredTypes.keypoints:
-            # interpolate masked keypoints
-            kps_fake, _, _, _ = self._G(kps_real, mask)
-            kps_real[mask_bool] = kps_fake[mask_bool]
-
-            _, _, _, z, attn, f_real, f_fake = self(kps_real, mask)
-
-            preds = []
-            for i in range(len(frame_nums)):
-                preds.append(
-                    {
-                        DataFormat.frame_num: int(self._to_numpy(frame_nums[i])),
-                        DataFormat.id: int(pids[i]),
-                        DataFormat.kps_real: self._to_numpy(kps_real[i]),
-                        DataFormat.kps_fake: self._to_numpy(kps_fake[i]),
-                        DataFormat.z: self._to_numpy(z[i]),
-                        DataFormat.attn: self._to_numpy(attn[i]),
-                        DataFormat.f_real: self._to_numpy(f_real[i]),
-                        DataFormat.f_fake: self._to_numpy(f_fake[i]),
-                        # DataFormat.loss_r: self._to_numpy(l_resi[i]),
-                        # DataFormat.loss_d: self._to_numpy(l_disc[i]),
-                    }
-                )
-        else:
-            raise KeyError
-
         return preds
 
     def configure_optimizers(self):
