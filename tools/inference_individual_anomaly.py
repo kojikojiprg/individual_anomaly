@@ -4,7 +4,7 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules.individual import IndividualActivityRecognition
+from modules import IndividualAnomalyEstimation
 
 warnings.simplefilter("ignore")
 
@@ -30,13 +30,6 @@ def parser():
 
     # options
     parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
-    parser.add_argument(
-        "-mt",
-        "--model_type",
-        type=str,
-        default="ganomaly",
-        help="'ganomaly' only",
-    )
     parser.add_argument(
         "-mv",
         "--model_version",
@@ -64,16 +57,13 @@ def parser():
     # delete last slash
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
 
-    args.model_type = args.model_type.lower()
-
     return args
 
 
 def main():
     args = parser()
 
-    iar = IndividualActivityRecognition(
-        args.model_type,
+    iar = IndividualAnomalyEstimation(
         args.seq_len,
         data_type=args.data_type,
         stage="inference",

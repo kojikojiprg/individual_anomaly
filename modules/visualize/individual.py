@@ -7,7 +7,7 @@ import numpy as np
 import seaborn as sns
 from tqdm import tqdm
 
-from modules.individual import IndividualDataFormat
+from modules import DataFormat
 from modules.utils.video import Capture, Writer
 
 from .pose import draw_bbox, put_frame_num
@@ -83,9 +83,9 @@ def write_frame(frame, ind_data_lst, frame_num):
     # add keypoints to image
     frame = put_frame_num(frame, frame_num)
     for data in ind_data_lst:
-        if data[IndividualDataFormat.frame_num] == frame_num:
-            if data[IndividualDataFormat.role_aux] == 1:
-                frame = draw_bbox(frame, np.array(data[IndividualDataFormat.bbox_real]))
+        if data[DataFormat.frame_num] == frame_num:
+            if data[DataFormat.role_aux] == 1:
+                frame = draw_bbox(frame, np.array(data[DataFormat.bbox_real]))
 
     return frame
 
@@ -105,7 +105,6 @@ def plot_val_kps(
     kps_fake,
     pid,
     epoch,
-    model_type,
     data_type,
     seq_len=10,
     plot_size=(300, 400),
@@ -141,8 +140,6 @@ def plot_val_kps(
     path = os.path.join(
         "data",
         "images",
-        "individual",
-        model_type,
         "generator",
         data_type,
         f"pid{pid}_epoch{epoch}.jpg",

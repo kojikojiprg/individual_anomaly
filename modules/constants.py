@@ -13,7 +13,7 @@ class _AbstractDataClass:
 
 
 @dataclass(frozen=True)
-class IndividualDataFormat(_AbstractDataClass):
+class DataFormat(_AbstractDataClass):
     frame_num: str = "frame"
     id: str = "id"
 
@@ -37,20 +37,15 @@ class IndividualDataFormat(_AbstractDataClass):
 
 
 @dataclass(frozen=True)
-class IndividualDataTypes(_AbstractDataClass):
+class DataTypes(_AbstractDataClass):
     global_: str = "global"
     local: str = "local"
     bbox: str = "bbox"
     bbox_local: str = "bbox+local"
 
 
-@dataclass(frozen=True)
-class IndividualModelTypes(_AbstractDataClass):
-    ganomaly: str = "ganomaly"
-
-
 # TODO
 @dataclass(frozen=True)
-class IndividualPredTypes(_AbstractDataClass):
+class PredTypes(_AbstractDataClass):
     anomaly: str = "anomaly"
     keypoints: str = "keypoints"

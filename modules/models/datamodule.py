@@ -4,16 +4,16 @@ from glob import glob
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
 
+from lightning.pytorch import LightningDataModule
 from numpy.typing import NDArray
-from pytorch_lightning import LightningDataModule
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
-from modules.pose import PoseDataHandler
+from modules.utils import json_handler
 from modules.utils.constants import Stages
 
 
-class AbstractIndividualDataModule(LightningDataModule, metaclass=ABCMeta):
+class AbstractDatamodule(LightningDataModule, metaclass=ABCMeta):
     def __init__(
         self,
         data_dir: str,
@@ -24,7 +24,7 @@ class AbstractIndividualDataModule(LightningDataModule, metaclass=ABCMeta):
         self._config = config.dataset
         self._stage = stage
 
-        self._data_dirs = sorted(glob(os.path.join(data_dir, "*")))
+        self._data_dirs = sorted(glob(os.path.join(data_dir, "*/")))
 
     @property
     def data_dirs(self) -> List[str]:
@@ -36,7 +36,7 @@ class AbstractIndividualDataModule(LightningDataModule, metaclass=ABCMeta):
     ) -> List[List[Dict[str, Any]]]:
         pose_data_lst = []
         for pose_data_dir in tqdm(data_dirs, leave=False, ncols=100):
-            data = PoseDataHandler.load(pose_data_dir, data_keys)
+            data = json_handler.load(os.path.join(pose_data_dir, "json", "pose.json"))
             if data is not None:
                 pose_data_lst.append(data)
         return pose_data_lst
@@ -78,7 +78,7 @@ class AbstractIndividualDataModule(LightningDataModule, metaclass=ABCMeta):
         return dataloaders
 
 
-class AbstractIndividualDataset(Dataset):
+class AbstractDataset(Dataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],

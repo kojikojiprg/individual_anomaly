@@ -5,13 +5,15 @@ We propose a semi-supervised individual activity anomaly estimation model based 
 In this research, we compare two specific features that can be used as inputs to our method to acquire anomaly scores.
 
 # Environments
-OS: Ubunts-20.04
-python: 3.8.13
-CUDA: 11.5
+- OS: Ubunts-20.04
+- python: 3.8.13
+- CUDA: 11.5
 
 # Installation
 ```
-bash setup.sh
+pip install -U pip
+pip install wheel
+pip install -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cu115
 ```
 
 # Train
@@ -22,7 +24,7 @@ bash setup.sh
 
 # Reference
 ```
-@proceedings{yokoyama_medinfo_2023
+@proceedings{yokoyama_medinfo_2023,
   title={Individual Activity Anomaly Estimation in Operating Rooms Based on Time-Sequential Prediction},
   author={Yokoyama, Koji and Yamamoto, Goshiro and Liu, Chang and Kishimoto, Kazumasa and Mori, Yukiko and Kuroda, Tomohiro},
   journal={MEDINFO 2023—The Future Is Accessible},

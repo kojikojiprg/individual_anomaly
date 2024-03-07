@@ -8,32 +8,26 @@ from scipy import interpolate
 from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.individual.constants import IndividualDataTypes
-from modules.individual.models.datamodule import (
-    AbstractIndividualDataModule,
-    AbstractIndividualDataset,
-)
-from modules.pose import PoseDataFormat
+from modules.constants import DataTypes
+from modules.models.datamodule import AbstractDatamodule, AbstractDataset
 from modules.utils.constants import Stages
 
 
-class IndividualDataModuleKps(AbstractIndividualDataModule):
+class DatamoduleKps(AbstractDatamodule):
     def __init__(
         self,
         data_dir: str,
         config: SimpleNamespace,
-        data_type: str = IndividualDataTypes.local,
+        data_type: str = DataTypes.local,
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
     ):
         super().__init__(data_dir, config, stage)
 
-        pose_data_lst = self._load_pose_data(
-            self._data_dirs, data_keys=[PoseDataFormat.keypoints]
-        )
+        pose_data_lst = self._load_pose_data(self._data_dirs, data_keys=["keypoints"])
 
-        assert data_type in [IndividualDataTypes.local, IndividualDataTypes.global_]
-        if data_type == IndividualDataTypes.global_:
+        assert data_type in [DataTypes.local, DataTypes.global_]
+        if data_type == DataTypes.global_:
             assert frame_shape is not None
 
         if stage == Stages.train:
@@ -59,10 +53,10 @@ class IndividualDataModuleKps(AbstractIndividualDataModule):
     def _create_dataset(
         self,
         pose_data: List[Dict[str, Any]],
-        data_type: str = IndividualDataTypes.local,
+        data_type: str = DataTypes.local,
         frame_shape: Tuple[int, int] = None,
     ):
-        return _IndividualDataset(
+        return _Dataset(
             pose_data,
             self._config.seq_len,
             self._config.th_split,
@@ -73,7 +67,7 @@ class IndividualDataModuleKps(AbstractIndividualDataModule):
         )
 
 
-class _IndividualDataset(AbstractIndividualDataset):
+class _Dataset(AbstractDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],
@@ -101,20 +95,20 @@ class _IndividualDataset(AbstractIndividualDataset):
         th_split: int,
     ):
         # sort data by frame_num
-        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
+        pose_data = sorted(pose_data, key=lambda x: x["frame"])
         # sort data by id
-        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
+        pose_data = sorted(pose_data, key=lambda x: x["id"])
 
         # get frame_num and id of first data
-        pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
-        pre_pid = pose_data[0][PoseDataFormat.id]
+        pre_frame_num = pose_data[0]["frame"]
+        pre_pid = pose_data[0]["id"]
 
         seq_data: list = []
         for item in tqdm(pose_data, leave=False, ncols=100):
             # get values
-            frame_num = item[PoseDataFormat.frame_num]
-            pid = item[PoseDataFormat.id]
-            kps = np.array(item[PoseDataFormat.keypoints])
+            frame_num = item["frame"]
+            pid = item["id"]
+            kps = np.array(item["keypoints"])
 
             # if self._stage == Stages.train and np.any(kps[:, 2] < 0.2):
             if np.any(kps[:, 2] < 0.2):
@@ -184,10 +178,10 @@ class _IndividualDataset(AbstractIndividualDataset):
             kps = all_kps[i : i + seq_len]
 
             mask = self._create_mask(kps)
-            if self._data_type == IndividualDataTypes.global_:
+            if self._data_type == DataTypes.global_:
                 # global
                 kps = self._scaling_keypoints_global(kps, self._frame_shape)
-            elif self._data_type == IndividualDataTypes.local:
+            elif self._data_type == DataTypes.local:
                 # local
                 kps = self._scaling_keypoints_local(kps)
             else:

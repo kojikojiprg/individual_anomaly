@@ -8,15 +8,11 @@ from scipy import interpolate
 from torch.utils.data import Subset
 from tqdm.auto import tqdm
 
-from modules.individual.models.datamodule import (
-    AbstractIndividualDataModule,
-    AbstractIndividualDataset,
-)
-from modules.pose import PoseDataFormat
+from modules.models.datamodule import AbstractDatamodule, AbstractDataset
 from modules.utils.constants import Stages
 
 
-class IndividualDataModuleBbox(AbstractIndividualDataModule):
+class DatamoduleBbox(AbstractDatamodule):
     def __init__(
         self,
         data_dir: str,
@@ -26,9 +22,7 @@ class IndividualDataModuleBbox(AbstractIndividualDataModule):
     ):
         super().__init__(data_dir, config, stage)
 
-        pose_data_lst = self._load_pose_data(
-            self._data_dirs, data_keys=[PoseDataFormat.bbox]
-        )
+        pose_data_lst = self._load_pose_data(self._data_dirs, data_keys=["bbox"])
 
         if stage == Stages.train:
             pose_data = []
@@ -60,7 +54,7 @@ class IndividualDataModuleBbox(AbstractIndividualDataModule):
         )
 
 
-class _IndividualDataset(AbstractIndividualDataset):
+class _IndividualDataset(AbstractDataset):
     def __init__(
         self,
         pose_data: List[Dict[str, Any]],
@@ -78,20 +72,20 @@ class _IndividualDataset(AbstractIndividualDataset):
         th_split: int,
     ):
         # sort data by frame_num
-        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
+        pose_data = sorted(pose_data, key=lambda x: x["frame"])
         # sort data by id
-        pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
+        pose_data = sorted(pose_data, key=lambda x: x["id"])
 
         # get frame_num and id of first data
-        pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
-        pre_pid = pose_data[0][PoseDataFormat.id]
+        pre_frame_num = pose_data[0]["frame"]
+        pre_pid = pose_data[0]["id"]
 
         seq_data: list = []
         for item in tqdm(pose_data, leave=False, ncols=100):
             # get values
-            frame_num = item[PoseDataFormat.frame_num]
-            pid = item[PoseDataFormat.id]
-            bbox = item[PoseDataFormat.bbox]
+            frame_num = item["frame"]
+            pid = item["id"]
+            bbox = item["bbox"]
 
             if pid != pre_pid:
                 if len(seq_data) > seq_len:

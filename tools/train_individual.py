@@ -4,7 +4,7 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules.individual import IndividualActivityRecognition
+from modules import IndividualAnomalyEstimation
 
 warnings.simplefilter("ignore")
 
@@ -33,13 +33,6 @@ def parser():
         "-g", "--gpus", type=int, nargs="*", default=None, help="gpu ids"
     )
     parser.add_argument(
-        "-mt",
-        "--model_type",
-        type=str,
-        default="ganomaly",
-        help="'ganomaly', 'role_estimation",
-    )
-    parser.add_argument(
         "-dt",
         "--data_type",
         type=str,
@@ -53,20 +46,11 @@ def parser():
         action="store_true",
         help="'ganomaly': Masking low confidence score keypoints",
     )
-    parser.add_argument(
-        "-an",
-        "--annotation_path",
-        type=str,
-        default=None,
-        help="'role_estimation': annotation file path",
-    )
 
     args = parser.parse_args()
 
     # delete last slash
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
-
-    args.model_type = args.model_type.lower()
 
     return args
 
@@ -74,14 +58,13 @@ def parser():
 def main():
     args = parser()
 
-    iar = IndividualActivityRecognition(
-        args.model_type,
+    iar = IndividualAnomalyEstimation(
         args.seq_len,
         data_type=args.data_type,
         masking=args.masking,
         stage="train",
     )
-    iar.train(args.data_dir, args.gpus, annotation_path=args.annotation_path)
+    iar.train(args.data_dir, args.gpus)
 
 
 if __name__ == "__main__":
