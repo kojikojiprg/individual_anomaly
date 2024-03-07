@@ -1,17 +1,17 @@
-checkpoint_dir: "models/individual/role_estimation/"
+checkpoint_dir: "models/ganomaly/"
 seed: 42  # random seed
 
-
 dataset:
-  seq_len: 30
-  th_split: 5  # split keypoints sequence of an individual
+  seq_len: 150
+  th_split: 30  # split keypoints sequence of an individual
+  th_mask: 0.5
   n_val: 1024  # validation number
 
 train:
   # actual_batch_size = batch_size * accumulate_grad_batches * num_gpu_ids
   batch_size: 512
-  accumulate_grad_batches: 1
-  epochs: 500
+  accumulate_grad_batches: 2
+  epochs: 200
 
 inference:
   batch_size: 4096
@@ -23,23 +23,29 @@ model:
     d_model: 32
     d_ff: 128
     n_heads: 8
-    n_tr: 6
+    n_tr_e: 6
+    n_tr_d: 3
     dropout: 0.1
-    activation: LeakyReLU
+    activation: SELU
   D:
-    num_classes: 2
     d_model: 32
     d_ff: 128
     d_out_feature: 16
     n_heads: 8
     n_tr: 6
     dropout: 0.1
-    activation: LeakyReLU
+    activation: SELU
+
+loss:
+  G:
+    w_adv: 1
+    w_con: 100
+    w_lat: 1
 
 optim:
-  lr_g: 0.00001
-  lr_d: 0.00002
+  lr_g: 0.0001
+  lr_d: 0.0001
   beta1: 0.5
   beta2: 0.999
-  lr_rate_g: 0.9
-  lr_rate_d: 0.9
+  lr_rate_g: 1.0
+  lr_rate_d: 1.0

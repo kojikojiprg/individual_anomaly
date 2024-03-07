@@ -1,8 +1,7 @@
 .vscode/
 data/
 models/
-!modules/individual/models/
-!modules/group/models/
+!modules/models/
 videos/
 notebooks/
 logs/

@@ -1,4 +1,4 @@
-checkpoint_dir: "models/individual/ganomaly/"
+checkpoint_dir: "models/ganomaly/"
 seed: 42  # random seed
 
 dataset:

@@ -9,27 +9,20 @@ import yaml
 from modules.utils import json_handler
 from modules.utils.constants import Stages
 
-from .constants import (
-    IndividualDataFormat,
-    IndividualDataTypes,
-    IndividualModelTypes,
-    IndividualPredTypes,
-)
-from .models.ganomaly_bbox.datamodule import IndividualDataModuleBbox
-from .models.ganomaly_kps.datamodule import IndividualDataModuleKps
-from .models.role_estimation.datamodule import RoleEstimationDataModule
+from .constants import DataFormat, DataTypes, PredTypes
+from .models.ganomaly_bbox.datamodule import DatamoduleBbox
+from .models.ganomaly_kps.datamodule import DatamoduleKps
 
 
-class IndividualDataHandler:
+class DataHandler:
     @classmethod
     def get_config(
         cls,
-        model_type: str,
         seq_len: int,
         data_type: str,
         stage: str = Stages.inference,
     ) -> SimpleNamespace:
-        config_path = cls._get_config_path(model_type, seq_len, data_type)
+        config_path = cls._get_config_path(seq_len, data_type)
         with open(config_path, "r") as f:
             config = yaml.safe_load(f)
         config = cls._get_config_reccursive(config)
@@ -64,18 +57,17 @@ class IndividualDataHandler:
         return config
 
     @staticmethod
-    def _get_config_path(model_type: str, seq_len: int, data_type: str):
+    def _get_config_path(seq_len: int, data_type: str):
         return os.path.join(
             "configs",
-            "individual",
-            f"{model_type.lower()}_{data_type.lower()}_seq{seq_len}.yaml",
+            f"ganomaly_{data_type.lower()}_seq{seq_len}.yaml",
         )
 
     @classmethod
     def _get_config_reccursive(cls, config: dict):
         new_config = SimpleNamespace(**config)
         for name, values in new_config.__dict__.items():
-            if type(values) == dict:
+            if type(values) is dict:
                 new_config.__setattr__(name, cls._get_config_reccursive(values))
             else:
                 continue
@@ -85,57 +77,41 @@ class IndividualDataHandler:
     def create_datamodule(
         data_dir: str,
         config: SimpleNamespace,
-        model_type: str,
-        data_type: str = IndividualDataTypes.local,
+        data_type: str = DataTypes.local,
         stage: str = Stages.inference,
         frame_shape: Tuple[int, int] = None,
-        annotation_path: str = None,
-    ) -> Union[IndividualDataModuleBbox, IndividualDataModuleKps]:
-        if model_type == IndividualModelTypes.ganomaly:
-            if data_type == IndividualDataTypes.bbox:
-                return IndividualDataModuleBbox(data_dir, config, stage, frame_shape)
-            else:
-                return IndividualDataModuleKps(
-                    data_dir, config, data_type, stage, frame_shape
-                )
-        elif model_type == IndividualModelTypes.role_estimation:
-            return RoleEstimationDataModule(
-                data_dir, annotation_path, config, data_type, stage, frame_shape
-            )
+    ) -> Union[DatamoduleBbox, DatamoduleKps]:
+        if data_type == DataTypes.bbox:
+            return DatamoduleBbox(data_dir, config, stage, frame_shape)
         else:
-            raise ValueError
+            return DatamoduleKps(data_dir, config, data_type, stage, frame_shape)
 
     @staticmethod
     def _get_data_path(
         data_dir: str,
-        model_type: str,
         data_type: str,
         masking: bool,
         seq_len: int,
         prediction_type: str,
     ):
         str_masked = ""
-        if masking and data_type != IndividualDataTypes.bbox:
+        if masking and data_type != DataTypes.bbox:
             str_masked = "_masked"
 
         str_pred = ""
-        if (
-            prediction_type == IndividualPredTypes.keypoints
-            and data_type != IndividualDataTypes.bbox
-        ):
+        if prediction_type == PredTypes.keypoints and data_type != DataTypes.bbox:
             str_pred = "_kps"
 
         return os.path.join(
             data_dir,
             "json",
-            f"individual_{model_type}{str_masked}_{data_type}_seq{seq_len}{str_pred}.json",
+            f"individual_ganomaly{str_masked}_{data_type}_seq{seq_len}{str_pred}.json",
         )
 
     @classmethod
     def load(
         cls,
         data_dir: str,
-        model_type: str,
         data_type: str,
         masking: bool,
         seq_len: int,
@@ -143,15 +119,15 @@ class IndividualDataHandler:
         data_keys: list = None,
     ) -> List[dict]:
         data_path = cls._get_data_path(
-            data_dir, model_type, data_type, masking, seq_len, prediction_type
+            data_dir, data_type, masking, seq_len, prediction_type
         )
         data = json_handler.load(data_path)
         if data_keys is None:
             return data
         else:
             data_keys = data_keys + [
-                IndividualDataFormat.frame_num,
-                IndividualDataFormat.id,
+                DataFormat.frame_num,
+                DataFormat.id,
             ]
             data_keys + list(set(data_keys))  # get unique
 
@@ -165,14 +141,13 @@ class IndividualDataHandler:
         cls,
         data_dir: str,
         data,
-        model_type: str,
         data_type: str,
         masking: bool,
         seq_len: int,
         prediction_type: str,
     ):
         data_path = cls._get_data_path(
-            data_dir, model_type, data_type, masking, seq_len, prediction_type
+            data_dir, data_type, masking, seq_len, prediction_type
         )
         os.makedirs(os.path.dirname(data_path), exist_ok=True)
         json_handler.dump(data, data_path)

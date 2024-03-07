@@ -3,7 +3,7 @@ import os
 
 from tqdm import tqdm
 
-from modules.pose import PoseDataHandler
+from modules.utils import json_handler
 from modules.utils.video import Capture, Writer
 
 from . import pose as pose_vis
@@ -18,9 +18,11 @@ class Visualizer:
     def visualise(self, video_path: str, data_dir: str):
         # load data
         if self._do_pose_estimation:
-            pose_data_lst = PoseDataHandler.load(data_dir)
+            pose_data_lst = json_handler.load(
+                os.path.join(data_dir, "json", "pose.json")
+            )
         # if self._do_individual:
-        #     ind_data_lst = IndividualDataHandler.load(data_dir)
+        #     ind_data_lst = DataHandler.load(data_dir)
 
         # create video capture
         print(f"=> loading video from {video_path}.")

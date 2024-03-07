@@ -11,12 +11,8 @@ import numpy as np
 from tqdm import tqdm
 
 sys.path.append(".")
-from modules.individual import (
-    IndividualActivityRecognition,
-    IndividualDataHandler,
-    IndividualPredTypes,
-)
-from modules.pose import PoseDataHandler
+from modules import DataHandler, IndividualAnomalyEstimation, PredTypes
+from modules.utils import json_handler
 from modules.utils.video import Capture, Writer
 from modules.visualize import pose as pose_vis
 
@@ -52,13 +48,6 @@ def parser():
     # options
     parser.add_argument("-g", "--gpu", type=int, default=0, help="gpu id")
     parser.add_argument(
-        "-mt",
-        "--model_type",
-        type=str,
-        default="ganomaly",
-        help="'ganomaly' only",
-    )
-    parser.add_argument(
         "-mv",
         "--model_version",
         type=str,
@@ -92,8 +81,6 @@ def parser():
     # delete last slash
     args.data_dir = args.data_dir[:-1] if args.data_dir[-1] == "/" else args.data_dir
 
-    args.model_type = args.model_type.lower()
-
     return args
 
 
@@ -101,14 +88,13 @@ def main():
     args = parser()
 
     if args.predict:
-        iar = IndividualActivityRecognition(
-            args.model_type,
+        iar = IndividualAnomalyEstimation(
             args.seq_len,
             data_type=args.data_type,
             stage="inference",
             model_version=args.model_version,
             masking=args.masking,
-            prediction_type=IndividualPredTypes.keypoints,
+            prediction_type=PredTypes.keypoints,
         )
         iar.inference(args.data_dir, [args.gpu])
 
@@ -121,9 +107,8 @@ def main():
     for video_path in video_paths:
         name = os.path.basename(video_path).replace(".mp4", "")
         data_dir = os.path.join(args.data_dir, name)
-        results = IndividualDataHandler.load(
+        results = DataHandler.load(
             data_dir,
-            args.model_type,
             args.data_type,
             args.masking,
             args.seq_len,
@@ -166,7 +151,7 @@ def restore_keypoints(
 
 def visualise(video_path: str, data_dir: str, results: List[Dict[str, Any]]):
     # load data
-    pose_data_lst = PoseDataHandler.load(data_dir)
+    pose_data_lst = json_handler.load(os.path.join(data_dir, "json", "pose.json"))
     if pose_data_lst is None:
         return
 

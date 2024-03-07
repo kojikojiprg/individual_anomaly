@@ -12,7 +12,7 @@ from scipy import interpolate
 from tqdm import tqdm
 
 sys.path.append(".")
-from modules.pose import PoseDataFormat, PoseDataHandler
+from modules.utils import json_handler
 from modules.utils.video import Capture, Writer
 from modules.visualize import pose as pose_vis
 
@@ -81,22 +81,22 @@ def main():
 
 def restore_keypoints(pose_data: List[Dict[str, Any]], seq_len: int, th_split: int):
     # sort data by frame_num
-    pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.frame_num])
+    pose_data = sorted(pose_data, key=lambda x: x["frame"])
     # sort data by id
-    pose_data = sorted(pose_data, key=lambda x: x[PoseDataFormat.id])
+    pose_data = sorted(pose_data, key=lambda x: x["id"])
 
     # get frame_num and id of first data
-    pre_frame_num = pose_data[0][PoseDataFormat.frame_num]
-    pre_pid = pose_data[0][PoseDataFormat.id]
-    pre_kps = pose_data[0][PoseDataFormat.keypoints]
+    pre_frame_num = pose_data[0]["frame"]
+    pre_pid = pose_data[0]["id"]
+    pre_kps = pose_data[0]["keypoints"]
 
     ret_data = []
     seq_data: list = []
     for item in tqdm(pose_data, leave=False):
         # get values
-        frame_num = item[PoseDataFormat.frame_num]
-        pid = item[PoseDataFormat.id]
-        kps = item[PoseDataFormat.keypoints]
+        frame_num = item["frame"]
+        pid = item["id"]
+        kps = item["keypoints"]
 
         if np.any(kps[:, 2] < 0.2):
             continue
@@ -172,9 +172,9 @@ def _interpolate_kps(seq_data):
     for i, kps in enumerate(all_kps):
         ret_data.append(
             {
-                PoseDataFormat.frame_num: start_frame_num + i,
-                PoseDataFormat.id: pid,
-                PoseDataFormat.keypoints: kps,
+                "frame": start_frame_num + i,
+                "id": pid,
+                "keypoints": kps,
             }
         )
     return ret_data
@@ -197,7 +197,7 @@ def _interpolate2d(vals):
 
 def visualise(video_path: str, data_dir: str, seq_len: int, th_split: int):
     # load data
-    pose_data_lst = PoseDataHandler.load(data_dir)
+    pose_data_lst = json_handler.load(os.path.join(data_dir, "json", "pose.json"))
     if pose_data_lst is None:
         return
 
