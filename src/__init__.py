@@ -7,8 +7,8 @@ from lightning.pytorch import LightningModule, Trainer
 from lightning.pytorch.loggers import TensorBoardLogger
 from tqdm.auto import tqdm
 
-from modules.utils import set_random
-from modules.utils.constants import Stages
+from src.utils import set_random
+from src.utils.constants import Stages
 
 from .constants import DataFormat, DataTypes
 from .datahandler import DataHandler

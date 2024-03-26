@@ -6,8 +6,8 @@ from typing import List, Tuple, Union
 
 import yaml
 
-from modules.utils import json_handler
-from modules.utils.constants import Stages
+from src.utils import json_handler
+from src.utils.constants import Stages
 
 from .constants import DataFormat, DataTypes
 from .models.ganomaly_bbox.datamodule import DatamoduleBbox
