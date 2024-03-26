@@ -18,7 +18,7 @@ pip install -r requirements.txt --extra-index-url https://download.pytorch.org/w
 ```
 
 
-# Train
+# Training
 ```
 python tools/train_individual.py [-h] -dd DATA_DIR -sl SEQ_LEN [-g [GPUS ...]] [-dt DATA_TYPE] [-msk]
 ```
