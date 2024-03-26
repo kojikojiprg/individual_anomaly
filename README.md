@@ -1,5 +1,5 @@
 # Individual Activity Anomaly Estimation in Operating Rooms Based on Time-Sequential Prediction
-This research was commended with **The Second Prize of Best Student Papers on MEDINFO 2023** ! You can find further information at [here](https://medinfo2023.org/the-international-medical-informatics-association-imia-announces-medinfo-2023-best-paper-winners/).
+This research was commended with **The Second Place of Best Student Paper on MEDINFO 2023** ! You can find further information at [here](https://medinfo2023.org/the-international-medical-informatics-association-imia-announces-medinfo-2023-best-paper-winners/).
 
 
 We propose a semi-supervised individual activity anomaly estimation model based on time-sequential prediction using Generative Adversarial Network.
