@@ -4,7 +4,7 @@ import sys
 import warnings
 
 sys.path.append(".")
-from modules import IndividualAnomalyEstimation
+from src import IndividualAnomalyEstimation
 
 warnings.simplefilter("ignore")
 

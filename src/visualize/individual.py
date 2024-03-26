@@ -7,8 +7,8 @@ import numpy as np
 import seaborn as sns
 from tqdm import tqdm
 
-from modules import DataFormat
-from modules.utils.video import Capture, Writer
+from src import DataFormat
+from src.utils.video import Capture, Writer
 
 from .pose import draw_bbox, put_frame_num
 

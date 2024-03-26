@@ -3,8 +3,8 @@ import os
 
 from tqdm import tqdm
 
-from modules.utils import json_handler
-from modules.utils.video import Capture, Writer
+from src.utils import json_handler
+from src.utils.video import Capture, Writer
 
 from . import pose as pose_vis
 
