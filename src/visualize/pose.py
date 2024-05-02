@@ -14,7 +14,7 @@ def write_frame(
     # add keypoints to image
     frame = put_frame_num(frame, frame_num)
     for kps in pose_data_lst:
-        if kps["frame"] == frame_num:
+        if kps["n_frame"] == frame_num:
             frame = _draw_skeleton(frame, kps["id"], np.array(kps["keypoints"]))
 
     return frame

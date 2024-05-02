@@ -14,7 +14,7 @@ class _AbstractDataClass:
 
 @dataclass(frozen=True)
 class DataFormat(_AbstractDataClass):
-    frame_num: str = "frame"
+    frame_num: str = "n_frame"
     id: str = "id"
 
     bbox_real: str = "bbox_real"
