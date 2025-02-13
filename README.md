@@ -57,10 +57,10 @@ optional arguments:
 
 # Reference
 ```
-@proceedings{yokoyama_medinfo_2023,
+@inproceedings{yokoyama_medinfo_2023,
   title={Individual Activity Anomaly Estimation in Operating Rooms Based on Time-Sequential Prediction},
   author={Yokoyama, Koji and Yamamoto, Goshiro and Liu, Chang and Kishimoto, Kazumasa and Mori, Yukiko and Kuroda, Tomohiro},
-  journal={MEDINFO 2023—The Future Is Accessible},
+  booktitle={MEDINFO 2023—The Future Is Accessible},
   pages={284--288},
   year={2024},
   publisher={IOS Press}
